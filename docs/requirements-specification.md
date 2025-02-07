@@ -137,9 +137,9 @@ Stripe / PayPal API (for expense splitting)
 ## Similar Existing Apps
 1. **Google Trips**  
    Provided travel suggestions but had no group-based planning features.
-2. **Wanderlog**
+2. **Wanderlog**  
    Offers itinerary planning but lacks real-time location sharing and group voting.
-3. **TripIt**
+3. **TripIt**  
    Focuses on organizing bookings and schedules but doesn’t support group trip sharing and management.
 ### Our App’s unique feature
 1. Combines itinerary planning, location sharing and expense tracking.  
