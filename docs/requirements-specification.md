@@ -30,7 +30,7 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 - Backpackers & road trippers looking for collaborative itineraries.  
 - Event organizers coordinating travel plans.
 
-## User Stories
+## ## Functional Requirements (User Stories)
 
 ### Must-Have
 
@@ -144,7 +144,7 @@ group itinerary and media for information sharing
 ---
 
 
-## Functional Requirements
+## Functional Requirements (For us to check)
 
 P1 to P5 are priority levels (P1 highest priority)
 
