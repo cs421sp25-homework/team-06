@@ -34,6 +34,7 @@
   * [ ] **Trip Routes with Map:** “As a group member, I want to tap on an existing event marker to open an editing interface where I can modify details (updating the event description and time) so that the itinerary stays accurate and up-to-date.”
   
 * **Nice-to-Have Features:**
+  * [ ] **Account:** “As a user, I want to sign up with my social media accounts so that I don’t have to create a new username and password.”
   * [ ] **Account:** “As a user, I want to keep a log of my trip history and archive or delete my previous trip plans, so that I can keep an organized dashboard.”
 
 ---
@@ -72,7 +73,6 @@
   * [ ] **Third Party Integration:** “As a trip participant, I want real-time interaction with Google Maps for route planning and updates so that I can adjust my travel route based on traffic conditions and unexpected changes.”
   
 * **Nice-to-Have Features:**
-  * [ ] **Account:** “As a user, I want to sign up with my social media accounts so that I don’t have to create a new username and password.”
   * [ ] **Trip Routes with Map:** “As a group member, I want visual indicators (color or user avatars) to identify who picked the location, ensuring transparent collaboration.”
   * [ ] **Trip Routes with Map:** “As a user, I want to access detailed information for each destination (e.g., key attractions, local tips) so that I can make informed travel decisions without the need for user reviews.”
   * [ ] **Trip Routes with Map:** “As a user, I want to receive recommendations for choice of routes while planning my trip, so that planning the itinerary becomes easier.”
