@@ -49,6 +49,9 @@
   * [ ] **Shared Bill:** “As a user, I want to create a shared expense and split it among involved members so that each person’s share is clearly tracked.”
   * [ ] **Shared Bill:** “As a user, I want to know how much the group spends and to whom I should send money in the end, so that I can easily pay the correct amount.”
   * [ ] **Trip Plan:** “As a group member, I want to edit our trip itinerary in real time so that members see the latest change immediately.”
+  * [ ] **Notification:** “As a trip participant, I want to receive notifications when itineraries get updated so that I can participate in collaboration on time and stay informed about changes.”
+  * [ ] **Notification:** “As a trip participant, I want to receive notifications when a shared expense is updated so that I can track my financial contributions and reimbursements accurately.”
+  * [ ] **Notification:** “As a trip participant, I want to receive a daily notification with the weather forecast and itinerary summary so that I can prepare accordingly for the day's activities.”
   
 * **Nice-to-Have Features:**
   * [ ] **Trip Plan:** “As a user, I want to sync my itinerary with other calendar-apps, so that I can receive reminders for my scheduled activities.”
@@ -64,9 +67,6 @@
 * **Goal:** Finalize advanced features including notifications and third-party integrations, as well as enhance map interactivity and route recommendations.
   
 * **Must-Have Features:**
-  * [ ] **Notification:** “As a trip participant, I want to receive notifications when itineraries get updated so that I can participate in collaboration on time and stay informed about changes.”
-  * [ ] **Notification:** “As a trip participant, I want to receive notifications when a shared expense is updated so that I can track my financial contributions and reimbursements accurately.”
-  * [ ] **Notification:** “As a trip participant, I want to receive a daily notification with the weather forecast and itinerary summary so that I can prepare accordingly for the day's activities.”
   * [ ] **Third Party Integration:** “As a user, I want to log in using my Google or Facebook account so that I can quickly access my account without needing to create a new username and password.”
   * [ ] **Third Party Integration:** “As a user, I want to export my trip itinerary to an .ical file so that I can integrate it into my preferred calendar app and receive event reminders.”
   * [ ] **Third Party Integration:** “As a user, I want to use Google Maps within the app to search for locations and get directions so that I can navigate efficiently during my trip.”
