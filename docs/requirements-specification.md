@@ -102,22 +102,18 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 - As a user, I want to export my trip itinerary to an .ical file so that I can integrate it into my preferred calendar app and receive event reminders.  
 - As a group member, I want real-time interaction with Google Maps for route planning and updates so that I can adjust my travel route based on traffic conditions and unexpected changes.
 
-
 ---
 
 ## Similar Existing Apps & Differentiation
 
-1\. Google Trips
+1. Google Trips
+   - Provided travel suggestions but had no group-based planning features.
 
-- Provided travel suggestions but had no group-based planning features.
+2. Wanderlog
+   - Offers itinerary planning but lacks real-time location sharing and group voting.
 
-2\. Wanderlog
-
-- Offers itinerary planning but lacks real-time location sharing and group voting.
-
-3\. TripIt
-
-- Focuses on organizing bookings and schedules but doesn’t support group trip sharing and management.
+3. TripIt
+   - Focuses on organizing bookings and schedules but doesn’t support group trip sharing and management.
 
 ### Our App’s unique feature
 
@@ -139,10 +135,7 @@ group itinerary and media for information sharing
 - Push Notifications: Firebase Cloud Messaging (FCM)  
 - Maps & Location: react-native-maps
 
-
-
 ---
-
 
 ## Functional Requirements
 
