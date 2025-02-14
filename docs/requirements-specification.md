@@ -65,9 +65,7 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 #### Create/Read/Update/Delete Account
 
 - As a user, I want to complete my profile to showcase my travel preferences and personal information, so that I can connect with my companions and find like-minded travel partners.  
-- As a user, I want to sign up with my social media accounts so that I don’t have to create a new username and password.  
 - As a user, I want to be able to delete my account if needed so that I can remove all personal data.  
-- As a user, I want to archive my past itineraries so that I can review them later without cluttering my active trips list.  
 - As a user, I want to keep a log of my trip history and archive or delete my previous trip plans, so that I can keep an organized dashboard.
 
 #### Create/Read/Update/Delete Trip Plan
@@ -82,9 +80,9 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 
 - As a group member, I want visual indicators (color or user avatars) to identify who picked the location, ensuring transparent collaboration.  
 - As a user, I want to access detailed information for each destination (e.g., key attractions, local tips) so that I can make informed travel decisions without the need for user reviews.  
-- As a user, I want to receive recommended travel routes based on real-time traffic and weather conditions so that I can adjust my plans and avoid delays.  
 - As a user, I want to filter recommended travel destinations by criteria such as region, travel style (e.g., adventure, relaxation, cultural) so that I can find options that match my preferences.  
 - As a user, I want to download maps and planned routes before my trip so that I can navigate even when I don’t have internet access.
+- As a user, I want to receive recommended travel routes based on real-time traffic and weather conditions so that I can adjust my plans and avoid delays.  
 
 #### Create/Read/Update/Delete Shared Bill
 
