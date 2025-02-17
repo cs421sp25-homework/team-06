@@ -55,11 +55,6 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 - As a group member, I want to add a new event by tapping on a specific location on the map, entering details (such as event name, description, and scheduled time), and the event will appear as a new marker on the map.  
 - As a group member, I want to tap on an existing event marker to open an editing interface where I can modify details (updating the event description and time) so that the itinerary stays accurate and up-to-date.
 
-#### Create/Read/Update/Delete Shared Bill
-
-- As a user, I want to create a shared expense and split it among involved members so that each person’s share is clearly tracked.  
-- As a user, I want to know how much the group spends and to whom I should send money in the end, so that I can easily pay the correct amount.
-
 ### Nice-to-have
 
 #### Create/Read/Update/Delete Account
@@ -75,7 +70,6 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 - As a user, I want to make our itinerary public without exposing personal privacy so that everyone can share their itineraries with other users.  
 - As a group member, I want to edit our trip itinerary in real time so that members see the latest change immediately.
 
-
 #### Create/Read/Update/Delete Trip Routes with Map
 
 - As a group member, I want visual indicators (color or user avatars) to identify who picked the location, ensuring transparent collaboration.  
@@ -86,6 +80,8 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 
 #### Create/Read/Update/Delete Shared Bill
 
+- As a user, I want to create a shared expense and split it among involved members so that each person’s share is clearly tracked.  
+- As a user, I want to know how much the group spends and to whom I should send money in the end, so that I can easily pay the correct amount.
 - As a user, I want to see how much each activity in our trip costs and the total cost of the trip so that I can manage my budget effectively and track expenses more efficiently.
 
 #### Notification
@@ -135,60 +131,59 @@ group itinerary and media for information sharing
 
 ---
 
-
 ## Functional Requirements (For us to check)
 
-P1 to P5 are priority levels (P1 highest priority)
+P1 to P5 are priority levels (P1 = highest priority, P4 = lower, P5 = lowest priority based on roadmap timeline).
 
 ### Core Requirements
 
-#### Account Management
+#### Account Management  
 
-- Register an account (P1)  
-- Login (P1)  
-- Log out of an account (P1)  
-- Register for a trip plan as group member (P1)  
-- Invite friends via links or in-app invitations (P1)  
-- Complete user profile with travel preferences (P4)  
-- Sign up with social media accounts (P4)
-- View log of archived trip plan (P4)
+- **(P1)** Register an account
+- **(P1)** Login
+- **(P1)** Log out of an account
+- **(P1)** Register for a trip plan as a group member
+- **(P1)** Invite friends via links or in-app invitations
+- **(P4)** Complete user profile with travel preferences
+- **(P3)** Sign up with social media accounts
+- **(P4)** View log of archived trip plans  
 
-#### Trip Planning
+#### Trip Planning  
 
-- Create a new group trip (P1)  
-- Create a structured day-by-day itinerary (P1)  
-- Archive a finished itinerary (P4)  
-- Real-time collaborative editing of itineraries (P3)
+- **(P1)** Create a new group trip  
+- **(P1)** Create a structured day-by-day itinerary  
+- **(P4)** Archive a finished itinerary  
+- **(P3)** Real-time collaborative editing of itineraries  
 
-#### Interactive Map
+#### Interactive Map  
 
-- CRUD trip routes on map (P2)  
-- Link routes with specific part of itinerary (P2)  
-- View recommendation of routes based on traffic and weather (P4)  
-- Download offline map and travel routes (P4)  
-- View group members’ locations on a map (P4)
+- **(P2)** CRUD trip routes on map  
+- **(P2)** Link routes with specific parts of the itinerary  
+- **(P3)** View recommendations of routes based on traffic and weather  
+- **(P3)** Download offline maps and travel routes  
+- **(P3)** View group members’ locations on a map  
 
 #### Expense Splitting & Cost Tracking
 
-- Create shared bill and split them among members (P3)  
-- Link the shared bill with specific activity in the itinerary (P3)  
-- View the total cost of a trip plan (P3)  
-- View a detailed breakdown of amounts owed (P3)
+- **(P4)** Create shared bill and split them among members  
+- **(P4)** Link the shared bill with a specific activity in the itinerary  
+- **(P4)** View the total cost of a trip plan  
+- **(P4)** View a detailed breakdown of amounts owed  
 
 ### Other Requirements
 
 #### Notifications
 
-- Send notifications for itinerary updates (P3)
-- Send notifications for expense updates (P3)  
-- Send notifications for daily weather and itinerary digest (P3)
+- **(P3)** Send notifications for itinerary updates  
+- **(P3)** Send notifications for expense updates  
+- **(P3)** Send notifications for daily weather and itinerary digest  
 
 #### Third-Party Integration
 
-- Enable login using social media accounts (e.g., Google, Facebook) (P3)  
-- Export itinerary to .ical files for calendar app subscription (P4)  
-- Integrate Google Maps for location search and directions (P2)  
-- Support real-time interaction with Google Maps for route planning and updates (P3)
+- **(P3)** Enable login using social media accounts (e.g., Google, Facebook)  
+- **(P4)** Export itinerary to .ical files for calendar app subscription  
+- **(P2)** Integrate Google Maps for location search and directions  
+- **(P3)** Support real-time interaction with Google Maps for route planning and updates  
 
 ## Non-functional Requirement
 
