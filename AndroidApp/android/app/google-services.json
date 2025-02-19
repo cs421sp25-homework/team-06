@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "902651100900",
+    "project_id": "oose-c260a",
+    "storage_bucket": "oose-c260a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:902651100900:android:954af33aa99904017436f1",
+        "android_client_info": {
+          "package_name": "com.androidapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_pHd51PsRbYIOUEtdV99bQ6TCNWh4hUM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

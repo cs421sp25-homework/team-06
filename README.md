@@ -9,13 +9,39 @@ Name of the application goes here -- followed by a brief description (elevator p
 
 ## Installing / Getting started
 
-A quick introduction of the minimal setup you need to get the app up & running on a local computer. For example, your advisor might use the instruction here to run the application locally.
+### Pre-requisite
+- node_js 22.14.0
+- JDK 17
+- Android Studio
+
+### set up env
+
+- create ANDROID_HOME to your env variables, the value is "xxx\Android\Sdk"
+- add %ANDROID_HOME%\platform-tools to your system's Path env variable.
+- add %ANDROID_HOME%\emulator to your system's Path env variable.
+- create JAVA_HOME to your env variables, the value is the path of your JDK 17
 
 ```shell
-commands here
+npm install -g yarn
+npm install @react-native-firebase/app
+npm install  @react-native-firebase/firestore @react-native-firebase/auth  @react-native-firebase/database @react-native-firebase/messaging
 ```
 
-## Developing
+### run the app locally
+
+```shell
+git clone https://github.com/cs421sp25-homework/team-06.git
+cd ./AndroidApp
+npm install -g yarn
+yarn android
+or
+npx react-native run-android
+```
+This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
+
+
+
+<!-- ## Developing
 
 Detailed and step-by-step documentation for setting up local development. For example, a new team member will use these instructions to start developing the project further. 
 
@@ -27,7 +53,7 @@ You should include what is needed (e.g. all of the configurations) to set up the
 
 Additionally, describe and show how to run the tests, explain your code style and show how to check it.
 
-If your project needs some additional steps for the developer to build the project after some code changes, state them here. Moreover, give instructions on how to build and release a new version. In case there's some step you have to take that publishes this project to a server, it must be stated here. 
+If your project needs some additional steps for the developer to build the project after some code changes, state them here. Moreover, give instructions on how to build and release a new version. In case there's some step you have to take that publishes this project to a server, it must be stated here.  -->
 
 ## Contributing
 

@@ -19,3 +19,9 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+buildscript {
+    dependencies {
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
