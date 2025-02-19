@@ -16,12 +16,16 @@ Name of the application goes here -- followed by a brief description (elevator p
 
 ### set up env
 
+- check details in [react native official document](https://reactnative.dev/docs/set-up-your-environment)
 - create ANDROID_HOME to your env variables, the value is "xxx\Android\Sdk"
 - add %ANDROID_HOME%\platform-tools to your system's Path env variable.
 - add %ANDROID_HOME%\emulator to your system's Path env variable.
 - create JAVA_HOME to your env variables, the value is the path of your JDK 17
+- you can run this commend `npx react-native doctor` in the Android folder to check whether you set up environment correctly.
+- you may need to install the lastest command-line tool in Android Studio and add this to your system's Path env `export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin`
 
 ```shell
+## For yarn start
 npm install -g yarn
 npm install @react-native-firebase/app
 npm install  @react-native-firebase/firestore @react-native-firebase/auth  @react-native-firebase/database @react-native-firebase/messaging
@@ -33,8 +37,16 @@ npm install  @react-native-firebase/firestore @react-native-firebase/auth  @reac
 git clone https://github.com/cs421sp25-homework/team-06.git
 cd ./AndroidApp
 
+#for yarn user
+npm install -g yarn
+
 yarn android
-or
+
+## For npm user
+npm install
+#run metro first
+npm start
+#run the app
 npx react-native run-android
 ```
 This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
