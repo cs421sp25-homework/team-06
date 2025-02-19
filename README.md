@@ -32,13 +32,21 @@ npm install  @react-native-firebase/firestore @react-native-firebase/auth  @reac
 ```shell
 git clone https://github.com/cs421sp25-homework/team-06.git
 cd ./AndroidApp
-npm install -g yarn
 
 yarn android
 or
 npx react-native run-android
 ```
 This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
+
+If you are confronted with some error, try the following:
+```shell
+cd ./android
+chmod +x ./gradlew
+./gradlew clean
+cd ../
+yarn android
+```
 
 ### firebase support
 I have added the firebase information file "google-services.json" into "AndroidApp/android/app/", so the app can directly connect to the Firebase.
