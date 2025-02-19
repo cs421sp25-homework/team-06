@@ -33,12 +33,25 @@ npm install  @react-native-firebase/firestore @react-native-firebase/auth  @reac
 git clone https://github.com/cs421sp25-homework/team-06.git
 cd ./AndroidApp
 npm install -g yarn
+
 yarn android
 or
 npx react-native run-android
 ```
 This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
 
+## Deploy
+you can simply deploy it on your android phone.
+
+- Make sure your Android device is connected to your laptop via USB and that USB debugging is enabled on your Android phone.
+- Start the React Native Metro bundler
+```shell
+npx react-native start
+```
+- Run the App
+```shell
+npx react-native run-android
+```
 
 
 <!-- ## Developing
