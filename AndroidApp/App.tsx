@@ -1,28 +1,53 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button } from 'react-native';
+import auth from '@react-native-firebase/auth';
 
+const FirebaseTest = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [msg, setMsg] = useState(null);
 
+  // Sign-Up Function
+  const signUp = async () => {
+    try {
+      await auth().createUserWithEmailAndPassword(email, password);
+      console.log('User signed up');
+      setMsg('User' + email + ' signed up');
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
 
-const App = () => {
+  // Sign-In Function
+  const signIn = async () => {
+    try {
+      await auth().signInWithEmailAndPassword(email, password);
+      console.log('User signed in');
+      setMsg('User ' + email + ' signed in');
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Hello, World!</Text>
-    </View>
+      <View>
+        <Text>Sign Up / Sign In</Text>
+        <TextInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+        />
+        <TextInput
+            placeholder="Password"
+            value={password}
+            secureTextEntry
+            onChangeText={setPassword}
+        />
+        <Button title="Sign Up" onPress={signUp} />
+        <Button title="Sign In" onPress={signIn} />
+        {msg && <Text>{msg}</Text>}
+      </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-});
-
-export default App;
+export default FirebaseTest;

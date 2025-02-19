@@ -40,6 +40,9 @@ npx react-native run-android
 ```
 This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
 
+### firebase support
+I have added the firebase information file "google-services.json" into "AndroidApp/android/app/", so the app can directly connect to the Firebase.
+
 ## Deploy
 you can simply deploy it on your android phone.
 
