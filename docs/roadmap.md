@@ -8,7 +8,8 @@
 
 
 * **Must-Have Features:**
-  - [ ] “As a user, I want to sign up with my email address, create a password, log in, and log out, so that I can securely manage my trip.”
+  - [ ] “As a user, I want to sign up with my email address, create a password,so that I can securely manage my trip.”
+  - [ ] "As a user, I want to log in and log out from my account with email and password, so that I can securely keep my data."
 
 * **Nice-to-Have Features:**
   - [ ] “As a user, I want to log in using my Google or Facebook account so that I can quickly access my account.”
