@@ -1,0 +1,45 @@
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { PaperProvider, Button, Text } from 'react-native-paper';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+
+type Props = {
+    navigation: HomeScreenNavigationProp;
+};
+
+const HomeScreen: React.FC<Props> = ({ navigation }) => {
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Welcome to the Trip Planner</Text>
+            <Button
+                mode="contained"
+                onPress={() => navigation.navigate('SignUp')}
+                style={styles.button}
+            >
+                Sign Up
+            </Button>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    button: {
+        marginTop: 10,
+    }
+});
+
+export default HomeScreen;
