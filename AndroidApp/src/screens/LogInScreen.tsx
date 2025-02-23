@@ -1,9 +1,10 @@
 import React, {useState} from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, Text, Snackbar, ActivityIndicator } from 'react-native-paper';
+import { View, Image, TouchableOpacity } from 'react-native';
+import { TextInput, Text, Button, Snackbar, ActivityIndicator, IconButton } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import loginStyles from '../styles/loginStyples';
 
 type LogInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -41,68 +42,79 @@ const LogInScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={loginStyles.container}>
 
-            <Text style={styles.title}> Log in </Text>
+            <Image source={require('../assets/logInBackground.jpg')} style={loginStyles.backgroundImage} />
 
-            <TextInput
-                label="Email"
-                mode="outlined"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                style={styles.input}
-            />
+            <View style={loginStyles.overlay}>
 
-            <TextInput
-                label="Password"
-                mode="outlined"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={styles.input}
-            />
+                <Text variant="headlineLarge" style={loginStyles.title}>
+                Let's <Text style={loginStyles.highlight}>Get</Text> Started!
+                </Text>
+
+                <Text variant="bodyMedium" style={loginStyles.subtitle}>
+                Discover the World with Every Sign In
+                </Text>
+
+                <TextInput
+                    label="Email"
+                    mode="outlined"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    style={loginStyles.input}
+                />
+
+                <TextInput
+                    label="Password"
+                    mode="outlined"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={loginStyles.input}
+                />
+
+                <TouchableOpacity>
+                <Text style={loginStyles.forgotPassword}>Forgot password?</Text>
+                </TouchableOpacity>
 
 
-            {loading ? (
-                <ActivityIndicator animating={true} size="large" />
-            ) : (
-                <Button mode="contained" onPress={handleLogIn} style={styles.button}>
-                    Log In
+                {loading ? (
+                    <ActivityIndicator animating={true} size="large" color="#007A8C" />
+                ) : (
+                    <Button mode="contained" onPress={handleLogIn} style={loginStyles.signInButton}>
+                        Sign In
+                    </Button>
+                )}
+
+                <Text style={loginStyles.orText}>or sign in with</Text>
+
+                <View style={loginStyles.socialIcons}>
+                    <TouchableOpacity>
+                        <IconButton icon="google" size={30} onPress={() => {}} />
+                        <IconButton icon="apple" size={30} onPress={() => {}} />
+                        <IconButton icon="facebook" size={30} onPress={() => {}} />
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={loginStyles.noAccount}>I don’t have an account?</Text>
+
+                <Button mode="outlined" onPress={() => navigation.navigate('SignUp')} style={loginStyles.signUpButton}>
+                    Sign Up
                 </Button>
-            )}
 
-            <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                duration={3000}
-            >
-                {message}
-            </Snackbar>
-
+                <Snackbar
+                    visible={snackbarVisible}
+                    onDismiss={() => setSnackbarVisible(false)}
+                    duration={3000}
+                >
+                    {message}
+                </Snackbar>
+            </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 20,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    input: {
-        marginBottom: 15,
-    },
-    button: {
-        marginTop: 10,
-    }
-});
 
 export default LogInScreen;
