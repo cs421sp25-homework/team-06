@@ -38,7 +38,7 @@ const ProfileScreen = ({ navigation }) => {
         (doc) => {
           if (doc.exists) {
             const data = doc.data();
-
+            // contents of profile
             setName(data?.name || '');
             setBio(data?.bio || '');
             setTravelPreferences(data?.travelPreferences || '');
@@ -64,14 +64,14 @@ const ProfileScreen = ({ navigation }) => {
 
     return () => unsubscribe();
   }, []);
-
+  // Name required for profile
   const handleSaveProfile = async () => {
     if (name.trim() === '') {
       setError('Name is required');
       setSnackbarVisible(true);
       return;
     }
-
+   // check if login
     const user = auth().currentUser;
     if (!user) {
       setError('User not logged in');
@@ -106,7 +106,7 @@ const ProfileScreen = ({ navigation }) => {
       setSnackbarVisible(true);
     }
   };
-
+// cancel editing
   const handleCancelEdit = () => {
     setName(savedProfile.name);
     setBio(savedProfile.bio);
@@ -124,7 +124,7 @@ const ProfileScreen = ({ navigation }) => {
       setSnackbarVisible(true);
     }
   };
-
+  // edit profile picture
   return (
     <View style={styles.container}>
       {/* Avatar */}
