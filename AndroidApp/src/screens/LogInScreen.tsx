@@ -30,8 +30,8 @@ const LogInScreen: React.FC<Props> = ({ navigation }) => {
             await auth().signInWithEmailAndPassword(email, password);
             setMessage('Login successful!');
             setSnackbarVisible(true);
-
-            navigation.navigate('Home');
+            navigation.navigate('Profile');
+            // navigation.navigate('Home');
 
         } catch (err) {
             setMessage( (err as Error).message );
