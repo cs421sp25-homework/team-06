@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { TextInput, Button, Text, Avatar, Snackbar } from 'react-native-paper';
+import { TextInput, Button, Text, Avatar, Snackbar, Menu } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import AppNavigator from './AppNavigator';
 
 const ProfileScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -14,6 +15,7 @@ const ProfileScreen = ({ navigation }) => {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const [savedProfile, setSavedProfile] = useState({
     name: '',
@@ -27,6 +29,17 @@ const ProfileScreen = ({ navigation }) => {
     { id: '2', src: require('../assets/another_image.png') },
   ];
 
+  // travel preference options
+  const travelPreferenceOptions = [
+    "N/A",
+    "Scenic & Leisurely",
+    "Gastronomic Adventure",
+    "Family-Friendly Trip",
+    "Eco-Friendly Travel",
+    "Luxury Experience",
+    "Budget-Conscious",
+  ];
+
   useEffect(() => {
     const user = auth().currentUser;
     if (!user) return;
@@ -38,7 +51,6 @@ const ProfileScreen = ({ navigation }) => {
         (doc) => {
           if (doc.exists) {
             const data = doc.data();
-            // contents of profile
             setName(data?.name || '');
             setBio(data?.bio || '');
             setTravelPreferences(data?.travelPreferences || '');
@@ -80,7 +92,7 @@ const ProfileScreen = ({ navigation }) => {
     }
 
     try {
-      // If you plan to store a reference to the image, consider storing an identifier (e.g. image id)
+      // If plan to store a reference to the image, consider storing an identifier (e.g. image id)
       await firestore().collection('users').doc(user.uid).set(
         {
           name,
@@ -124,11 +136,25 @@ const ProfileScreen = ({ navigation }) => {
       setSnackbarVisible(true);
     }
   };
-  // edit profile picture
+
+  const openMenu = () => setMenuVisible(true);
+  const closeMenu = () => setMenuVisible(false);
+
   return (
     <View style={styles.container}>
-      {/* Avatar */}
-      <TouchableOpacity onPress={() => setModalVisible(true)}>
+      {/* Avatar: Allow modification only in edit mode */}
+      {isEditing ? (
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Avatar.Image
+            size={100}
+            source={
+              profilePicture
+                ? profilePicture
+                : require('../assets/profile_pic.png')
+            }
+          />
+        </TouchableOpacity>
+      ) : (
         <Avatar.Image
           size={100}
           source={
@@ -137,7 +163,7 @@ const ProfileScreen = ({ navigation }) => {
               : require('../assets/profile_pic.png')
           }
         />
-      </TouchableOpacity>
+      )}
 
       {isEditing ? (
         <>
@@ -154,12 +180,36 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.input}
             multiline
           />
-          <TextInput
-            label="Travel Preferences"
-            value={travelPreferences}
-            onChangeText={setTravelPreferences}
-            style={styles.input}
-          />
+
+          {/* Travel Preferences Dropdown */}
+          <View style={{ width: '100%' }}>
+            <Menu
+              visible={menuVisible}
+              onDismiss={closeMenu}
+              anchor={
+                <TouchableOpacity onPress={openMenu}>
+                  <TextInput
+                    label="Travel Preferences"
+                    value={travelPreferences}
+                    style={styles.input}
+                    editable={false}
+                    pointerEvents="none"
+                  />
+                </TouchableOpacity>
+              }
+            >
+              {travelPreferenceOptions.map(option => (
+                <Menu.Item
+                  key={option}
+                  onPress={() => {
+                    setTravelPreferences(option);
+                    closeMenu();
+                  }}
+                  title={option}
+                />
+              ))}
+            </Menu>
+          </View>
 
           <Button
             mode="contained"
