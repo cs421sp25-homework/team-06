@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { TextInput, Button, Text, Avatar, Snackbar, Menu } from 'react-native-paper';
+import { TextInput, Button, Text, Avatar, Snackbar, Menu, Divider } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import AppNavigator from './AppNavigator';
@@ -16,6 +16,8 @@ const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [avatarCenterY, setAvatarCenterY] = useState(null);
+  const offset = 100
 
   const [savedProfile, setSavedProfile] = useState({
     name: '',
@@ -32,11 +34,11 @@ const ProfileScreen = ({ navigation }) => {
   // travel preference options
   const travelPreferenceOptions = [
     "N/A",
-    "Scenic & Leisurely",
-    "Gastronomic Adventure",
-    "Family-Friendly Trip",
-    "Eco-Friendly Travel",
-    "Luxury Experience",
+    "Leisurely",
+    "Gastronomic",
+    "Family-Friendly",
+    "Eco-Friendly",
+    "Luxury",
     "Budget-Conscious",
   ];
 
@@ -76,23 +78,21 @@ const ProfileScreen = ({ navigation }) => {
 
     return () => unsubscribe();
   }, []);
-  // Name required for profile
+
+  // save profile
   const handleSaveProfile = async () => {
     if (name.trim() === '') {
       setError('Name is required');
       setSnackbarVisible(true);
       return;
     }
-   // check if login
     const user = auth().currentUser;
     if (!user) {
       setError('User not logged in');
       setSnackbarVisible(true);
       return;
     }
-
     try {
-      // If plan to store a reference to the image, consider storing an identifier (e.g. image id)
       await firestore().collection('users').doc(user.uid).set(
         {
           name,
@@ -102,14 +102,12 @@ const ProfileScreen = ({ navigation }) => {
         },
         { merge: true }
       );
-
       setSavedProfile({
         name,
         bio,
         travelPreferences,
         profilePicture,
       });
-
       setError('Profile saved successfully!');
       setSnackbarVisible(true);
       setIsEditing(false);
@@ -118,7 +116,8 @@ const ProfileScreen = ({ navigation }) => {
       setSnackbarVisible(true);
     }
   };
-// cancel editing
+
+  // cancel editing
   const handleCancelEdit = () => {
     setName(savedProfile.name);
     setBio(savedProfile.bio);
@@ -141,164 +140,215 @@ const ProfileScreen = ({ navigation }) => {
   const closeMenu = () => setMenuVisible(false);
 
   return (
-    <View style={styles.container}>
-      {/* Avatar: Allow modification only in edit mode */}
-      {isEditing ? (
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Avatar.Image
-            size={100}
-            source={
-              profilePicture
-                ? profilePicture
-                : require('../assets/profile_pic.png')
-            }
-          />
-        </TouchableOpacity>
-      ) : (
-        <Avatar.Image
-          size={100}
-          source={
-            profilePicture
-              ? profilePicture
-              : require('../assets/profile_pic.png')
-          }
-        />
+    <View style={styles.root}>
+      {/* background layer */}
+      {avatarCenterY !== null && (
+        <>
+          <View style={[styles.topBackground, { height: avatarCenterY }]} />
+          <View style={[styles.bottomBackground, { top: avatarCenterY }]} />
+        </>
       )}
 
-      {isEditing ? (
-        <>
-          <TextInput
-            label="Name"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-          />
-          <TextInput
-            label="Bio"
-            value={bio}
-            onChangeText={setBio}
-            style={styles.input}
-            multiline
-          />
+      {/* content layer */}
+      <View style={styles.container}>
+        {/* avatar container */}
+        <View
+          style={styles.avatarContainer}
+          onLayout={(event) => {
+            const layout = event.nativeEvent.layout;
+            setAvatarCenterY(layout.y + layout.height / 2 + offset);
+          }}
+        >
+          {isEditing ? (
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
+              <Avatar.Image
+                size={100}
+                source={
+                  profilePicture
+                    ? profilePicture
+                    : require('../assets/profile_pic.png')
+                }
+              />
+            </TouchableOpacity>
+          ) : (
+            <Avatar.Image
+              size={100}
+              source={
+                profilePicture
+                  ? profilePicture
+                  : require('../assets/profile_pic.png')
+              }
+            />
+          )}
+        </View>
 
-          {/* Travel Preferences Dropdown */}
-          <View style={{ width: '100%' }}>
-            <Menu
-              visible={menuVisible}
-              onDismiss={closeMenu}
-              anchor={
-                <TouchableOpacity onPress={openMenu}>
-                  <TextInput
-                    label="Travel Preferences"
-                    value={travelPreferences}
-                    style={styles.input}
-                    editable={false}
-                    pointerEvents="none"
+        {isEditing ? (
+          <>
+            <TextInput
+              label="Name"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+            />
+            <TextInput
+              label="Bio"
+              value={bio}
+              onChangeText={setBio}
+              style={styles.input}
+              multiline
+            />
+            {/* Travel Preferences drop down */}
+            <View style={{ width: '100%' }}>
+              <Menu
+                visible={menuVisible}
+                onDismiss={closeMenu}
+                anchor={
+                  <TouchableOpacity onPress={openMenu}>
+                    <TextInput
+                      label="Travel Preferences"
+                      value={travelPreferences}
+                      style={styles.input}
+                      editable={false}
+                      pointerEvents="none"
+                    />
+                  </TouchableOpacity>
+                }
+              >
+                {travelPreferenceOptions.map((option) => (
+                  <Menu.Item
+                    key={option}
+                    onPress={() => {
+                      setTravelPreferences(option);
+                      closeMenu();
+                    }}
+                    title={option}
+                  />
+                ))}
+              </Menu>
+            </View>
+            <Button mode="contained" onPress={handleSaveProfile} style={[styles.button, { marginTop: '10%' }]}>
+              Save Profile
+            </Button>
+            <Button mode="outlined" onPress={handleCancelEdit} style={styles.button}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoTitle}>Name:</Text>
+              <Text style={styles.infoContent}>{name}</Text>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.infoTitle}>Bio:</Text>
+              <Text style={styles.infoContent}>{bio}</Text>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.infoTitle}>Travel Preferences:</Text>
+              <Text style={styles.infoContent}>{travelPreferences}</Text>
+            </View>
+            <Divider style={styles.divider} />
+            <Button mode="contained" onPress={() => setIsEditing(true)} style={[styles.button, { marginTop: '20%' }]}>
+              Edit
+            </Button>
+          </>
+        )}
+        <Button mode="outlined" onPress={handleLogout} style={styles.button}>
+          Log Out
+        </Button>
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+        >
+          {error}
+        </Snackbar>
+        {/* Modal select avatar */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalView}>
+            <FlatList
+              data={availableImages}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setProfilePicture(item.src);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Avatar.Image
+                    size={100}
+                    source={item.src}
+                    style={styles.modalImage}
                   />
                 </TouchableOpacity>
-              }
-            >
-              {travelPreferenceOptions.map(option => (
-                <Menu.Item
-                  key={option}
-                  onPress={() => {
-                    setTravelPreferences(option);
-                    closeMenu();
-                  }}
-                  title={option}
-                />
-              ))}
-            </Menu>
+              )}
+              numColumns={3}
+            />
+            <Button onPress={() => setModalVisible(false)}>Cancel</Button>
           </View>
-
-          <Button
-            mode="contained"
-            onPress={handleSaveProfile}
-            style={styles.button}
-          >
-            Save Profile
-          </Button>
-
-          <Button
-            mode="outlined"
-            onPress={handleCancelEdit}
-            style={styles.button}
-          >
-            Cancel
-          </Button>
-        </>
-      ) : (
-        <>
-          <Text style={styles.label}>Name: {name}</Text>
-          <Text style={styles.label}>Bio: {bio}</Text>
-          <Text style={styles.label}>Travel Preferences: {travelPreferences}</Text>
-
-          <Button
-            mode="contained"
-            onPress={() => setIsEditing(true)}
-            style={styles.button}
-          >
-            Edit
-          </Button>
-        </>
-      )}
-
-      <Button mode="outlined" onPress={handleLogout} style={styles.button}>
-        Log Out
-      </Button>
-
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-      >
-        {error}
-      </Snackbar>
-
-      {/* Modal for selecting a profile picture from assets */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalView}>
-          <FlatList
-            data={availableImages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  setProfilePicture(item.src);
-                  setModalVisible(false);
-                }}
-              >
-                <Avatar.Image
-                  size={100}
-                  source={item.src}
-                  style={styles.modalImage}
-                />
-              </TouchableOpacity>
-            )}
-            numColumns={3}
-          />
-          <Button onPress={() => setModalVisible(false)}>Cancel</Button>
-        </View>
-      </Modal>
+        </Modal>
+      </View>
     </View>
   );
 };
 
+const offset = 100
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  topBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'gray',
+  },
+  bottomBackground: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
+    backgroundColor: 'transparent',
     padding: 20,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: offset,
+  },
+  avatarContainer: {
+
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,
+    width: '100%',
+  },
+  infoTitle: {
+    width: 200,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginRight: 10,
+  },
+  infoContent: {
+    flex: 1,
+    fontSize: 18,
   },
   input: {
     width: '100%',
     marginBottom: 15,
+    marginTop: 10,
   },
   button: {
     marginTop: 10,
@@ -317,6 +367,12 @@ const styles = StyleSheet.create({
   },
   modalImage: {
     margin: 10,
+  },
+  divider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#ccc',
+    marginVertical: 5,
   },
 });
 
