@@ -20,8 +20,9 @@ const SignUpScreen = () => {
 
         setLoading(true);
         try {
-            await auth().createUserWithEmailAndPassword(email, password);
-            setError("Signup successful!");
+            const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+            await userCredential.user.sendEmailVerification();
+            setError("Signup successful! Please check your email to verify your account.");
             setSnackbarVisible(true);
         } catch (err) {
             const er = err as Error;
