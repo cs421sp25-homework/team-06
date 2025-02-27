@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { View, Image, TouchableOpacity } from 'react-native';
 import { TextInput, Text, Button, Snackbar, ActivityIndicator, IconButton } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
@@ -13,28 +13,31 @@ type Props = {
 };
 
 const LogInScreen: React.FC<Props> = ({ navigation }) => {
-
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-
     const [snackbarVisible, setSnackbarVisible] = useState(false);
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogIn = async () => {
-
         setLoading(true);
 
         try {
-            await auth().signInWithEmailAndPassword(email, password);
+            const userCredential = await auth().signInWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+
+            if (!user.emailVerified) {
+                await auth().signOut(); 
+                setMessage('Please verify your email before logging in.');
+                setSnackbarVisible(true);
+                return;
+            }
+
             setMessage('Login successful!');
             setSnackbarVisible(true);
-            navigation.navigate('Profile');
-            // navigation.navigate('Home');
-
+            navigation.navigate('Profile'); // 导航到用户主页
         } catch (err) {
-            setMessage( (err as Error).message );
+            setMessage((err as Error).message);
             setSnackbarVisible(true);
         }
 
@@ -43,17 +46,15 @@ const LogInScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={loginStyles.container}>
-
             <Image source={require('../assets/logInBackground.jpg')} style={loginStyles.backgroundImage} />
 
             <View style={loginStyles.overlay}>
-
                 <Text variant="headlineLarge" style={loginStyles.title}>
-                Let's <Text style={loginStyles.highlight}>Get</Text> Started!
+                    Let's <Text style={loginStyles.highlight}>Get</Text> Started!
                 </Text>
 
                 <Text variant="bodyMedium" style={loginStyles.subtitle}>
-                Discover the World with Every Sign In
+                    Discover the World with Every Sign In
                 </Text>
 
                 <TextInput
@@ -76,9 +77,8 @@ const LogInScreen: React.FC<Props> = ({ navigation }) => {
                 />
 
                 <TouchableOpacity>
-                <Text style={loginStyles.forgotPassword}>Forgot password?</Text>
+                    <Text style={loginStyles.forgotPassword}>Forgot password?</Text>
                 </TouchableOpacity>
-
 
                 {loading ? (
                     <ActivityIndicator animating={true} size="large" color="#007A8C" />
@@ -115,6 +115,5 @@ const LogInScreen: React.FC<Props> = ({ navigation }) => {
         </View>
     );
 };
-
 
 export default LogInScreen;
