@@ -2,22 +2,17 @@ import React, { useState } from 'react';
 import { View, Image, TouchableOpacity } from 'react-native';
 import { TextInput, Text, Button, Snackbar, ActivityIndicator, IconButton } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
 import loginStyles from '../styles/loginStyples';
+import { useAppNavigation } from '../navigation/useAppNavigation';
 
-type LogInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
-type Props = {
-  navigation: LogInScreenNavigationProp;
-};
-
-const LogInScreen: React.FC<Props> = ({ navigation }) => {
+const LogInScreen = ({ }) => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [snackbarVisible, setSnackbarVisible] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const navigation = useAppNavigation();
 
     const handleLogIn = async () => {
         setLoading(true);
@@ -35,7 +30,7 @@ const LogInScreen: React.FC<Props> = ({ navigation }) => {
 
             setMessage('Login successful!');
             setSnackbarVisible(true);
-            navigation.navigate('Profile'); // 导航到用户主页
+            navigation.navigate('App'); // 导航到用户主页
         } catch (err) {
             setMessage((err as Error).message);
             setSnackbarVisible(true);

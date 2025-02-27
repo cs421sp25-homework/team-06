@@ -1,16 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { PaperProvider, Button, Text } from 'react-native-paper';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { useAppNavigation } from '../navigation/useAppNavigation';
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
-
-type Props = {
-    navigation: HomeScreenNavigationProp;
-};
-
-const HomeScreen: React.FC<Props> = ({ navigation }) => {
+const HomeScreen = ({ }) => {
+    const navigation = useAppNavigation();
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome to the Trip Planner</Text>

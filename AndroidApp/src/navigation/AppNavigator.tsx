@@ -6,30 +6,36 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import HomeScreen from '../screens/HomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import LogInScreen from '../screens/LogInScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-
-export type RootStackParamList = {
-  Home: undefined;
-  SignUp: undefined;
-  Login: undefined;
-  Profile: undefined;
-};
+import BottomTabsNavigator from './BottomTabsNavigator';
+import { RootStackParamList } from './useAppNavigation';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-const AppNavigator = () => {
+export default function AppNavigator() {
   return (
-    <PaperProvider>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-          <Stack.Screen name="Login" component={LogInScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="App"
+          component={BottomTabsNavigator}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LogInScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SignUp"
+          component={SignUpScreen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
-};
-
-export default AppNavigator;
+}
