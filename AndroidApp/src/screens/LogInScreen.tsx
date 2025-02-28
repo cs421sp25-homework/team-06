@@ -126,7 +126,7 @@ const LogInScreen = ({ }) => {
                 <View style={loginStyles.socialIcons}>
                     <TouchableOpacity>
                         <IconButton icon="google" size={30} onPress={handleGoogleSignIn} />
-                        <IconButton icon="github" size={30} onPress={() => {}} />
+                        {/*<IconButton icon="github" size={30} onPress={() => {}} />*/}
                     </TouchableOpacity>
                 </View>
 
