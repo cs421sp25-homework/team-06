@@ -39,6 +39,22 @@ const LogInScreen = ({ }) => {
         setLoading(false);
     };
 
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setMessage('Please enter your email first');
+            setSnackbarVisible(true);
+            return;
+        }
+        try {
+            await auth().sendPasswordResetEmail(email);
+            setMessage('A password reset email has been sent');
+            setSnackbarVisible(true);
+        } catch (error: any) {
+            setMessage(error.message);
+            setSnackbarVisible(true);
+        }
+    };
+
     return (
         <View style={loginStyles.container}>
             <Image source={require('../assets/logInBackground.jpg')} style={loginStyles.backgroundImage} />
@@ -71,7 +87,7 @@ const LogInScreen = ({ }) => {
                     style={loginStyles.input}
                 />
 
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleForgotPassword}>
                     <Text style={loginStyles.forgotPassword}>Forgot password?</Text>
                 </TouchableOpacity>
 
@@ -85,18 +101,23 @@ const LogInScreen = ({ }) => {
 
                 <Text style={loginStyles.orText}>or sign in with</Text>
 
-                <View style={loginStyles.socialIcons}>
-                    <TouchableOpacity>
-                        <IconButton icon="google" size={30} onPress={() => {}} />
-                        <IconButton icon="apple" size={30} onPress={() => {}} />
-                        <IconButton icon="facebook" size={30} onPress={() => {}} />
+                <View style={loginStyles.socialIconsContainer}>
+                    <TouchableOpacity style={loginStyles.iconWarpper} onPress={() => console.log('Google pressed')}>
+                        <IconButton icon="google" size={30}/>
                     </TouchableOpacity>
-                </View>
 
+                    <TouchableOpacity style={loginStyles.iconWarpper} onPress={() => console.log('Facebook pressed')}>
+                        <IconButton icon="facebook" size={30}/>
+                    </TouchableOpacity>
+
+                </View>
+            </View>
+
+            <View style={loginStyles.overlay}>
                 <Text style={loginStyles.noAccount}>I don’t have an account?</Text>
 
                 <Button mode="outlined" onPress={() => navigation.navigate('SignUp')} style={loginStyles.signUpButton}>
-                    Sign Up
+                    <Text style={loginStyles.signUpText}>Sign Up</Text>
                 </Button>
 
                 <Snackbar

@@ -1,4 +1,9 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const ICON_WIDTH = SCREEN_WIDTH * 0.18;
+const ICON_HEIGHT = ICON_WIDTH * (55 / 75);
 
 const loginStyles = StyleSheet.create({
   container: {
@@ -48,10 +53,6 @@ const loginStyles = StyleSheet.create({
   },
   signInButton: {
     backgroundColor: '#007A8C',
-    padding: 15,
-    borderRadius: 30,
-    alignItems: 'center',
-    marginVertical: 10,
   },
   signInText: {
     color: '#FFF',
@@ -62,13 +63,20 @@ const loginStyles = StyleSheet.create({
     color: '#33415C',
     marginVertical: 10,
   },
-  socialIcons: {
+  socialIconsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  icon: {
-    color: '#33415C',
+  iconWarpper: {
+    width: ICON_WIDTH,
+    height: ICON_HEIGHT,
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    elevation: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
   },
   noAccount: {
     textAlign: 'center',
@@ -77,9 +85,6 @@ const loginStyles = StyleSheet.create({
   },
   signUpButton: {
     backgroundColor: 'rgba(246, 246, 246, 0.9)',
-    padding: 15,
-    borderRadius: 30,
-    alignItems: 'center',
   },
   signUpText: {
     color: '#007A8C',
