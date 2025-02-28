@@ -10,11 +10,13 @@ Name of the application goes here -- followed by a brief description (elevator p
 ## Installing / Getting started
 
 ### Pre-requisite
+
 - node_js 22.14.0
 - JDK 17
 - Android Studio
 
 ### Tech stack
+
 1. **Framework: React Native (with React Native CLI)**
     - Although our current focus is on Android, React Native’s cross-platform nature allows us to eventually
       expand to iOS with minimal code changes.
@@ -79,6 +81,7 @@ npx react-native run-android
 This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
 
 If you are confronted with some error, try the following:
+
 ```shell
 cd ./android
 chmod +x ./gradlew
@@ -88,21 +91,25 @@ yarn android
 ```
 
 ### Firebase support
+
 I have added the firebase information file "google-services.json" into "AndroidApp/android/app/", so the app can directly connect to the Firebase.
 
 ## Deploy
+
 you can simply deploy it on your android phone.
 
 - Make sure your Android device is connected to your laptop via USB and that USB debugging is enabled on your Android phone.
 - Start the React Native Metro bundler
+
 ```shell
 npx react-native start
 ```
+
 - Run the App
+
 ```shell
 npx react-native run-android
 ```
-
 
 <!-- ## Developing
 

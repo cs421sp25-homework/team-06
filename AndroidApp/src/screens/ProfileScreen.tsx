@@ -3,9 +3,10 @@ import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-nativ
 import { TextInput, Button, Text, Avatar, Snackbar, Menu, Divider } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import AppNavigator from './AppNavigator';
+import { useAppNavigation } from '../navigation/useAppNavigation';
 
-const ProfileScreen = ({ navigation }) => {
+
+const ProfileScreen = ({ }) => {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [travelPreferences, setTravelPreferences] = useState('');
@@ -18,6 +19,8 @@ const ProfileScreen = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [avatarCenterY, setAvatarCenterY] = useState(null);
   const offset = 100
+  // Use the hook to get navigation if needed:
+  const navigation = useAppNavigation();
 
   const [savedProfile, setSavedProfile] = useState({
     name: '',
@@ -112,7 +115,7 @@ const ProfileScreen = ({ navigation }) => {
       setSnackbarVisible(true);
       setIsEditing(false);
     } catch (err) {
-      setError('Error saving profile: ' + err.message);
+      setError('Error saving profile: ' + (err as Error).message);
       setSnackbarVisible(true);
     }
   };
