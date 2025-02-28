@@ -1,47 +1,82 @@
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { BottomNavigation, FAB } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import React from 'react';
-import { BottomNavigation } from 'react-native-paper';
-
-// Import your actual screen components
-import HomeScreen from '../screens/HomeScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import CurrentTripScreen from '../screens/CurrentTripScreen';
+import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-// If you have placeholders for Dashboard and History, import or create them too
-// import DashboardScreen from '../screens/DashboardScreen';
-// import HistoryScreen from '../screens/HistoryScreen';
 
-// If you don't have placeholders yet, you can use inline components:
-import { Text } from 'react-native';
 
-const DashboardPlaceholder = () => <Text>Dashboard Screen</Text>;
-const TripPlaceholder = () => <Text>Current Trip Screen</Text>;
-const HistoryPlaceholder = () => <Text>History Screen</Text>;
-
-const BottomTabsNavigator = () => {
-    const [index, setIndex] = React.useState<number>(0);
-
-    // Define the routes for your bottom navigation
-    const [routes] = React.useState([
-        { key: 'dashboard', title: 'Dashboard', icon: 'home' },
+export default function BottomTabsNavigator() {
+    const [index, setIndex] = useState<number>(0);
+    const [routes] = useState([
+        { key: 'dashboard', title: 'Dashboard', icon: 'view-dashboard' },
         { key: 'trip', title: 'Trip', icon: 'map' },
         { key: 'history', title: 'History', icon: 'history' },
         { key: 'profile', title: 'Profile', icon: 'account' },
     ]);
 
-    // Map each route key to a component (screen) to render
+    // Map each route to its corresponding screen
     const renderScene = BottomNavigation.SceneMap({
-        dashboard: DashboardPlaceholder, // Replace with your actual DashboardScreen
-        trip: TripPlaceholder,          // Replace with your actual Current Trip Screen
-        history: HistoryPlaceholder,    // Replace with your actual HistoryScreen
-        profile: ProfileScreen,         
+        dashboard: DashboardScreen,
+        trip: CurrentTripScreen,
+        history: HistoryScreen,
+        profile: ProfileScreen,
     });
 
-    return (
-        <BottomNavigation
-            navigationState={{ index, routes }}
-            onIndexChange={setIndex}
-            renderScene={renderScene}
-        />
-    );
-};
+    // Custom renderIcon to ensure icons come from MaterialCommunityIcons
+    const renderIcon = ({ route, color, focused }: any) => {
+        // route.icon is the string we defined above (e.g., "map", "account", etc.)
+        return (
+            <MaterialCommunityIcons
+                name={route.icon}
+                color={color}
+                size={focused ? 28 : 24}
+            />
+        );
+    };
 
-export default BottomTabsNavigator;
+    // Handler for FAB press
+    const handlePlusPress = () => {
+        // TODO: Implement your create-new-trip feature
+        console.log('Create new trip plan');
+    };
+
+    return (
+        <View style={styles.container}>
+            <BottomNavigation
+                navigationState={{ index, routes }}
+                onIndexChange={setIndex}
+                renderScene={renderScene}
+                renderIcon={renderIcon}
+                // Optionally control shifting or barStyle
+                shifting={true}
+                barStyle={styles.barStyle}
+            />
+            <FAB
+                style={styles.fab}
+                icon="plus"
+                onPress={handlePlusPress}
+            />
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    barStyle: {
+        // You can adjust the bar style to create space or change color
+        backgroundColor: '#ffffff',
+    },
+    fab: {
+        position: 'absolute',
+        // Increase bottom offset so the FAB sits above the bottom nav
+        bottom: 60,
+        alignSelf: 'center',
+        backgroundColor: '#6200ee', // Customize the FAB color
+    },
+});
