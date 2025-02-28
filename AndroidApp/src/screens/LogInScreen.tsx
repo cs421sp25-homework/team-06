@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { View, Image, TouchableOpacity } from 'react-native';
 import { TextInput, Text, Button, Snackbar, ActivityIndicator, IconButton } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import loginStyles from '../styles/loginStyples';
 import { useAppNavigation } from '../navigation/useAppNavigation';
-
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 const LogInScreen = ({ }) => {
     const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ const LogInScreen = ({ }) => {
             const user = userCredential.user;
 
             if (!user.emailVerified) {
-                await auth().signOut(); 
+                await auth().signOut();
                 setMessage('Please verify your email before logging in.');
                 setSnackbarVisible(true);
                 return;
@@ -33,10 +33,48 @@ const LogInScreen = ({ }) => {
             navigation.navigate('App'); // 导航到用户主页
         } catch (err) {
             setMessage((err as Error).message);
+            console.error('Google Signin Error: ', err);
             setSnackbarVisible(true);
         }
 
         setLoading(false);
+    };
+
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: '902651100900-eira13inc6alf5d9jqs7t4q38v4hutjc.apps.googleusercontent.com', // Web Client ID from Firebase
+        });
+    }, []);
+
+    const handleGoogleSignIn = async () => {
+        try {
+            console.log('Checking Play Services...');
+            await GoogleSignin.hasPlayServices();
+
+            console.log('Signing in...');
+            const userInfo = await GoogleSignin.signIn();
+            console.log('Google Sign-In response:', userInfo);
+
+            // Extract the idToken from userInfo.data
+            const idToken = userInfo.data?.idToken;
+            if (!idToken) {
+                throw new Error('No ID Token received');
+            }
+
+            const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+            console.log('Authenticating with Firebase...');
+            await auth().signInWithCredential(googleCredential);
+
+            console.log('Google Sign-In Successful!');
+            setMessage('Google Sign-In Successful!');
+            setSnackbarVisible(true);
+            navigation.navigate('App');
+        } catch (error: any) {
+            console.error('Google Sign-In Error:', error);
+            Alert.alert('Error', error.message || 'Unknown error');
+            setMessage(error.message || 'Unknown error');
+            setSnackbarVisible(true);
+        }
     };
 
     return (
@@ -48,9 +86,9 @@ const LogInScreen = ({ }) => {
                     Let's <Text style={loginStyles.highlight}>Get</Text> Started!
                 </Text>
 
-                <Text variant="bodyMedium" style={loginStyles.subtitle}>
-                    Discover the World with Every Sign In
-                </Text>
+                {/*<Text variant="bodyMedium" style={loginStyles.subtitle}>*/}
+                {/*    Discover the World with Every Sign In*/}
+                {/*</Text>*/}
 
                 <TextInput
                     label="Email"
@@ -87,9 +125,8 @@ const LogInScreen = ({ }) => {
 
                 <View style={loginStyles.socialIcons}>
                     <TouchableOpacity>
-                        <IconButton icon="google" size={30} onPress={() => {}} />
-                        <IconButton icon="apple" size={30} onPress={() => {}} />
-                        <IconButton icon="facebook" size={30} onPress={() => {}} />
+                        <IconButton icon="google" size={30} onPress={handleGoogleSignIn} />
+                        <IconButton icon="github" size={30} onPress={() => {}} />
                     </TouchableOpacity>
                 </View>
 
