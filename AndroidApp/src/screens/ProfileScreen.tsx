@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { TextInput, Button, Text, Avatar, Snackbar, Menu, Divider } from 'react-native-paper';
+import { TextInput, Button, Text, Avatar, Snackbar, Menu, Divider, Portal, Dialog, Paragraph } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useAppNavigation } from '../navigation/useAppNavigation';
-
 
 const ProfileScreen = ({ }) => {
   const [name, setName] = useState('');
@@ -18,7 +17,8 @@ const ProfileScreen = ({ }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [avatarCenterY, setAvatarCenterY] = useState(null);
-  const offset = 100
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const offset = 100;
   // Use the hook to get navigation if needed:
   const navigation = useAppNavigation();
 
@@ -139,6 +139,27 @@ const ProfileScreen = ({ }) => {
     }
   };
 
+  // account deletion action
+  const handleDeleteAccount = async () => {
+    const user = auth().currentUser;
+    if (!user) {
+      setError('No user logged in');
+      setSnackbarVisible(true);
+      return;
+    }
+    try {
+      // delete stored date in firebase
+      await firestore().collection('users').doc(user.uid).delete();
+      // delete account
+      await user.delete();
+      // navigate to home once deletion successful
+      navigation.navigate('Home');
+    } catch (err) {
+      setError('Error deleting account: ' + (err as Error).message);
+      setSnackbarVisible(true);
+    }
+  };
+
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
 
@@ -232,6 +253,14 @@ const ProfileScreen = ({ }) => {
             <Button mode="contained" onPress={handleSaveProfile} style={[styles.button, { marginTop: '10%' }]}>
               Save Profile
             </Button>
+            {/* delete account button */}
+            <Button
+              mode="contained"
+              onPress={() => setDeleteDialogVisible(true)}
+              style={styles.button}
+              >
+              Delete Account
+            </Button>
             <Button mode="outlined" onPress={handleCancelEdit} style={styles.button}>
               Cancel
             </Button>
@@ -298,12 +327,33 @@ const ProfileScreen = ({ }) => {
             <Button onPress={() => setModalVisible(false)}>Cancel</Button>
           </View>
         </Modal>
+
+        {/* Acc deletion dialog */}
+        <Portal>
+          <Dialog
+            visible={deleteDialogVisible}
+            onDismiss={() => setDeleteDialogVisible(false)}
+          >
+            <Dialog.Title style={styles.dialogTitle}>
+              <Avatar.Icon icon="alert" size={24} style={styles.warningIcon} /> Confirm Account Deletion
+            </Dialog.Title>
+            <Dialog.Content>
+              <Paragraph>
+                Are you sure you want to delete your account? This action cannot be undone.
+              </Paragraph>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
+              <Button onPress={handleDeleteAccount}>Confirm</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
       </View>
     </View>
   );
 };
 
-const offset = 100
+const offset = 100;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -329,9 +379,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: offset,
   },
-  avatarContainer: {
-
-  },
+  avatarContainer: {},
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -376,6 +424,13 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#ccc',
     marginVertical: 5,
+  },
+  dialogTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  warningIcon: {
+    marginRight: 8,
   },
 });
 
