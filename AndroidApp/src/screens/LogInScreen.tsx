@@ -51,6 +51,8 @@ const LogInScreen = ({ }) => {
             console.log('Checking Play Services...');
             await GoogleSignin.hasPlayServices();
 
+            await GoogleSignin.signOut(); // Ensure fresh account selection
+
             console.log('Signing in...');
             const userInfo = await GoogleSignin.signIn();
             console.log('Google Sign-In response:', userInfo);
