@@ -1,3 +1,4 @@
+// src/navigation/BottomTabsNavigator.tsx
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BottomNavigation, FAB } from 'react-native-paper';
@@ -5,44 +6,33 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import DashboardScreen from '../screens/DashboardScreen';
 import CurrentTripScreen from '../screens/CurrentTripScreen';
-import HistoryScreen from '../screens/HistoryScreen';
+import MapScreen from '../screens/MapScreen'; // New screen for map view
 import ProfileScreen from '../screens/ProfileScreen';
-
 
 export default function BottomTabsNavigator() {
     const [index, setIndex] = useState<number>(0);
     const [routes] = useState([
         { key: 'dashboard', title: 'Dashboard', icon: 'view-dashboard' },
-        { key: 'trip', title: 'Trip', icon: 'map' },
-        { key: 'history', title: 'History', icon: 'history' },
+        { key: 'trip', title: 'Trip', icon: 'clipboard-list' },
+        { key: 'map', title: 'Map', icon: 'map-marker' }, // Changed from History to Map
         { key: 'profile', title: 'Profile', icon: 'account' },
     ]);
 
-    // Map each route to its corresponding screen
     const renderScene = BottomNavigation.SceneMap({
         dashboard: DashboardScreen,
         trip: CurrentTripScreen,
-        history: HistoryScreen,
+        map: MapScreen,
         profile: ProfileScreen,
     });
 
-    // Custom renderIcon to ensure icons come from MaterialCommunityIcons
-    const renderIcon = ({ route, color, focused }: any) => {
-        // route.icon is the string we defined above (e.g., "map", "account", etc.)
-        return (
-            <MaterialCommunityIcons
-                name={route.icon}
-                color={color}
-                size={focused ? 28 : 24}
-            />
-        );
+    const handlePlusPress = () => {
+        // TODO: Implement "create new trip plan" feature
+        console.log("Create new trip plan");
     };
 
-    // Handler for FAB press
-    const handlePlusPress = () => {
-        // TODO: Implement your create-new-trip feature
-        console.log('Create new trip plan');
-    };
+    const renderIcon = ({ route, color, focused }: any) => (
+        <MaterialCommunityIcons name={route.icon} color={color} size={focused ? 28 : 24} />
+    );
 
     return (
         <View style={styles.container}>
@@ -51,32 +41,21 @@ export default function BottomTabsNavigator() {
                 onIndexChange={setIndex}
                 renderScene={renderScene}
                 renderIcon={renderIcon}
-                // Optionally control shifting or barStyle
-                shifting={true}
+                shifting={false}
                 barStyle={styles.barStyle}
             />
-            <FAB
-                style={styles.fab}
-                icon="plus"
-                onPress={handlePlusPress}
-            />
+            <FAB style={styles.fab} icon="plus" onPress={handlePlusPress} />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    barStyle: {
-        // You can adjust the bar style to create space or change color
-        backgroundColor: '#ffffff',
-    },
+    container: { flex: 1 },
+    barStyle: { backgroundColor: '#ffffff' },
     fab: {
         position: 'absolute',
-        // Increase bottom offset so the FAB sits above the bottom nav
-        bottom: 60,
+        bottom: 60, // Adjust as needed so the FAB doesn't crowd the tabs
         alignSelf: 'center',
-        backgroundColor: '#6200ee', // Customize the FAB color
+        backgroundColor: '#6200ee',
     },
 });

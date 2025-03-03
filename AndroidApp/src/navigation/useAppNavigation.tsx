@@ -7,6 +7,8 @@ export type RootStackParamList = {
     Login: undefined;
     Profile: undefined;
     App: undefined;
+    History: undefined;
+    ArchivedHistory: undefined;
 };
 
 export type AppNavigationProp = StackNavigationProp<RootStackParamList>;

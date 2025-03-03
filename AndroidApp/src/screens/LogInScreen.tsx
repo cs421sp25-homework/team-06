@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import { View, Image, TouchableOpacity } from 'react-native';
+import React, {useEffect, useState } from 'react';
+import { View, Image, TouchableOpacity, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { TextInput, Text, Button, Snackbar, ActivityIndicator, IconButton } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import loginStyles from '../styles/loginStyples';
@@ -79,74 +79,98 @@ const LogInScreen = ({ }) => {
         }
     };
 
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setMessage('Please enter your email first');
+            setSnackbarVisible(true);
+            return;
+        }
+        try {
+            await auth().sendPasswordResetEmail(email);
+            setMessage('A password reset email has been sent');
+            setSnackbarVisible(true);
+        } catch (error: any) {
+            setMessage(error.message);
+            setSnackbarVisible(true);
+        }
+    };
+
     return (
-        <View style={loginStyles.container}>
-            <Image source={require('../assets/logInBackground.jpg')} style={loginStyles.backgroundImage} />
+        <KeyboardAvoidingView style={loginStyles.container}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <Image source={require('../assets/logInBackground.jpg')} style={loginStyles.backgroundImage} />
 
-            <View style={loginStyles.overlay}>
-                <Text variant="headlineLarge" style={loginStyles.title}>
-                    Let's <Text style={loginStyles.highlight}>Get</Text> Started!
-                </Text>
+                <View style={loginStyles.overlay}>
+                    <Text variant="headlineLarge" style={loginStyles.title}>
+                        Let's <Text style={loginStyles.highlight}>Get</Text> Started!
+                    </Text>
 
-                {/*<Text variant="bodyMedium" style={loginStyles.subtitle}>*/}
-                {/*    Discover the World with Every Sign In*/}
-                {/*</Text>*/}
+                    <Text variant="bodyMedium" style={loginStyles.subtitle}>
+                        Discover the World with Every Sign In
+                    </Text>
 
-                <TextInput
-                    label="Email"
-                    mode="outlined"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    style={loginStyles.input}
-                />
+                    <TextInput
+                        label="Email"
+                        mode="outlined"
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        theme={loginStyles.textInput}
+                    />
 
-                <TextInput
-                    label="Password"
-                    mode="outlined"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    style={loginStyles.input}
-                />
+                    <TextInput
+                        label="Password"
+                        mode="outlined"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        theme={loginStyles.textInput}
+                    />
 
-                <TouchableOpacity>
-                    <Text style={loginStyles.forgotPassword}>Forgot password?</Text>
-                </TouchableOpacity>
-
-                {loading ? (
-                    <ActivityIndicator animating={true} size="large" color="#007A8C" />
-                ) : (
-                    <Button mode="contained" onPress={handleLogIn} style={loginStyles.signInButton}>
-                        Sign In
-                    </Button>
-                )}
-
-                <Text style={loginStyles.orText}>or sign in with</Text>
-
-                <View style={loginStyles.socialIcons}>
-                    <TouchableOpacity>
-                        <IconButton icon="google" size={30} onPress={handleGoogleSignIn} />
-                        {/*<IconButton icon="github" size={30} onPress={() => {}} />*/}
+                    <TouchableOpacity onPress={handleForgotPassword}>
+                        <Text style={loginStyles.forgotPassword}>Forgot password?</Text>
                     </TouchableOpacity>
+
+                    {loading ? (
+                        <ActivityIndicator animating={true} size="large" color="#007A8C" />
+                    ) : (
+                        <Button mode="contained" onPress={handleLogIn} style={loginStyles.signInButton}>
+                            Sign In
+                        </Button>
+                    )}
+
+                    <View style={loginStyles.dividerContainer}>
+                        <View style={loginStyles.line} />
+                        <Text style={loginStyles.orText}>or sign in with</Text>
+                        <View style={loginStyles.line} />
+                    </View>
+
+                    <View style={loginStyles.socialIconsContainer}>
+                        <TouchableOpacity style={loginStyles.iconWarpper} onPress={handleGoogleSignIn}>
+                            <IconButton icon="google" size={30}/>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={loginStyles.noAccount}>I don’t have an account?</Text>
                 </View>
 
-                <Text style={loginStyles.noAccount}>I don’t have an account?</Text>
+                <View>
 
-                <Button mode="outlined" onPress={() => navigation.navigate('SignUp')} style={loginStyles.signUpButton}>
-                    Sign Up
-                </Button>
+                    <Button mode="outlined" onPress={() => navigation.navigate('SignUp')} style={loginStyles.signUpButton}>
+                        <Text style={loginStyles.signUpText}>Sign Up</Text>
+                    </Button>
 
-                <Snackbar
-                    visible={snackbarVisible}
-                    onDismiss={() => setSnackbarVisible(false)}
-                    duration={3000}
-                >
-                    {message}
-                </Snackbar>
-            </View>
-        </View>
+                    <Snackbar
+                        visible={snackbarVisible}
+                        onDismiss={() => setSnackbarVisible(false)}
+                        duration={3000}
+                    >
+                        {message}
+                    </Snackbar>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 

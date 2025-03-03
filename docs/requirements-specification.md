@@ -30,7 +30,7 @@ By the end of the trip, all members will have had a well-organized, stress-free 
 - Backpackers & road trippers looking for collaborative itineraries.  
 - Event organizers coordinating travel plans.
 
-## ## Functional Requirements (User Stories)
+## Functional Requirements (User Stories)
 
 ### Must-Have
 
@@ -121,13 +121,31 @@ group itinerary and media for information sharing
 
 ### React Native Android App
 
-- Framework: React Native (with React Native CLI)  
-- UI Library: Native React Native Components  
-- Backend & Database: Firebase Firestore (for real-time updates & data storage)  
-- Navigation: React Navigation  
-- Authentication: Firebase Authentication (Google, Email, etc.)  
-- Push Notifications: Firebase Cloud Messaging (FCM)  
-- Maps & Location: react-native-maps
+1. **Framework: React Native (with React Native CLI)**
+    - Although our current focus is on Android, React Native’s cross-platform nature allows us to eventually
+      expand to iOS with minimal code changes.
+    - With a vast ecosystem and strong community support, we have access to numerous libraries, tools,
+      and community-driven best practices that accelerate development.
+    - React Native provides near-native performance by utilizing native components, ensuring a smooth and responsive user experience.
+2. **UI Library: Native React Native Components**
+    - Utilizing native components ensures that the app behaves as expected on Android devices, providing a familiar look and feel to users.
+    - Native components give us the control to style and adapt the UI specifically for our application’s unique design requirements.
+3. **Backend & Database: Firebase Firestore (for real-time updates & data storage)**
+    - Firestore is designed for real-time data synchronization, which is crucial for a trip planner app that might display
+      dynamic information like itineraries, travel updates, or user activity.
+    - Firebase integrates well with mobile apps and scales automatically, allowing us to focus on feature development rather than infrastructure concerns.
+    - It’s a managed NoSQL cloud database, which reduces the overhead of server management and maintenance.
+4. **Navigation: React Navigation**
+    - React Navigation offers a wide range of navigation patterns (stack, tab, drawer, etc.) that are essential for a smooth and intuitive user journey in our trip planner app.
+    - It has extensive documentation and a large community, ensuring that we have support and resources when implementing complex navigation flows.
+5. **Authentication: Firebase Authentication (Google, Email, etc.)**
+    - Firebase Authentication supports various sign-in methods including Google, email/password, and more, making it easy to implement secure and diverse authentication flows.
+6. **Push Notifications: Firebase Cloud Messaging (FCM)**
+    - FCM is an excellent choice for sending push notifications, ensuring that users receive timely updates such as travel alerts, or itinerary changes.
+    - It integrates with other Firebase services, simplifying the overall development process.
+7. **Maps & Location: react-native-maps**
+    -  This library allows us to integrate native map components into our app, essential for a trip planner where location-based services are central to the user experience.
+    - It offers various customization options for map views and markers, enabling us to tailor the experience to fit the design and functional needs of our app.
 
 ---
 
