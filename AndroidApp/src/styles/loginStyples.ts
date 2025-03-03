@@ -39,12 +39,11 @@ const loginStyles = StyleSheet.create({
     color: '#336749',
     marginVertical: 10,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#336749',
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 10,
+  textInput: {
+    colors: {
+      primary: '#007A8C', // Outline color when focused
+      outline: '#007A8C', // Outline color in some versions of RN Paper
+    },
   },
   forgotPassword: {
     textAlign: 'right',
@@ -53,6 +52,9 @@ const loginStyles = StyleSheet.create({
   },
   signInButton: {
     backgroundColor: '#007A8C',
+    width: '100%',
+    alignSelf: 'center',
+    marginVertical: 10,
   },
   signInText: {
     color: '#FFF',
@@ -62,6 +64,18 @@ const loginStyles = StyleSheet.create({
     textAlign: 'center',
     color: '#33415C',
     marginVertical: 10,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,  // 竖直方向间距
+    justifyContent: 'center',
+  },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ccc',
+    marginHorizontal: 5,
   },
   socialIconsContainer: {
     flexDirection: 'row',
@@ -85,6 +99,10 @@ const loginStyles = StyleSheet.create({
   },
   signUpButton: {
     backgroundColor: 'rgba(246, 246, 246, 0.9)',
+    width: '80%',
+    alignSelf: 'center',
+    marginVertical: 10,
+    position:'static',
   },
   signUpText: {
     color: '#007A8C',
