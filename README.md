@@ -38,10 +38,10 @@ npm install  @react-native-firebase/firestore @react-native-firebase/auth  @reac
 git clone https://github.com/cs421sp25-homework/team-06.git
 cd ./AndroidApp
 
-#for yarn user
 npm install -g yarn
 
-yarn android
+
+
 
 ## For npm user
 npm install
@@ -49,6 +49,9 @@ npm install
 npm start
 #run the app
 npx react-native run-android
+
+# or use yarn to run the app
+yarn android
 ```
 This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
 
@@ -82,6 +85,30 @@ npx react-native start
 ```shell
 npx react-native run-android
 ```
+
+## Tech Stacks
+
+1. **Framework: React Native (with React Native CLI)**
+    - Although our current focus is on Android, React Native’s cross-platform nature allows us to eventually
+      expand to iOS with minimal code changes.
+    - With a vast ecosystem and strong community support, we have access to numerous libraries, tools,
+      and community-driven best practices that accelerate development.
+    - React Native provides near-native performance by utilizing native components, ensuring a smooth and responsive user experience.
+2. **UI Library: Native React Native Components**
+    - Utilizing native components ensures that the app behaves as expected on Android devices, providing a familiar look and feel to users.
+    - Native components give us the control to style and adapt the UI specifically for our application’s unique design requirements.
+3. **Backend & Database: Firebase Firestore (for real-time updates & data storage)**
+    - Firestore is designed for real-time data synchronization, which is crucial for a trip planner app that might display
+      dynamic information like itineraries, travel updates, or user activity.
+    - Firebase integrates well with mobile apps and scales automatically, allowing us to focus on feature development rather than infrastructure concerns.
+    - It’s a managed NoSQL cloud database, which reduces the overhead of server management and maintenance.
+
+## Completed Feature
+1. User can sign up with their email and password, or directly sign in with their google accounts.
+2. User can log in, log out and delete their account.
+2. User can use verification email to change password and verify identity.
+3. User can edit and show their profile and information
+4. User can navigate between different screens by the bottom navigator.
 
 <!-- ## Developing
 
