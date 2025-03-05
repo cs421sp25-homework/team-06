@@ -1,13 +1,17 @@
 import React from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
-import AppNavigator from './navigation/AppNavigator.tsx';
+
+import { MessageDialogProvider } from './components/MessageDialog';
+import AppNavigator from './navigation/AppNavigator';
 import 'expo-dev-client';
 
 const App = () => {
   return (
-      <PaperProvider>
+    <PaperProvider>
+      <MessageDialogProvider>
         <AppNavigator />
-      </PaperProvider>
+      </MessageDialogProvider>
+    </PaperProvider>
   );
 };
 

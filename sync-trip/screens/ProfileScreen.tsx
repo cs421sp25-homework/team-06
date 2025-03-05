@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { TextInput, Button, Text, Avatar, Snackbar, Menu, Divider, Portal, Dialog, Paragraph } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import {
+  TextInput,
+  Button,
+  Text,
+  Avatar,
+  Snackbar,
+  Menu,
+  Divider,
+  Portal,
+  Dialog,
+  Paragraph,
+} from 'react-native-paper';
+
 import { useAppNavigation } from '../navigation/useAppNavigation';
 
-const ProfileScreen = ({ }) => {
+const ProfileScreen = ({}) => {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [travelPreferences, setTravelPreferences] = useState('');
@@ -16,7 +28,7 @@ const ProfileScreen = ({ }) => {
   const [isEditing, setIsEditing] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [avatarCenterY, setAvatarCenterY] = useState(null);
+  const [avatarCenterY, setAvatarCenterY] = useState<number | null>(null);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const offset = 100;
   // Use the hook to get navigation if needed:
@@ -36,13 +48,13 @@ const ProfileScreen = ({ }) => {
 
   // travel preference options
   const travelPreferenceOptions = [
-    "N/A",
-    "Leisurely",
-    "Gastronomic",
-    "Family-Friendly",
-    "Eco-Friendly",
-    "Luxury",
-    "Budget-Conscious",
+    'N/A',
+    'Leisurely',
+    'Gastronomic',
+    'Family-Friendly',
+    'Eco-Friendly',
+    'Luxury',
+    'Budget-Conscious',
   ];
 
   useEffect(() => {
@@ -148,6 +160,7 @@ const ProfileScreen = ({ }) => {
       return;
     }
     try {
+      setDeleteDialogVisible(false);
       // delete stored date in firebase
       await firestore().collection('users').doc(user.uid).delete();
       // delete account
@@ -181,39 +194,25 @@ const ProfileScreen = ({ }) => {
           onLayout={(event) => {
             const layout = event.nativeEvent.layout;
             setAvatarCenterY(layout.y + layout.height / 2 + offset);
-          }}
-        >
+          }}>
           {isEditing ? (
             <TouchableOpacity onPress={() => setModalVisible(true)}>
               <Avatar.Image
                 size={100}
-                source={
-                  profilePicture
-                    ? profilePicture
-                    : require('../assets/profile_pic.png')
-                }
+                source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
               />
             </TouchableOpacity>
           ) : (
             <Avatar.Image
               size={100}
-              source={
-                profilePicture
-                  ? profilePicture
-                  : require('../assets/profile_pic.png')
-              }
+              source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
             />
           )}
         </View>
 
         {isEditing ? (
           <>
-            <TextInput
-              label="Name"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-            />
+            <TextInput label="Name" value={name} onChangeText={setName} style={styles.input} />
             <TextInput
               label="Bio"
               value={bio}
@@ -236,8 +235,7 @@ const ProfileScreen = ({ }) => {
                       pointerEvents="none"
                     />
                   </TouchableOpacity>
-                }
-              >
+                }>
                 {travelPreferenceOptions.map((option) => (
                   <Menu.Item
                     key={option}
@@ -250,15 +248,17 @@ const ProfileScreen = ({ }) => {
                 ))}
               </Menu>
             </View>
-            <Button mode="contained" onPress={handleSaveProfile} style={[styles.button, { marginTop: '10%' }]}>
+            <Button
+              mode="contained"
+              onPress={handleSaveProfile}
+              style={[styles.button, { marginTop: '10%' }]}>
               Save Profile
             </Button>
             {/* delete account button */}
             <Button
               mode="contained"
               onPress={() => setDeleteDialogVisible(true)}
-              style={styles.button}
-              >
+              style={styles.button}>
               Delete Account
             </Button>
             <Button mode="outlined" onPress={handleCancelEdit} style={styles.button}>
@@ -282,7 +282,10 @@ const ProfileScreen = ({ }) => {
               <Text style={styles.infoContent}>{travelPreferences}</Text>
             </View>
             <Divider style={styles.divider} />
-            <Button mode="contained" onPress={() => setIsEditing(true)} style={[styles.button, { marginTop: '20%' }]}>
+            <Button
+              mode="contained"
+              onPress={() => setIsEditing(true)}
+              style={[styles.button, { marginTop: '20%' }]}>
               Edit
             </Button>
           </>
@@ -293,17 +296,15 @@ const ProfileScreen = ({ }) => {
         <Snackbar
           visible={snackbarVisible}
           onDismiss={() => setSnackbarVisible(false)}
-          duration={3000}
-        >
+          duration={3000}>
           {error}
         </Snackbar>
         {/* Modal select avatar */}
         <Modal
           animationType="slide"
-          transparent={true}
+          transparent
           visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
+          onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalView}>
             <FlatList
               data={availableImages}
@@ -313,13 +314,8 @@ const ProfileScreen = ({ }) => {
                   onPress={() => {
                     setProfilePicture(item.src);
                     setModalVisible(false);
-                  }}
-                >
-                  <Avatar.Image
-                    size={100}
-                    source={item.src}
-                    style={styles.modalImage}
-                  />
+                  }}>
+                  <Avatar.Image size={100} source={item.src} style={styles.modalImage} />
                 </TouchableOpacity>
               )}
               numColumns={3}
@@ -330,12 +326,10 @@ const ProfileScreen = ({ }) => {
 
         {/* Acc deletion dialog */}
         <Portal>
-          <Dialog
-            visible={deleteDialogVisible}
-            onDismiss={() => setDeleteDialogVisible(false)}
-          >
+          <Dialog visible={deleteDialogVisible} onDismiss={() => setDeleteDialogVisible(false)}>
             <Dialog.Title style={styles.dialogTitle}>
-              <Avatar.Icon icon="alert" size={24} style={styles.warningIcon} /> Confirm Account Deletion
+              <Avatar.Icon icon="alert" size={24} style={styles.warningIcon} /> Confirm Account
+              Deletion
             </Dialog.Title>
             <Dialog.Content>
               <Paragraph>
