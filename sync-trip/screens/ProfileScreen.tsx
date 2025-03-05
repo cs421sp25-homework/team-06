@@ -254,15 +254,8 @@ const ProfileScreen = () => {
               <Button
                 mode="contained"
                 onPress={handleSaveProfile}
-                style={[styles.button, { marginTop: '10%' }]}>
+                style={[styles.button, { marginTop: '4%' }]}>
                 Save Profile
-              </Button>
-              {/* delete account button */}
-              <Button
-                mode="contained"
-                onPress={() => setDeleteDialogVisible(true)}
-                style={styles.button}>
-                Delete Account
               </Button>
               <Button mode="outlined" onPress={handleCancelEdit} style={styles.button}>
                 Cancel
@@ -295,6 +288,14 @@ const ProfileScreen = () => {
           )}
           <Button mode="outlined" onPress={handleLogout} style={styles.button}>
             Log Out
+          </Button>
+          {/* delete account button */}
+          <Button
+            mode="contained"
+            buttonColor="#D32F2F" // dark red button
+            onPress={() => setDeleteDialogVisible(true)}
+            style={styles.redButton}>
+            Delete Account
           </Button>
           <Snackbar
             visible={snackbarVisible}
@@ -398,12 +399,17 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    marginBottom: 15,
-    marginTop: 10,
+    marginBottom: 5,
+    marginTop: 5,
   },
   button: {
     marginTop: 10,
     width: '100%',
+  },
+  redButton: {
+    marginTop: 10,
+    width: '100%',
+    color: 'red',
   },
   label: {
     fontSize: 18,
@@ -414,7 +420,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 10,
   },
   modalImage: {
     margin: 10,
