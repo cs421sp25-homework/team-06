@@ -1,7 +1,7 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, FlatList, ScrollView } from 'react-native';
 import {
   TextInput,
   Button,
@@ -17,7 +17,7 @@ import {
 
 import { useAppNavigation } from '../navigation/useAppNavigation';
 
-const ProfileScreen = ({}) => {
+const ProfileScreen = () => {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [travelPreferences, setTravelPreferences] = useState('');
@@ -87,6 +87,7 @@ const ProfileScreen = ({}) => {
         },
         (err) => {
           setError('Error fetching profile data');
+          console.error(err);
           setSnackbarVisible(true);
         }
       );
@@ -147,6 +148,7 @@ const ProfileScreen = ({}) => {
       navigation.navigate('Home');
     } catch (err) {
       setError('Error logging out');
+      console.log(err);
       setSnackbarVisible(true);
     }
   };
@@ -177,177 +179,178 @@ const ProfileScreen = ({}) => {
   const closeMenu = () => setMenuVisible(false);
 
   return (
-    <View style={styles.root}>
-      {/* background layer */}
-      {avatarCenterY !== null && (
-        <>
-          <View style={[styles.topBackground, { height: avatarCenterY }]} />
-          <View style={[styles.bottomBackground, { top: avatarCenterY }]} />
-        </>
-      )}
+    <ScrollView contentContainerStyle={styles.outerContainer}>
+      <View style={styles.root}>
+        {/* background layer */}
+        {avatarCenterY !== null && (
+          <>
+            <View style={[styles.topBackground, { height: avatarCenterY }]} />
+            <View style={[styles.bottomBackground, { top: avatarCenterY }]} />
+          </>
+        )}
 
-      {/* content layer */}
-      <View style={styles.container}>
-        {/* avatar container */}
-        <View
-          style={styles.avatarContainer}
-          onLayout={(event) => {
-            const layout = event.nativeEvent.layout;
-            setAvatarCenterY(layout.y + layout.height / 2 + offset);
-          }}>
-          {isEditing ? (
-            <TouchableOpacity onPress={() => setModalVisible(true)}>
+        {/* content layer */}
+        <View style={styles.container}>
+          {/* avatar container */}
+          <View
+            style={styles.avatarContainer}
+            onLayout={(event) => {
+              const layout = event.nativeEvent.layout;
+              setAvatarCenterY(layout.y + layout.height / 2 + offset);
+            }}>
+            {isEditing ? (
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Avatar.Image
+                  size={100}
+                  source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
+                />
+              </TouchableOpacity>
+            ) : (
               <Avatar.Image
                 size={100}
                 source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
               />
-            </TouchableOpacity>
-          ) : (
-            <Avatar.Image
-              size={100}
-              source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
-            />
-          )}
-        </View>
-
-        {isEditing ? (
-          <>
-            <TextInput label="Name" value={name} onChangeText={setName} style={styles.input} />
-            <TextInput
-              label="Bio"
-              value={bio}
-              onChangeText={setBio}
-              style={styles.input}
-              multiline
-            />
-            {/* Travel Preferences drop down */}
-            <View style={{ width: '100%' }}>
-              <Menu
-                visible={menuVisible}
-                onDismiss={closeMenu}
-                anchor={
-                  <TouchableOpacity onPress={openMenu}>
-                    <TextInput
-                      label="Travel Preferences"
-                      value={travelPreferences}
-                      style={styles.input}
-                      editable={false}
-                      pointerEvents="none"
-                    />
-                  </TouchableOpacity>
-                }>
-                {travelPreferenceOptions.map((option) => (
-                  <Menu.Item
-                    key={option}
-                    onPress={() => {
-                      setTravelPreferences(option);
-                      closeMenu();
-                    }}
-                    title={option}
-                  />
-                ))}
-              </Menu>
-            </View>
-            <Button
-              mode="contained"
-              onPress={handleSaveProfile}
-              style={[styles.button, { marginTop: '10%' }]}>
-              Save Profile
-            </Button>
-            {/* delete account button */}
-            <Button
-              mode="contained"
-              onPress={() => setDeleteDialogVisible(true)}
-              style={styles.button}>
-              Delete Account
-            </Button>
-            <Button mode="outlined" onPress={handleCancelEdit} style={styles.button}>
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoTitle}>Name:</Text>
-              <Text style={styles.infoContent}>{name}</Text>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.infoTitle}>Bio:</Text>
-              <Text style={styles.infoContent}>{bio}</Text>
-            </View>
-            <Divider style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.infoTitle}>Travel Preferences:</Text>
-              <Text style={styles.infoContent}>{travelPreferences}</Text>
-            </View>
-            <Divider style={styles.divider} />
-            <Button
-              mode="contained"
-              onPress={() => setIsEditing(true)}
-              style={[styles.button, { marginTop: '20%' }]}>
-              Edit
-            </Button>
-          </>
-        )}
-        <Button mode="outlined" onPress={handleLogout} style={styles.button}>
-          Log Out
-        </Button>
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={3000}>
-          {error}
-        </Snackbar>
-        {/* Modal select avatar */}
-        <Modal
-          animationType="slide"
-          transparent
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.modalView}>
-            <FlatList
-              data={availableImages}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    setProfilePicture(item.src);
-                    setModalVisible(false);
-                  }}>
-                  <Avatar.Image size={100} source={item.src} style={styles.modalImage} />
-                </TouchableOpacity>
-              )}
-              numColumns={3}
-            />
-            <Button onPress={() => setModalVisible(false)}>Cancel</Button>
+            )}
           </View>
-        </Modal>
 
-        {/* Acc deletion dialog */}
-        <Portal>
-          <Dialog visible={deleteDialogVisible} onDismiss={() => setDeleteDialogVisible(false)}>
-            <Dialog.Title style={styles.dialogTitle}>
-              <Avatar.Icon icon="alert" size={24} style={styles.warningIcon} /> Confirm Account
-              Deletion
-            </Dialog.Title>
-            <Dialog.Content>
-              <Paragraph>
-                Are you sure you want to delete your account? This action cannot be undone.
-              </Paragraph>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
-              <Button onPress={handleDeleteAccount}>Confirm</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
+          {isEditing ? (
+            <>
+              <TextInput label="Name" value={name} onChangeText={setName} style={styles.input} />
+              <TextInput
+                label="Bio"
+                value={bio}
+                onChangeText={setBio}
+                style={styles.input}
+                multiline
+              />
+              {/* Travel Preferences drop down */}
+              <View style={{ width: '100%' }}>
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={closeMenu}
+                  anchor={
+                    <TouchableOpacity onPress={openMenu}>
+                      <TextInput
+                        label="Travel Preferences"
+                        value={travelPreferences}
+                        style={styles.input}
+                        editable={false}
+                        pointerEvents="none"
+                      />
+                    </TouchableOpacity>
+                  }>
+                  {travelPreferenceOptions.map((option) => (
+                    <Menu.Item
+                      key={option}
+                      onPress={() => {
+                        setTravelPreferences(option);
+                        closeMenu();
+                      }}
+                      title={option}
+                    />
+                  ))}
+                </Menu>
+              </View>
+              <Button
+                mode="contained"
+                onPress={handleSaveProfile}
+                style={[styles.button, { marginTop: '10%' }]}>
+                Save Profile
+              </Button>
+              {/* delete account button */}
+              <Button
+                mode="contained"
+                onPress={() => setDeleteDialogVisible(true)}
+                style={styles.button}>
+                Delete Account
+              </Button>
+              <Button mode="outlined" onPress={handleCancelEdit} style={styles.button}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoTitle}>Name:</Text>
+                <Text style={styles.infoContent}>{name}</Text>
+              </View>
+              <Divider style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.infoTitle}>Bio:</Text>
+                <Text style={styles.infoContent}>{bio}</Text>
+              </View>
+              <Divider style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.infoTitle}>Travel Preferences:</Text>
+                <Text style={styles.infoContent}>{travelPreferences}</Text>
+              </View>
+              <Divider style={styles.divider} />
+              <Button
+                mode="contained"
+                onPress={() => setIsEditing(true)}
+                style={[styles.button, { marginTop: '20%' }]}>
+                Edit
+              </Button>
+            </>
+          )}
+          <Button mode="outlined" onPress={handleLogout} style={styles.button}>
+            Log Out
+          </Button>
+          <Snackbar
+            visible={snackbarVisible}
+            onDismiss={() => setSnackbarVisible(false)}
+            duration={3000}>
+            {error}
+          </Snackbar>
+          {/* Modal select avatar */}
+          <Modal
+            animationType="slide"
+            transparent
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}>
+            <View style={styles.modalView}>
+              <FlatList
+                data={availableImages}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setProfilePicture(item.src);
+                      setModalVisible(false);
+                    }}>
+                    <Avatar.Image size={100} source={item.src} style={styles.modalImage} />
+                  </TouchableOpacity>
+                )}
+                numColumns={3}
+              />
+              <Button onPress={() => setModalVisible(false)}>Cancel</Button>
+            </View>
+          </Modal>
+
+          {/* Acc deletion dialog */}
+          <Portal>
+            <Dialog visible={deleteDialogVisible} onDismiss={() => setDeleteDialogVisible(false)}>
+              <Dialog.Title style={styles.dialogTitle}>
+                <Avatar.Icon icon="alert" size={24} style={styles.warningIcon} /> Confirm Account
+                Deletion
+              </Dialog.Title>
+              <Dialog.Content>
+                <Paragraph>
+                  Are you sure you want to delete your account? This action cannot be undone.
+                </Paragraph>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
+                <Button onPress={handleDeleteAccount}>Confirm</Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
-const offset = 100;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -369,9 +372,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
-    marginTop: offset,
+    marginTop: 100,
+  },
+  outerContainer: {
+    padding: 0,
   },
   avatarContainer: {},
   infoRow: {

@@ -135,7 +135,7 @@ const LogInScreen = () => {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            style={loginStyles.textInput}
+            // style={loginStyles.textInput}
           />
 
           <TextInput
@@ -144,7 +144,7 @@ const LogInScreen = () => {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            style={loginStyles.textInput}
+            // style={loginStyles.textInput}
           />
 
           <TouchableOpacity onPress={handleForgotPassword}>
