@@ -294,7 +294,7 @@ const ProfileScreen = () => {
             mode="contained"
             buttonColor="#D32F2F" // dark red button
             onPress={() => setDeleteDialogVisible(true)}
-            style={styles.redButton}>
+            style={styles.button}>
             Delete Account
           </Button>
           <Snackbar
@@ -405,11 +405,6 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 10,
     width: '100%',
-  },
-  redButton: {
-    marginTop: 10,
-    width: '100%',
-    color: 'red',
   },
   label: {
     fontSize: 18,
