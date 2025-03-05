@@ -1,1 +1,0 @@
-This file folder is for images and fonts.
