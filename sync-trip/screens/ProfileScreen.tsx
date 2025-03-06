@@ -1,5 +1,5 @@
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth, firestore, getUserDocRef } from "../utils/firebase";
+import { deleteDoc, onSnapshot, setDoc } from '@react-native-firebase/firestore';
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal, FlatList, ScrollView } from 'react-native';
 import {
@@ -57,40 +57,40 @@ const ProfileScreen = () => {
     'Budget-Conscious',
   ];
 
+
   useEffect(() => {
-    const user = auth().currentUser;
-    if (!user) return;
+    if (!auth.currentUser) return;
 
-    const unsubscribe = firestore()
-      .collection('users')
-      .doc(user.uid)
-      .onSnapshot(
-        (doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            setName(data?.name || '');
-            setBio(data?.bio || '');
-            setTravelPreferences(data?.travelPreferences || '');
-            setProfilePicture(data?.profilePicture || null);
+    const userDocRef = getUserDocRef();
 
-            setSavedProfile({
-              name: data?.name || '',
-              bio: data?.bio || '',
-              travelPreferences: data?.travelPreferences || '',
-              profilePicture: data?.profilePicture || null,
-            });
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (docSnap) => {
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          setName(data?.name || '');
+          setBio(data?.bio || '');
+          setTravelPreferences(data?.travelPreferences || '');
+          setProfilePicture(data?.profilePicture || null);
 
-            if (data?.name) {
-              setIsEditing(false);
-            }
+          setSavedProfile({
+            name: data?.name || '',
+            bio: data?.bio || '',
+            travelPreferences: data?.travelPreferences || '',
+            profilePicture: data?.profilePicture || null,
+          });
+
+          if (data?.name) {
+            setIsEditing(false);
           }
-        },
-        (err) => {
-          setError('Error fetching profile data');
-          console.error(err);
-          setSnackbarVisible(true);
         }
-      );
+      },
+      (err) => {
+        setError('Error fetching profile data');
+        console.error(err);
+        setSnackbarVisible(true);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -102,28 +102,17 @@ const ProfileScreen = () => {
       setSnackbarVisible(true);
       return;
     }
-    const user = auth().currentUser;
-    if (!user) {
-      setError('User not logged in');
-      setSnackbarVisible(true);
-      return;
-    }
+
     try {
-      await firestore().collection('users').doc(user.uid).set(
-        {
-          name,
-          bio,
-          travelPreferences,
-          profilePicture,
-        },
-        { merge: true }
-      );
-      setSavedProfile({
+      const userDocRef = getUserDocRef();
+      await setDoc(userDocRef, {
         name,
         bio,
         travelPreferences,
         profilePicture,
-      });
+      }, { merge: true });
+
+      setSavedProfile({ name, bio, travelPreferences, profilePicture });
       setError('Profile saved successfully!');
       setSnackbarVisible(true);
       setIsEditing(false);
@@ -144,8 +133,8 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await auth().signOut();
-      navigation.navigate('Home');
+      await auth.signOut();
+      navigation.navigate('Login');
     } catch (err) {
       setError('Error logging out');
       console.log(err);
@@ -155,7 +144,7 @@ const ProfileScreen = () => {
 
   // account deletion action
   const handleDeleteAccount = async () => {
-    const user = auth().currentUser;
+    const user = auth.currentUser;
     if (!user) {
       setError('No user logged in');
       setSnackbarVisible(true);
@@ -164,7 +153,8 @@ const ProfileScreen = () => {
     try {
       setDeleteDialogVisible(false);
       // delete stored date in firebase
-      await firestore().collection('users').doc(user.uid).delete();
+      const userDocRef = getUserDocRef();
+      await deleteDoc(userDocRef);
       // delete account
       await user.delete();
       // navigate to home once deletion successful

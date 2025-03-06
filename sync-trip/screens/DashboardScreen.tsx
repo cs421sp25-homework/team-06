@@ -1,5 +1,5 @@
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth, firestore, getUserDocRef } from "../utils/firebase";
+import { onSnapshot } from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { useEffect, useState } from 'react';
@@ -16,26 +16,24 @@ const DashboardScreen = () => {
 
   // Retrieve the user's name from Firestore (adjust the collection/document as needed)
   useEffect(() => {
-    const user = auth().currentUser;
-    if (user) {
-      const unsubscribe = firestore()
-        .collection('users')
-        .doc(user.uid)
-        .onSnapshot(
-          (doc) => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (data && data.name) {
-                setUsername(data.name);
-              }
-            }
-          },
-          (err) => {
-            console.error('Error fetching user data:', err);
+    const userDocRef = getUserDocRef();
+    if (!userDocRef) return; // Ensure it's not null
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (docSnap) => {
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          if (data?.name) {
+            setUsername(data.name);
           }
-        );
-      return () => unsubscribe();
-    }
+        }
+      },
+      (err) => {
+        console.error('Error fetching user data:', err);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const handleViewTripHistory = () => {
