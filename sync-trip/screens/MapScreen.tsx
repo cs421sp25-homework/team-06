@@ -25,7 +25,7 @@ const MapScreen = () => {
   const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
   const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newMarker, setNewMarker] = useState<MarkerData | null>(null);
+  const [currMarker, setCurrMarker] = useState<MarkerData | null>(null);
 
   //for a new marker
   // const [trip, setTrip] = useState(''); //TODO: bundle the trip with the marker
@@ -72,16 +72,20 @@ const MapScreen = () => {
       console.log('Error getting address:', error);
     }
 
-    setNewMarker({ latitude, longitude, address, description: '', time: '' });
+    setCurrMarker({ latitude, longitude, address, description: '', time: '' });
     setModalVisible(true);
   };
 
+  const handleMarkerPress = async () => {
+
+  }
+
   const saveMarker = () => {
-    if (!newMarker || !description || !time) {
+    if (!currMarker || !description || !time) {
       Alert.alert('Incomplete Details', 'Please fill in all fields before saving.');
       return;
     }
-    setMarkers([...markers, { ...newMarker, description, time }]);
+    setMarkers([...markers, { ...currMarker, description, time }]);
     setModalVisible(false);
     setDescription('');
     setTime('');
@@ -91,11 +95,6 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-      {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6200ee" />
-          </View>
-      )}
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
@@ -113,6 +112,12 @@ const MapScreen = () => {
         ))}
       </MapView>
 
+      {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#6200ee" />
+          </View>
+      )}
+
       <Portal>
         <Modal
           visible={modalVisible}
@@ -121,7 +126,7 @@ const MapScreen = () => {
           <Card style={styles.card}>
             <Card.Title title="New Marker" />
             <Card.Content>
-              <Text style={styles.addressText}>{newMarker?.address}</Text>
+              <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
                 label="Description"
                 defaultValue={description}
@@ -174,9 +179,10 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 10,
   },
-  loadingContainer: {
-    flex: 1,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject, // covers the entire container
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.8)', // optional: to dim the background
   },
 });
