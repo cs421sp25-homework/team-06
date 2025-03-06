@@ -4,11 +4,18 @@ import { View, StyleSheet, Alert } from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
   Marker,
-  MapPressEvent,
   Region,
   LongPressEvent,
 } from 'react-native-maps';
-import { Modal, Portal, TextInput, Button, Card, Text , ActivityIndicator } from 'react-native-paper';
+import {
+  Modal,
+  Portal,
+  TextInput,
+  Button,
+  Card,
+  Text,
+  ActivityIndicator,
+} from 'react-native-paper';
 
 interface MarkerData {
   latitude: number;
@@ -25,13 +32,14 @@ const MapScreen = () => {
   const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
   const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  // info modal will show information of a marker
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [currMarker, setCurrMarker] = useState<MarkerData | null>(null);
 
   //for a new marker
   // const [trip, setTrip] = useState(''); //TODO: bundle the trip with the marker
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
-
 
   const [loading, setLoading] = useState(true); // Loading state
 
@@ -76,9 +84,10 @@ const MapScreen = () => {
     setModalVisible(true);
   };
 
-  const handleMarkerPress = async () => {
-
-  }
+  const handleMarkerPress = (marker: MarkerData) => {
+    setCurrMarker(marker);
+    setInfoModalVisible(true);
+  };
 
   const saveMarker = () => {
     if (!currMarker || !description || !time) {
@@ -90,8 +99,6 @@ const MapScreen = () => {
     setDescription('');
     setTime('');
   };
-
-
 
   return (
     <View style={styles.container}>
@@ -108,14 +115,15 @@ const MapScreen = () => {
             key={index}
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             description={`${marker.description}\nTime: ${marker.time}`}
+            onPress={() => handleMarkerPress(marker)}
           />
         ))}
       </MapView>
 
       {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#6200ee" />
-          </View>
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#6200ee" />
+        </View>
       )}
 
       <Portal>
@@ -124,7 +132,7 @@ const MapScreen = () => {
           onDismiss={() => setModalVisible(false)}
           contentContainerStyle={styles.modalContainer}>
           <Card style={styles.card}>
-            <Card.Title title="New Marker" />
+            <Card.Title title="Marker" />
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
@@ -148,6 +156,36 @@ const MapScreen = () => {
               </Button>
               <Button mode="outlined" onPress={() => setModalVisible(false)}>
                 Cancel
+              </Button>
+            </Card.Actions>
+          </Card>
+        </Modal>
+
+        <Modal
+          visible={infoModalVisible}
+          onDismiss={() => setInfoModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}>
+          <Card style={styles.card}>
+            <Card.Title title="Marker Details" />
+            <Card.Content>
+              <Text style={styles.addressText}>{currMarker?.address}</Text>
+              <Text>Description: {currMarker?.description}</Text>
+              <Text>Time: {currMarker?.time}</Text>
+            </Card.Content>
+            <Card.Actions>
+              <Button mode="contained" onPress={() => setInfoModalVisible(false)}>
+                Close
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  setModalVisible(true);
+                  setInfoModalVisible(false);
+                  setDescription(currMarker?.description || '');
+                  setTime(currMarker?.time || '');
+                  //TODO: need to modify when more attributes of marker added. Or create a explicit function to handle.
+                }}>
+                Edit
               </Button>
             </Card.Actions>
           </Card>
@@ -184,5 +222,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.8)', // optional: to dim the background
+  },
+  callout: {
+    backgroundColor: 'white',
+    borderRadius: 4,
+    padding: 10,
+    width: 200, // Adjust width as needed
   },
 });
