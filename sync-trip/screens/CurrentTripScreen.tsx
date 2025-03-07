@@ -29,7 +29,7 @@ const MapScreen = () => {
 
         <Text style={styles.sectionTitle}>Destinations</Text>
         {currentTrip.destinations.length === 0 ? (
-            <Text>No destinations available</Text>
+            <Text>No destinations now, add some from map!</Text>
         ) : (
             currentTrip.destinations.map((destination: Destination, index: number) => (
                 <Card key={index} style={styles.card}>
