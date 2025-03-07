@@ -1,47 +1,69 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import {View} from 'react-native';
 import { TextInput, Button, Dialog, Portal } from 'react-native-paper';
 import { DatePickerModal } from 'react-native-paper-dates';
+import { useTrip } from "../context/TripContext";
+import {CalendarDate} from "react-native-paper-dates/lib/typescript/Date/Calendar";
+import { useMessageDialog } from '../components/MessageDialog'
+import { useAppNavigation } from '../navigation/useAppNavigation';
 
 const TripCreationScreen = () => {
-  const [title, setTitle] = useState('');
-  const [dateRange, setDateRange] = useState<{ startDate?: Date; endDate?: Date }>({});
-  const [visible, setVisible] = useState(false);
+    const navigation = useAppNavigation();
+    const { showMessage } = useMessageDialog();
 
-  const onDismiss = () => setVisible(false);
+    const [title, setTitle] = useState('');
+    const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+    const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+    const [visible, setVisible] = useState(false);
 
-  const onConfirm = (params: { startDate: Date; endDate: Date }) => {
-    setDateRange(params);
-    setVisible(false);
-  };
+    const {setCurrentTrip} = useTrip();
 
-  return (
-    <View style={{ padding: 20 }}>
-      <TextInput label="Trip Title" value={title} onChangeText={setTitle} mode="outlined" />
+    const onDismiss = () => setVisible(false);
 
-      <Button onPress={() => setVisible(true)} mode="outlined">
-        {dateRange.startDate && dateRange.endDate
-          ? `${dateRange.startDate.toDateString()} - ${dateRange.endDate.toDateString()}`
-          : 'Select Dates'}
-      </Button>
+    const onConfirm = (params: { startDate: CalendarDate ; endDate: CalendarDate }) => {
+        setStartDate(params.startDate);
+        setEndDate(params.endDate);
+        setVisible(false);
+    };
 
-      <Portal>
-        <DatePickerModal
-          locale="en"
-          mode="range"
-          visible={visible}
-          onDismiss={onDismiss}
-          startDate={dateRange.startDate}
-          endDate={dateRange.endDate}
-          onConfirm={onConfirm}
-        />
-      </Portal>
+    const handleCreateTrip = () => {
+        if (title && startDate && endDate) {
+            setCurrentTrip({title, startDate, endDate, locations:[]});
+            navigation.navigate('App');
+        } else {
+            showMessage("please enter title and dates");
+        }
 
-      <Button mode="contained" style={{ marginTop: 20 }}>
-        Create Trip
-      </Button>
-    </View>
-  );
+    }
+
+    return (
+        <View style={{ padding: 20 }}>
+            <TextInput label="Trip Title" value={title} onChangeText={setTitle} mode="outlined" />
+
+            <Button onPress={() => setVisible(true)} mode="outlined">
+                {startDate && endDate
+                    ? `${startDate.toDateString()} - ${endDate.toDateString()}`
+                    : 'Select Dates'}
+            </Button>
+
+            <Portal>
+                <DatePickerModal
+                    locale={"en"}
+                    mode="range"
+                    visible={visible}
+                    onDismiss={onDismiss}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onConfirm={onConfirm}
+                />
+            </Portal>
+
+            <Button mode="contained" style={{ marginTop: 20 }}
+                    onPress={handleCreateTrip}>
+                Create Trip
+            </Button>
+        </View>
+    );
 };
 
 export default TripCreationScreen;

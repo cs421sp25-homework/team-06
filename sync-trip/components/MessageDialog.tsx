@@ -29,7 +29,7 @@ export const MessageDialogProvider: React.FC<MessageDialogProviderProps> = ({ ch
       {children}
       <Portal>
         <Dialog visible={visible} onDismiss={hideMessage}>
-          <Dialog.Title>Message</Dialog.Title>
+          <Dialog.Title>Notice</Dialog.Title>
           <Dialog.Content>
             <Paragraph>{message}</Paragraph>
           </Dialog.Content>
