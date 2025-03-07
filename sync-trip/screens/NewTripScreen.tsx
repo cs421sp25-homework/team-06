@@ -5,7 +5,7 @@ import { DatePickerModal } from 'react-native-paper-dates';
 import { useTrip } from "../context/TripContext";
 import { CalendarDate } from "react-native-paper-dates/lib/typescript/Date/Calendar";
 import { useMessageDialog } from '../components/MessageDialog';
-import { useAppNavigation } from '../navigation/useAppNavigation';
+import { useAppNavigation, useTabs } from '../navigation/useAppNavigation';
 
 const TripCreationScreen = () => {
     const navigation = useAppNavigation();
@@ -17,6 +17,7 @@ const TripCreationScreen = () => {
     const [visible, setVisible] = useState(false);
 
     const { setCurrentTrip } = useTrip();
+    const { setIndex } = useTabs();
 
     const onDismiss = () => setVisible(false);
 
@@ -34,7 +35,8 @@ const TripCreationScreen = () => {
     const handleCreateTrip = () => {
         if (title && startDate && endDate) {
             setCurrentTrip({ title, startDate, endDate, destinations: [] });
-            navigation.navigate('App');
+            //navigation.navigate('App');
+            setIndex(1);
         } else {
             showMessage("Please enter a title and select dates.");
         }
