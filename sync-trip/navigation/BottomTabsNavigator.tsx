@@ -4,21 +4,23 @@ import { StyleSheet, View } from 'react-native';
 import { BottomNavigation, FAB } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { TabsProvider, useTabs } from './useAppNavigation';
 import CurrentTripScreen from '../screens/CurrentTripScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import MapScreen from '../screens/MapScreen'; // New screen for map view
 import NewTripScreen from '../screens/NewTripScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
-export default function BottomTabsNavigator() {
-  const [index, setIndex] = useState<number>(0);
-  const [routes] = useState([
+const BottomTabsContent = () => {
+  const { index, setIndex } = useTabs();
+
+  const routes = [
     { key: 'dashboard', title: 'Dashboard', icon: 'view-dashboard' },
     { key: 'trip', title: 'Trip', icon: 'clipboard-list' },
-    { key: 'plus', title: 'New Trip', icon: 'plus' }, // Plus route
-    { key: 'map', title: 'Map', icon: 'map-marker' }, // Changed from History to Map
+    { key: 'plus', title: 'New Trip', icon: 'plus' },
+    { key: 'map', title: 'Map', icon: 'map-marker' },
     { key: 'profile', title: 'Profile', icon: 'account' },
-  ]);
+  ];
 
   const renderScene = BottomNavigation.SceneMap({
     dashboard: DashboardScreen,
@@ -44,6 +46,14 @@ export default function BottomTabsNavigator() {
       />
     </View>
   );
+};
+
+export default function BottomTabsNavigator() {
+  return (
+    <TabsProvider>
+      <BottomTabsContent />
+    </TabsProvider>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -51,7 +61,7 @@ const styles = StyleSheet.create({
   barStyle: { backgroundColor: '#ffffff' },
   fab: {
     position: 'absolute',
-    bottom: 60, // Adjust as needed so the FAB doesn't crowd the tabs
+    bottom: 60,
     alignSelf: 'center',
     backgroundColor: '#6200ee',
   },
