@@ -12,7 +12,7 @@ import NewTripScreen from '../screens/NewTripScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const BottomTabsContent = () => {
-  const { index, setIndex } = useTabs();
+  const { index, setTabIndex } = useTabs();
 
   const routes = [
     { key: 'dashboard', title: 'Dashboard', icon: 'view-dashboard' },
@@ -38,7 +38,7 @@ const BottomTabsContent = () => {
     <View style={styles.container}>
       <BottomNavigation
         navigationState={{ index, routes }}
-        onIndexChange={setIndex}
+        onIndexChange={setTabIndex}
         renderScene={renderScene}
         renderIcon={renderIcon}
         shifting={false}

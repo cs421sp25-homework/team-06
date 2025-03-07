@@ -21,10 +21,6 @@ import {useTrip} from "../context/TripContext";
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
-  //TODO: handle the situation without a valid currentTrip, maybe enforce user to create one.
-  if(!currentTrip) {
-    Alert.alert("currentTrip does not exist! create one first.");
-    return;}
 
   const [location, setLocation] = useState<any>(null);
   // const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]); //TODO: show route.
@@ -43,6 +39,11 @@ const MapScreen = () => {
   const [time, setTime] = useState('');
 
   const [loading, setLoading] = useState(true); // Loading state
+
+  if(!currentTrip) {
+    Alert.alert("currentTrip does not exist! create one first.");
+    return;}
+  //TODO: handle the situation without a valid currentTrip, maybe enforce user to create one.
 
   useEffect(() => {
     (async () => {
