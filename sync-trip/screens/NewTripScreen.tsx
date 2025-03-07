@@ -28,7 +28,7 @@ const TripCreationScreen = () => {
 
     const handleCreateTrip = () => {
         if (title && startDate && endDate) {
-            setCurrentTrip({title, startDate, endDate, locations:[]});
+            setCurrentTrip({title, startDate, endDate, destinations:[]});
             navigation.navigate('App');
         } else {
             showMessage("please enter title and dates");
