@@ -4,6 +4,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { MessageDialogProvider } from './components/MessageDialog';
 import AppNavigator from './navigation/AppNavigator';
 import 'expo-dev-client';
+import './utils/firebase';
 
 const App = () => {
   return (

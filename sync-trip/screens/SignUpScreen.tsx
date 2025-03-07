@@ -1,4 +1,4 @@
-import auth from '@react-native-firebase/auth';
+import { auth } from "../utils/firebase";
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text, Snackbar, ActivityIndicator } from 'react-native-paper';
@@ -23,7 +23,7 @@ const SignUpScreen = () => {
 
     setLoading(true);
     try {
-      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
       await userCredential.user.sendEmailVerification();
       setError('Signup successful! Please check your email to verify your account.');
       setSnackbarVisible(true);

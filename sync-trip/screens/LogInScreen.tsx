@@ -1,4 +1,5 @@
-import auth from '@react-native-firebase/auth';
+import { auth } from "../utils/firebase";
+import { GoogleAuthProvider } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import React, { useEffect, useState } from 'react';
 import {
@@ -35,11 +36,11 @@ const LogInScreen = () => {
     setLoading(true);
 
     try {
-      const userCredential = await auth().signInWithEmailAndPassword(email, password);
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
       const user = userCredential.user;
 
       if (!user.emailVerified) {
-        await auth().signOut();
+        await auth.signOut();
         showMessage('Please verify your email before logging in.');
         setSnackbarVisible(true);
         navigation.navigate('Login');
@@ -80,9 +81,9 @@ const LogInScreen = () => {
         throw new Error('No ID Token received');
       }
 
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const googleCredential = GoogleAuthProvider.credential(idToken);
       console.log('Authenticating with Firebase...');
-      await auth().signInWithCredential(googleCredential);
+      await auth.signInWithCredential(googleCredential);
 
       console.log('Google Sign-In Successful!');
       setMessage('Google Sign-In Successful!');
@@ -102,7 +103,7 @@ const LogInScreen = () => {
       return;
     }
     try {
-      await auth().sendPasswordResetEmail(email);
+      await auth.sendPasswordResetEmail(email);
       showMessage('A password reset email has been sent');
       setSnackbarVisible(true);
     } catch (error: any) {
