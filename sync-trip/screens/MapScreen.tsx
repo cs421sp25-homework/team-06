@@ -16,28 +16,29 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native-paper';
-
-interface MarkerData {
-  latitude: number;
-  longitude: number;
-  address?: string;
-  // trip: string; //TODO: bundle trip with marker
-  description: string;
-  time: string;
-}
+import {Destination} from "../types/Destination";
+import {useTrip} from "../context/TripContext";
 
 const MapScreen = () => {
+  const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
+  //TODO: handle the situation without a valid currentTrip, maybe enforce user to create one.
+  if(!currentTrip) {
+    Alert.alert("currentTrip does not exist! create one first.");
+    return;}
+
   const [location, setLocation] = useState<any>(null);
   // const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]); //TODO: show route.
   const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
-  const [markers, setMarkers] = useState<MarkerData[]>([]);
+  // this modal can edit an existing marker(destination)
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  // this modal can add a new marker(destination)
   const [modalVisible, setModalVisible] = useState(false);
   // info modal will show information of a marker
   const [infoModalVisible, setInfoModalVisible] = useState(false);
-  const [currMarker, setCurrMarker] = useState<MarkerData | null>(null);
+
+  const [currMarker, setCurrMarker] = useState<Destination | null>(null);
 
   //for a new marker
-  // const [trip, setTrip] = useState(''); //TODO: bundle the trip with the marker
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
 
@@ -65,7 +66,7 @@ const MapScreen = () => {
     })();
   }, []);
 
-  const handleMapPress = async (event: LongPressEvent) => {
+  const handleMapLongPress = async (event: LongPressEvent) => {
     //TODO: make the location information auto filled by Google Map.
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
@@ -80,25 +81,68 @@ const MapScreen = () => {
       console.log('Error getting address:', error);
     }
 
-    setCurrMarker({ latitude, longitude, address, description: '', time: '' });
+    setCurrMarker({ latitude, longitude, address, description: '' });
     setModalVisible(true);
   };
 
-  const handleMarkerPress = (marker: MarkerData) => {
+  const handleMarkerPress = (marker: Destination) => {
     setCurrMarker(marker);
     setInfoModalVisible(true);
   };
 
-  const saveMarker = () => {
-    if (!currMarker || !description || !time) {
-      Alert.alert('Incomplete Details', 'Please fill in all fields before saving.');
+  const saveNewMarker = () => {
+    if (!currMarker || !description) {
+      Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
     }
-    setMarkers([...markers, { ...currMarker, description, time }]);
+    
+    if (currentTrip) {
+      currMarker.trip=currentTrip;
+    }
+    currMarker.description=description;//TODO: if more info added to Marker(Destination) editor, need to add here.
+    
+    addDestinationToTrip(currMarker);
     setModalVisible(false);
     setDescription('');
     setTime('');
   };
+
+  const showEditUI = () => {
+    setEditModalVisible(true);
+    setInfoModalVisible(false);
+  }
+
+  const updateMarker = () => {
+    if (!currMarker || !description) {
+      Alert.alert('Incomplete', 'Please fill in all fields before saving.');
+      return;
+    }
+
+    const markerIndex = currentTrip.destinations.findIndex(
+        (marker) =>
+            marker.latitude === currMarker.latitude &&
+            marker.longitude === currMarker.longitude
+    );
+
+    if (markerIndex === -1) {
+      Alert.alert("Error", "Marker not found in the current trip.");
+      return;
+    }
+
+    currMarker.description=description; //TODO: if more info added to Marker(Destination) editor, need to add here.
+    const updatedMarker = {
+      ...currentTrip.destinations[markerIndex],
+      description: description, //TODO: and here
+    };
+
+    updateDestinationInTrip(updatedMarker, markerIndex);
+
+
+
+    setEditModalVisible(false);
+    setDescription('');
+    setTime('');
+  }
 
   return (
     <View style={styles.container}>
@@ -107,14 +151,14 @@ const MapScreen = () => {
         provider={PROVIDER_GOOGLE}
         showsUserLocation // Enables the blue dot for the user's location
         showsMyLocationButton // Enables a button to recenter on the user
-        onLongPress={handleMapPress}
+        onLongPress={handleMapLongPress}
         region={mapRegion}>
         {/* Show existing markers */}
-        {markers.map((marker, index) => (
+        {(currentTrip?.destinations || []).map((marker, index) => (
           <Marker
             key={index}
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-            description={`${marker.description}\nTime: ${marker.time}`}
+            description={`${marker.description}\nDate: ${marker.date}`}
             onPress={() => handleMarkerPress(marker)}
           />
         ))}
@@ -132,7 +176,7 @@ const MapScreen = () => {
           onDismiss={() => setModalVisible(false)}
           contentContainerStyle={styles.modalContainer}>
           <Card style={styles.card}>
-            <Card.Title title="Marker" />
+            <Card.Title title="Add a new Marker" />
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
@@ -142,19 +186,39 @@ const MapScreen = () => {
                 onChangeText={setDescription}
                 style={styles.input}
               />
+            </Card.Content>
+            <Card.Actions>
+              <Button mode="contained" onPress={saveNewMarker}>
+                Add
+              </Button>
+              <Button mode="outlined" onPress={() => setModalVisible(false)}>
+                Cancel
+              </Button>
+            </Card.Actions>
+          </Card>
+        </Modal>
+
+        <Modal
+            visible={editModalVisible}
+            onDismiss={() => setEditModalVisible(false)}
+            contentContainerStyle={styles.modalContainer}>
+          <Card style={styles.card}>
+            <Card.Title title="Edit the Destination" />
+            <Card.Content>
+              <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
-                label="Time"
-                defaultValue={time}
-                mode="outlined"
-                onChangeText={setTime}
-                style={styles.input}
+                  label="Description"
+                  defaultValue={description}
+                  mode="outlined"
+                  onChangeText={setDescription}
+                  style={styles.input}
               />
             </Card.Content>
             <Card.Actions>
-              <Button mode="contained" onPress={saveMarker}>
-                Save
+              <Button mode="contained" onPress={updateMarker}>
+                Save Change
               </Button>
-              <Button mode="outlined" onPress={() => setModalVisible(false)}>
+              <Button mode="outlined" onPress={() => setEditModalVisible(false)}>
                 Cancel
               </Button>
             </Card.Actions>
@@ -170,7 +234,6 @@ const MapScreen = () => {
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <Text>Description: {currMarker?.description}</Text>
-              <Text>Time: {currMarker?.time}</Text>
             </Card.Content>
             <Card.Actions>
               <Button mode="contained" onPress={() => setInfoModalVisible(false)}>
@@ -178,13 +241,8 @@ const MapScreen = () => {
               </Button>
               <Button
                 mode="outlined"
-                onPress={() => {
-                  setModalVisible(true);
-                  setInfoModalVisible(false);
-                  setDescription(currMarker?.description || '');
-                  setTime(currMarker?.time || '');
-                  //TODO: need to modify when more attributes of marker added. Or create a explicit function to handle.
-                }}>
+                onPress={showEditUI}
+                  >
                 Edit
               </Button>
             </Card.Actions>
