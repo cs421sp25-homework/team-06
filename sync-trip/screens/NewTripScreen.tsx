@@ -1,67 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import { View } from 'react-native';
+import { TextInput, Button, Dialog, Portal } from 'react-native-paper';
+import { DatePickerModal } from 'react-native-paper-dates';
 
-export default function NewTripScreen({ navigation }: any) {
-  const [tripName, setTripName] = useState<string>('');
-  const [tripDescription, setTripDescription] = useState<string>('');
-  const [tripDate, setTripDate] = useState<string>('');
+const TripCreationScreen = () => {
+  const [title, setTitle] = useState('');
+  const [dateRange, setDateRange] = useState<{ startDate?: Date; endDate?: Date }>({});
+  const [visible, setVisible] = useState(false);
 
-  const handleCreateTrip = () => {
-    // Handle the trip creation logic here (e.g., saving to Firebase or navigating to another screen)
-    console.log('New Trip Created:', { tripName, tripDescription, tripDate });
+  const onDismiss = () => setVisible(false);
 
-    // Optionally, navigate back to a previous screen (e.g., Dashboard) after creating the trip
-    navigation.goBack();
+  const onConfirm = (params: { startDate: Date; endDate: Date }) => {
+    setDateRange(params);
+    setVisible(false);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Create a New Trip</Text>
+    <View style={{ padding: 20 }}>
+      <TextInput label="Trip Title" value={title} onChangeText={setTitle} mode="outlined" />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Trip Name"
-        value={tripName}
-        onChangeText={setTripName}
-      />
+      <Button onPress={() => setVisible(true)} mode="outlined">
+        {dateRange.startDate && dateRange.endDate
+          ? `${dateRange.startDate.toDateString()} - ${dateRange.endDate.toDateString()}`
+          : 'Select Dates'}
+      </Button>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Trip Description"
-        value={tripDescription}
-        onChangeText={setTripDescription}
-        multiline
-      />
+      <Portal>
+        <DatePickerModal
+          locale="en"
+          mode="range"
+          visible={visible}
+          onDismiss={onDismiss}
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onConfirm={onConfirm}
+        />
+      </Portal>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Trip Date"
-        value={tripDate}
-        onChangeText={setTripDate}
-      />
-
-      <Button title="Create Trip" onPress={handleCreateTrip} />
-    </ScrollView>
+      <Button mode="contained" style={{ marginTop: 20 }}>
+        Create Trip
+      </Button>
+    </View>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingLeft: 10,
-    marginBottom: 16,
-  },
-});
+export default TripCreationScreen;
