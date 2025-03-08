@@ -3,16 +3,16 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { createContext, useContext, useState, PropsWithChildren } from 'react';
 
 type TabsContextType = {
-    index: number;
-    setIndex: React.Dispatch<React.SetStateAction<number>>;
+    tabIndex: number;
+    setTabIndex: React.Dispatch<React.SetStateAction<number>>;
 };
 
 const TabsContext = createContext<TabsContextType | undefined>(undefined);
 
 export const TabsProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
-    const [index, setIndex] = useState<number>(0);
+    const [tabIndex, setTabIndex] = useState<number>(0);
     return (
-        <TabsContext.Provider value={{ index, setIndex }}>
+        <TabsContext.Provider value={{ tabIndex, setTabIndex }}>
             {children}
         </TabsContext.Provider>
     );

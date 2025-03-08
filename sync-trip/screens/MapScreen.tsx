@@ -14,17 +14,14 @@ import {
   Button,
   Card,
   Text,
-  ActivityIndicator,
+  ActivityIndicator, Dialog,
 } from 'react-native-paper';
 import {Destination} from "../types/Destination";
 import {useTrip} from "../context/TripContext";
+import {useTabs} from "../navigation/useAppNavigation";
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
-  //TODO: handle the situation without a valid currentTrip, maybe enforce user to create one.
-  if(!currentTrip) {
-    Alert.alert("currentTrip does not exist! create one first.");
-    return;}
 
   const [location, setLocation] = useState<any>(null);
   // const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]); //TODO: show route.
@@ -36,6 +33,8 @@ const MapScreen = () => {
   // info modal will show information of a marker
   const [infoModalVisible, setInfoModalVisible] = useState(false);
 
+  const [dialogVisible, setDialogVisible] = useState(true);
+
   const [currMarker, setCurrMarker] = useState<Destination | null>(null);
 
   //for a new marker
@@ -43,6 +42,9 @@ const MapScreen = () => {
   const [time, setTime] = useState('');
 
   const [loading, setLoading] = useState(true); // Loading state
+  const {tabIndex, setTabIndex} = useTabs();
+
+
 
   useEffect(() => {
     (async () => {
@@ -65,6 +67,34 @@ const MapScreen = () => {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!currentTrip && tabIndex === 3) {
+      setDialogVisible(true);
+    }
+  }, [currentTrip, tabIndex]);
+
+  const redirectToNewTrip = () => {
+    setTabIndex(2);
+    setDialogVisible(false);
+  }
+
+  if (!currentTrip) {
+    return (
+        <Portal>
+          <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+            <Dialog.Title>No Trip Found</Dialog.Title>
+            <Dialog.Content>
+              <Text>You need to create a trip first.</Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={redirectToNewTrip}>Create a New Trip</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
+    );
+  }
+
 
   const handleMapLongPress = async (event: LongPressEvent) => {
     //TODO: make the location information auto filled by Google Map.
@@ -100,6 +130,7 @@ const MapScreen = () => {
       currMarker.trip=currentTrip;
     }
     currMarker.description=description;//TODO: if more info added to Marker(Destination) editor, need to add here.
+
     
     addDestinationToTrip(currMarker);
     setModalVisible(false);
@@ -144,8 +175,11 @@ const MapScreen = () => {
     setTime('');
   }
 
+
+
   return (
     <View style={styles.container}>
+
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}

@@ -17,7 +17,7 @@ const TripCreationScreen = () => {
     const [visible, setVisible] = useState(false);
 
     const { setCurrentTrip } = useTrip();
-    const { setIndex } = useTabs();
+    const { setTabIndex } = useTabs();
 
     const onDismiss = () => setVisible(false);
 
@@ -36,7 +36,7 @@ const TripCreationScreen = () => {
         if (title && startDate && endDate) {
             setCurrentTrip({ title, startDate, endDate, destinations: [] });
             //navigation.navigate('App');
-            setIndex(1);
+            setTabIndex(1);
         } else {
             showMessage("Please enter a title and select dates.");
         }
