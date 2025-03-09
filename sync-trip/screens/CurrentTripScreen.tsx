@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, ScrollView, View } from "react-native";
+import { StyleSheet, ScrollView } from "react-native";
 import {
   Text,
   Card,
@@ -10,10 +10,10 @@ import {
   Portal,
   Dialog,
 } from "react-native-paper";
-import { useTrip } from "../context/TripContext"; // 根据实际路径调整
-import { Destination } from "../types/Destination"; // 根据实际路径调整
+import { useTrip } from "../context/TripContext"; // Adjust path as needed
+import { Destination } from "../types/Destination"; // Adjust path as needed
 
-// 根据旅程开始与结束日期生成日期数组（包含首尾）
+// Generate an array of dates from the start to the end date (inclusive)
 const getDatesInRange = (start, end) => {
   const date = new Date(start);
   const dates = [];
@@ -26,11 +26,11 @@ const getDatesInRange = (start, end) => {
 
 const MapScreen = () => {
   const { currentTrip } = useTrip();
-  // 为了示例，使用本地 state 管理 trip 数据，实际项目中建议通过 context 或后端更新数据
+  // Using local state to manage trip data; in production, update data through context or an API
   const [trip, setTrip] = useState(currentTrip);
-  // 控制对话框显示状态以及记录当前选择的日期
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+  // Control the assign date dialog and store the destination to be assigned
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [destinationToAssign, setDestinationToAssign] = useState(null);
 
   useEffect(() => {
     setTrip(currentTrip);
@@ -40,32 +40,33 @@ const MapScreen = () => {
     return <Text>No current trip</Text>;
   }
 
-  // 生成旅程日期数组
+  // Get an array of dates for the trip
   const tripDates = getDatesInRange(trip.startDate, trip.endDate);
-  // 未分配日期的目的地（假设未分配的 destination.date 为 null 或 undefined）
+  // Filter out destinations that are not yet assigned a date
   const unassignedDestinations = trip.destinations.filter(
     (dest) => !dest.date
   );
 
-  // 打开添加目的地对话框，并记录当前日期
-  const handleOpenModal = (date) => {
-    setSelectedDate(date);
-    setModalVisible(true);
+  // Open the assign dialog and store the destination that needs a date assignment
+  const handleOpenAssignModal = (destination) => {
+    setDestinationToAssign(destination);
+    setAssignModalVisible(true);
   };
 
-  // 当用户选中某个未分配的目的地时，将其 date 更新为选中的日期
-  const handleAssignDestination = (destination) => {
+  // When the user selects a date in the dialog, update the destination's date
+  const handleAssignDate = (date) => {
     const updatedDestinations = trip.destinations.map((dest) => {
-      if (dest === destination) {
-        return { ...dest, date: selectedDate };
+      if (dest === destinationToAssign) {
+        return { ...dest, date: date };
       }
       return dest;
     });
     setTrip({ ...trip, destinations: updatedDestinations });
-    setModalVisible(false);
+    setAssignModalVisible(false);
+    setDestinationToAssign(null);
   };
 
-  // 删除（取消分配）目的地，即将目的地的 date 设为 null
+  // Remove (unassign) a destination by setting its date to null
   const handleRemoveDestination = (destination) => {
     const updatedDestinations = trip.destinations.map((dest) => {
       if (dest === destination) {
@@ -93,9 +94,32 @@ const MapScreen = () => {
           </Card.Content>
         </Card>
 
+        {/* Display unassigned destinations */}
+        <Text style={styles.sectionTitle}>Unassigned Destinations</Text>
+        {unassignedDestinations.length === 0 ? (
+          <Text>All destinations have been assigned</Text>
+        ) : (
+          unassignedDestinations.map((destination, idx) => (
+            <List.Item
+              key={idx}
+              title={destination.description}
+              description={destination.address}
+              right={() => (
+                <Button
+                  mode="outlined"
+                  onPress={() => handleOpenAssignModal(destination)}
+                >
+                  Assign Date
+                </Button>
+              )}
+            />
+          ))
+        )}
+
+        {/* Display destinations grouped by date */}
         <Text style={styles.sectionTitle}>Destinations by Date</Text>
         {tripDates.map((date, index) => {
-          // 过滤出已分配到当前日期的目的地（只比较日期部分）
+          // Filter out destinations assigned to the current date (comparing only the date portion)
           const destinationsForDate = trip.destinations.filter(
             (dest) =>
               dest.date &&
@@ -124,13 +148,7 @@ const MapScreen = () => {
                   />
                 ))
               )}
-              <Button
-                mode="outlined"
-                onPress={() => handleOpenModal(date)}
-                style={styles.addButton}
-              >
-                Add Destination
-              </Button>
+              {/* Optional: Allow adding unassigned destinations under each date */}
             </List.Accordion>
           );
         })}
@@ -146,28 +164,34 @@ const MapScreen = () => {
         </Button>
       </ScrollView>
 
+      {/* Dialog for assigning a date to a destination */}
       <Portal>
         <Dialog
-          visible={modalVisible}
-          onDismiss={() => setModalVisible(false)}
+          visible={assignModalVisible}
+          onDismiss={() => {
+            setAssignModalVisible(false);
+            setDestinationToAssign(null);
+          }}
         >
-          <Dialog.Title>Select a Destination</Dialog.Title>
+          <Dialog.Title>Select a Date to Assign Destination</Dialog.Title>
           <Dialog.Content>
-            {unassignedDestinations.length === 0 ? (
-              <Text>No unassigned destinations available</Text>
-            ) : (
-              unassignedDestinations.map((destination, idx) => (
-                <List.Item
-                  key={idx}
-                  title={destination.description}
-                  description={destination.address}
-                  onPress={() => handleAssignDestination(destination)}
-                />
-              ))
-            )}
+            {tripDates.map((date, idx) => (
+              <List.Item
+                key={idx}
+                title={date.toLocaleDateString()}
+                onPress={() => handleAssignDate(date)}
+              />
+            ))}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setModalVisible(false)}>Cancel</Button>
+            <Button
+              onPress={() => {
+                setAssignModalVisible(false);
+                setDestinationToAssign(null);
+              }}
+            >
+              Cancel
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
