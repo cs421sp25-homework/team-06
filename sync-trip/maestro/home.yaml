@@ -1,0 +1,4 @@
+appId: "com.s370101387.synctrip"
+---
+- launchApp
+- assertVisible: "or sign in with"
