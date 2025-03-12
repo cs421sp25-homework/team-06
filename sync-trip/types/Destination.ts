@@ -8,4 +8,5 @@ export interface Destination {
     address?: string;
     description?: string;
     date?: Date;
+    name?: string
 }

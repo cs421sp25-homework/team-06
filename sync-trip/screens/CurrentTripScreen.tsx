@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, ScrollView } from "react-native";
-import {
-  Text,
-  Card,
-  List,
-  Button,
-  Title,
-  IconButton,
-  Portal,
-  Dialog,
-} from "react-native-paper";
+import { Text, Card, List, Button, Title, IconButton, Portal, Dialog } from "react-native-paper";
 import { useTrip } from "../context/TripContext"; // Adjust path as needed
 import { Destination } from "../types/Destination"; // Adjust path as needed
 
@@ -24,7 +15,7 @@ const getDatesInRange = (start, end) => {
   return dates;
 };
 
-const MapScreen = () => {
+const CurrentTripScreen = () => {
   const { currentTrip } = useTrip();
   // Using local state to manage trip data; in production, update data through context or an API
   const [trip, setTrip] = useState(currentTrip);
@@ -37,14 +28,22 @@ const MapScreen = () => {
   }, [currentTrip]);
 
   if (!trip) {
-    return <Text>No current trip</Text>;
+    return (
+      <View style={styles.emptyContainer}>
+        <Title>No Current Trip</Title>
+        <Text>You haven't created a trip plan yet. Please create one to start adding destinations.</Text>
+        <Button mode="contained" onPress={() => {/* Navigate to trip creation screen */ }} style={styles.emptyButton}>
+          Create New Trip
+        </Button>
+      </View>
+    );
   }
 
   // Get an array of dates for the trip
   const tripDates = getDatesInRange(trip.startDate, trip.endDate);
   // Filter out destinations that are not yet assigned a date
   const unassignedDestinations = trip.destinations.filter(
-      (dest) => !dest.date
+    (dest) => !dest.date
   );
 
   // Open the assign dialog and store the destination that needs a date assignment
@@ -78,124 +77,124 @@ const MapScreen = () => {
   };
 
   return (
-      <>
-        <ScrollView style={styles.container}>
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>{trip.title}</Title>
-              <Text>
-                <Text style={styles.bold}>From: </Text>
-                {new Date(trip.startDate).toLocaleDateString()}
-              </Text>
-              <Text>
-                <Text style={styles.bold}>To: </Text>
-                {new Date(trip.endDate).toLocaleDateString()}
-              </Text>
-            </Card.Content>
-          </Card>
+    <>
+      <ScrollView style={styles.container}>
+        <Card style={styles.card}>
+          <Card.Content>
+            <Title>{trip.title}</Title>
+            <Text>
+              <Text style={styles.bold}>From: </Text>
+              {new Date(trip.startDate).toLocaleDateString()}
+            </Text>
+            <Text>
+              <Text style={styles.bold}>To: </Text>
+              {new Date(trip.endDate).toLocaleDateString()}
+            </Text>
+          </Card.Content>
+        </Card>
 
-          {/* Display unassigned destinations */}
-          <Text style={styles.sectionTitle}>Unassigned Destinations</Text>
-          {unassignedDestinations.length === 0 ? (
-              <Text>All destinations have been assigned</Text>
-          ) : (
-              unassignedDestinations.map((destination, idx) => (
-                  <List.Item
-                      key={idx}
-                      title={destination.description}
-                      description={destination.address}
-                      right={() => (
-                          <Button
-                              mode="outlined"
-                              onPress={() => handleOpenAssignModal(destination)}
-                          >
-                            Assign Date
-                          </Button>
-                      )}
-                  />
-              ))
-          )}
-
-          {/* Display destinations grouped by date */}
-          <Text style={styles.sectionTitle}>Destinations by Date</Text>
-          {tripDates.map((date, index) => {
-            // Filter out destinations assigned to the current date (comparing only the date portion)
-            const destinationsForDate = trip.destinations.filter(
-                (dest) =>
-                    dest.date &&
-                    new Date(dest.date).toDateString() === date.toDateString()
-            );
-            return (
-                <List.Accordion
-                    key={index}
-                    title={date.toLocaleDateString()}
-                    style={styles.accordion}
+        {/* Display unassigned destinations */}
+        <Text style={styles.sectionTitle}>Unassigned Destinations</Text>
+        {unassignedDestinations.length === 0 ? (
+          <Text>All destinations have been assigned</Text>
+        ) : (
+          unassignedDestinations.map((destination, idx) => (
+            <List.Item
+              key={idx}
+              title={destination.description}
+              description={destination.address}
+              right={() => (
+                <Button
+                  mode="outlined"
+                  onPress={() => handleOpenAssignModal(destination)}
                 >
-                  {destinationsForDate.length === 0 ? (
-                      <List.Item title="No destinations for this day" />
-                  ) : (
-                      destinationsForDate.map((destination, idx) => (
-                          <List.Item
-                              key={idx}
-                              title={destination.description}
-                              description={destination.address}
-                              right={() => (
-                                  <IconButton
-                                      icon="delete"
-                                      onPress={() => handleRemoveDestination(destination)}
-                                  />
-                              )}
-                          />
-                      ))
-                  )}
-                  {/* Optional: Allow adding unassigned destinations under each date */}
-                </List.Accordion>
-            );
-          })}
+                  Assign Date
+                </Button>
+              )}
+            />
+          ))
+        )}
 
-          <Button
-              mode="contained"
+        {/* Display destinations grouped by date */}
+        <Text style={styles.sectionTitle}>Destinations by Date</Text>
+        {tripDates.map((date, index) => {
+          // Filter out destinations assigned to the current date (comparing only the date portion)
+          const destinationsForDate = trip.destinations.filter(
+            (dest) =>
+              dest.date &&
+              new Date(dest.date).toDateString() === date.toDateString()
+          );
+          return (
+            <List.Accordion
+              key={index}
+              title={date.toLocaleDateString()}
+              style={styles.accordion}
+            >
+              {destinationsForDate.length === 0 ? (
+                <List.Item title="No destinations for this day" />
+              ) : (
+                destinationsForDate.map((destination, idx) => (
+                  <List.Item
+                    key={idx}
+                    title={destination.description}
+                    description={destination.address}
+                    right={() => (
+                      <IconButton
+                        icon="delete"
+                        onPress={() => handleRemoveDestination(destination)}
+                      />
+                    )}
+                  />
+                ))
+              )}
+              {/* Optional: Allow adding unassigned destinations under each date */}
+            </List.Accordion>
+          );
+        })}
+
+        <Button
+          mode="contained"
+          onPress={() => {
+            /* Handle Edit Trip */
+          }}
+          style={styles.button}
+        >
+          Edit Trip
+        </Button>
+      </ScrollView>
+
+      {/* Dialog for assigning a date to a destination */}
+      <Portal>
+        <Dialog
+          visible={assignModalVisible}
+          onDismiss={() => {
+            setAssignModalVisible(false);
+            setDestinationToAssign(null);
+          }}
+        >
+          <Dialog.Title>Select a Date to Assign Destination</Dialog.Title>
+          <Dialog.Content>
+            {tripDates.map((date, idx) => (
+              <List.Item
+                key={idx}
+                title={date.toLocaleDateString()}
+                onPress={() => handleAssignDate(date)}
+              />
+            ))}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
               onPress={() => {
-                /* Handle Edit Trip */
-              }}
-              style={styles.button}
-          >
-            Edit Trip
-          </Button>
-        </ScrollView>
-
-        {/* Dialog for assigning a date to a destination */}
-        <Portal>
-          <Dialog
-              visible={assignModalVisible}
-              onDismiss={() => {
                 setAssignModalVisible(false);
                 setDestinationToAssign(null);
               }}
-          >
-            <Dialog.Title>Select a Date to Assign Destination</Dialog.Title>
-            <Dialog.Content>
-              {tripDates.map((date, idx) => (
-                  <List.Item
-                      key={idx}
-                      title={date.toLocaleDateString()}
-                      onPress={() => handleAssignDate(date)}
-                  />
-              ))}
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button
-                  onPress={() => {
-                    setAssignModalVisible(false);
-                    setDestinationToAssign(null);
-                  }}
-              >
-                Cancel
-              </Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-      </>
+            >
+              Cancel
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    </>
   );
 };
 
@@ -227,4 +226,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MapScreen;
+export default CurrentTripScreen;

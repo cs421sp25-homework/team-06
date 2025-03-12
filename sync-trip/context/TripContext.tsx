@@ -16,12 +16,13 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
     const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
 
     const addDestinationToTrip = (destination: Destination) => {
-        if (currentTrip) {
-            setCurrentTrip({
-                ...currentTrip,
-                destinations: [...currentTrip.destinations, destination],
-            });
-        }
+        setCurrentTrip((prevTrip) => {
+            if (!prevTrip) return prevTrip;
+            return {
+                ...prevTrip,
+                destinations: [...prevTrip.destinations, destination],
+            };
+        });
     };
 
     const updateDestinationInTrip = (updatedMarker: Destination, index: number) => {
