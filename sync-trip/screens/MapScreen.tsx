@@ -16,9 +16,9 @@ import {
   Text,
   ActivityIndicator, Dialog,
 } from 'react-native-paper';
-import {Destination} from "../types/Destination";
-import {useTrip} from "../context/TripContext";
-import {useTabs} from "../navigation/useAppNavigation";
+import { Destination } from "../types/Destination";
+import { useTrip } from "../context/TripContext";
+import { useTabs } from "../navigation/useAppNavigation";
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
@@ -42,7 +42,7 @@ const MapScreen = () => {
   const [time, setTime] = useState('');
 
   const [loading, setLoading] = useState(true); // Loading state
-  const {tabIndex, setTabIndex} = useTabs();
+  const { tabIndex, setTabIndex } = useTabs();
 
 
 
@@ -79,28 +79,22 @@ const MapScreen = () => {
     setDialogVisible(false);
   }
 
-  if (!currentTrip) {
-    return (
-        <Portal>
-          <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-            <Dialog.Title>No Trip Found</Dialog.Title>
-            <Dialog.Content>
-              <Text>You need to create a trip first.</Text>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={redirectToNewTrip}>Create a New Trip</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-    );
-  }
-
-
   const handleMapLongPress = async (event: LongPressEvent) => {
-    //TODO: make the location information auto filled by Google Map.
-    const { latitude, longitude } = event.nativeEvent.coordinate;
+    if (!currentTrip) {
+      // No current trip exists; show a dialog prompting trip creation
+      Alert.alert(
+        "No Trip Found",
+        "You need to create a trip first.",
+        [
+          { text: "Start Creating Now", onPress: redirectToNewTrip },
+          { text: "Cancel", style: "cancel" }
+        ]
+      );
+      return;
+    }
 
-    // Reverse geocode to get address
+    // TODO: make the location information auto filled by Google Map.
+    const { latitude, longitude } = event.nativeEvent.coordinate;
     let address = 'Unknown Location';
     try {
       const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
@@ -125,13 +119,13 @@ const MapScreen = () => {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
     }
-    
-    if (currentTrip) {
-      currMarker.trip=currentTrip;
-    }
-    currMarker.description=description;//TODO: if more info added to Marker(Destination) editor, need to add here.
 
-    
+    if (currentTrip) {
+      currMarker.trip = currentTrip;
+    }
+    currMarker.description = description;//TODO: if more info added to Marker(Destination) editor, need to add here.
+
+
     addDestinationToTrip(currMarker);
     setModalVisible(false);
     setDescription('');
@@ -150,9 +144,9 @@ const MapScreen = () => {
     }
 
     const markerIndex = currentTrip.destinations.findIndex(
-        (marker) =>
-            marker.latitude === currMarker.latitude &&
-            marker.longitude === currMarker.longitude
+      (marker) =>
+        marker.latitude === currMarker.latitude &&
+        marker.longitude === currMarker.longitude
     );
 
     if (markerIndex === -1) {
@@ -160,7 +154,7 @@ const MapScreen = () => {
       return;
     }
 
-    currMarker.description=description; //TODO: if more info added to Marker(Destination) editor, need to add here.
+    currMarker.description = description; //TODO: if more info added to Marker(Destination) editor, need to add here.
     const updatedMarker = {
       ...currentTrip.destinations[markerIndex],
       description: description, //TODO: and here
@@ -233,19 +227,19 @@ const MapScreen = () => {
         </Modal>
 
         <Modal
-            visible={editModalVisible}
-            onDismiss={() => setEditModalVisible(false)}
-            contentContainerStyle={styles.modalContainer}>
+          visible={editModalVisible}
+          onDismiss={() => setEditModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}>
           <Card style={styles.card}>
             <Card.Title title="Edit the Destination" />
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
-                  label="Description"
-                  defaultValue={description}
-                  mode="outlined"
-                  onChangeText={setDescription}
-                  style={styles.input}
+                label="Description"
+                defaultValue={description}
+                mode="outlined"
+                onChangeText={setDescription}
+                style={styles.input}
               />
             </Card.Content>
             <Card.Actions>
@@ -276,7 +270,7 @@ const MapScreen = () => {
               <Button
                 mode="outlined"
                 onPress={showEditUI}
-                  >
+              >
                 Edit
               </Button>
             </Card.Actions>

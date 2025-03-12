@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, ScrollView } from "react-native";
+import { StyleSheet, ScrollView, View } from "react-native";
 import { Text, Card, List, Button, Title, IconButton, Portal, Dialog } from "react-native-paper";
-import { useTrip } from "../context/TripContext"; // Adjust path as needed
-import { Destination } from "../types/Destination"; // Adjust path as needed
+import { useTrip } from "../context/TripContext";
+import { useTabs } from "../navigation/useAppNavigation";
+import { Destination } from "../types/Destination";
 
 // Generate an array of dates from the start to the end date (inclusive)
 const getDatesInRange = (start, end) => {
@@ -19,6 +20,7 @@ const CurrentTripScreen = () => {
   const { currentTrip } = useTrip();
   // Using local state to manage trip data; in production, update data through context or an API
   const [trip, setTrip] = useState(currentTrip);
+  const {tabIndex, setTabIndex} = useTabs();
   // Control the assign date dialog and store the destination to be assigned
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [destinationToAssign, setDestinationToAssign] = useState(null);
@@ -31,8 +33,8 @@ const CurrentTripScreen = () => {
     return (
       <View style={styles.emptyContainer}>
         <Title>No Current Trip</Title>
-        <Text>You haven't created a trip plan yet. Please create one to start adding destinations.</Text>
-        <Button mode="contained" onPress={() => {/* Navigate to trip creation screen */ }} style={styles.emptyButton}>
+        <Text>You haven't planned for a trip yet. Start planning now!</Text>
+        <Button mode="contained" onPress={() => {setTabIndex(2);}} style={styles.emptyButton}>
           Create New Trip
         </Button>
       </View>
@@ -223,6 +225,15 @@ const styles = StyleSheet.create({
   },
   addButton: {
     margin: 8,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  emptyButton: {
+    marginTop: 16,
   },
 });
 
