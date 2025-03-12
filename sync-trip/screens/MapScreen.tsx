@@ -19,6 +19,11 @@ import {
 import {Destination} from "../types/Destination";
 import {useTrip} from "../context/TripContext";
 import {useTabs} from "../navigation/useAppNavigation";
+//import { GoogleMapsApiKey } from '@expo/config-plugins/build/android';
+import Constants from 'expo-constants';
+const googleMapsApiKey = Constants.manifest?.extra?.googleMapsApiKey;
+
+
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
@@ -104,6 +109,7 @@ const MapScreen = () => {
     let address = 'Unknown Location';
     try {
       const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+      console.log("Latitude:", latitude, "Longitude:", longitude);
       if (reverseGeocode.length > 0) {
         address = `${reverseGeocode[0].name || ''}, ${reverseGeocode[0].city || ''}`;
       }
@@ -111,7 +117,34 @@ const MapScreen = () => {
       console.log('Error getting address:', error);
     }
 
-    setCurrMarker({ latitude, longitude, address, description: '' });
+    //using google map for detailed information
+    let placeName = "Unknown Place";
+    let placeDescription = "";
+
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10&key=${googleMapsApiKey}`
+      );
+      const result = await response.json();
+      
+      console.log("Nearby search result:", JSON.stringify(result, null, 2));
+
+      if (result.results.length > 0) {
+        placeName = result.results[0].name;
+        placeDescription = result.results[0].types.join(", ");
+      }
+    } catch (error) {
+      console.log("Error fetching place details:", error);
+    }
+
+    setCurrMarker({
+      latitude,
+      longitude,
+      address: placeName,
+      description: placeDescription,
+      coords: `${latitude}, ${longitude}`,
+    });
+
     setModalVisible(true);
   };
 
