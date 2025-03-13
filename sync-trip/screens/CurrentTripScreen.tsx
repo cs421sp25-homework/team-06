@@ -26,24 +26,35 @@ const CurrentTripScreen = () => {
   const [destinationToAssign, setDestinationToAssign] = useState(null);
 
   useEffect(() => {
-    if (currentTrip && currentTrip.id) {
-      const unsubscribe = subscribeToTrip(currentTrip.id, (tripData) => {
-        if (tripData) {
-          const updatedTrip = {
-            ...tripData,
-            startDate: convertTimestampToDate(tripData.startDate),
-            endDate: convertTimestampToDate(tripData.endDate),
-            destinations: tripData.destinations.map((dest: any) => ({
-              ...dest,
-              date: dest.date ? convertTimestampToDate(dest.date) : null,
-            })),
-          };
-          setCurrentTrip(updatedTrip);
+    if (currentTrip) {
+      let needUpdate = false;
+      const startDateConverted =
+        currentTrip.startDate instanceof Date
+          ? currentTrip.startDate
+          : (needUpdate = true, convertTimestampToDate(currentTrip.startDate));
+      const endDateConverted =
+        currentTrip.endDate instanceof Date
+          ? currentTrip.endDate
+          : (needUpdate = true, convertTimestampToDate(currentTrip.endDate));
+
+      const destinationsConverted = currentTrip.destinations.map((dest: any) => {
+        if (dest.date && !(dest.date instanceof Date)) {
+          needUpdate = true;
+          return { ...dest, date: convertTimestampToDate(dest.date) };
         }
+        return dest;
       });
-      return () => unsubscribe && unsubscribe();
+
+      if (needUpdate) {
+        setCurrentTrip({
+          ...currentTrip,
+          startDate: startDateConverted,
+          endDate: endDateConverted,
+          destinations: destinationsConverted,
+        });
+      }
     }
-  }, [currentTrip?.id]);
+  }, [currentTrip]);
   console.log("Current trip:", currentTrip);
 
 
@@ -155,7 +166,7 @@ const CurrentTripScreen = () => {
           const destinationsForDate = currentTrip.destinations.filter(
             (dest) => {
               if (!dest.date) return false;
-              const destDate = convertTimestampToDate(dest.date);
+              const destDate = dest.date instanceof Date ? dest.date : convertTimestampToDate(dest.date);
               return destDate.toDateString() === date.toDateString();
             });
           return (
