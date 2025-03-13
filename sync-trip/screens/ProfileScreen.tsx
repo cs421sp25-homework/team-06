@@ -1,5 +1,5 @@
 import { auth, firestore, getUserDocRef } from "../utils/firebase";
-import { deleteDoc, onSnapshot, setDoc } from '@react-native-firebase/firestore';
+import { deleteDoc, onSnapshot, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal, FlatList, ScrollView } from 'react-native';
 import {
@@ -106,10 +106,12 @@ const ProfileScreen = () => {
     try {
       const userDocRef = getUserDocRef();
       await setDoc(userDocRef, {
+        ownerId: auth.currentUser.uid,
         name,
         bio,
         travelPreferences,
         profilePicture,
+        updatedAt: serverTimestamp(),
       }, { merge: true });
 
       setSavedProfile({ name, bio, travelPreferences, profilePicture });
