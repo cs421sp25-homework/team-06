@@ -114,22 +114,29 @@ const MapScreen = () => {
     setInfoModalVisible(true);
   };
 
-  const saveNewMarker = () => {
+  const saveNewMarker = async () => {
     if (!currMarker || !description) {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
     }
-
     if (currentTrip) {
       currMarker.trip = currentTrip;
     }
-    currMarker.description = description;//TODO: if more info added to Marker(Destination) editor, need to add here.
-
-
-    addDestinationToTrip(currMarker);
-    setModalVisible(false);
-    setDescription('');
-    setTime('');
+    const newDestination: Destination = {
+      ...currMarker,
+      description: description
+    };
+    // TODO: if more info added to Marker(Destination) editor, need to add here.
+    
+    try {
+      await addDestinationToTrip(newDestination);
+      setModalVisible(false);
+      setDescription('');
+      setTime('');
+    } catch (error) {
+      console.error("Error adding destination:", error);
+      Alert.alert("Error", "Failed to add destination. Please try again.");
+    }
   };
 
   const showEditUI = () => {
@@ -137,38 +144,43 @@ const MapScreen = () => {
     setInfoModalVisible(false);
   }
 
-  const updateMarker = () => {
-    if (!currMarker || !description) {
+  const updateMarker = async () => {
+    if (!currMarker || !description.trim()) {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
     }
 
-    const markerIndex = currentTrip.destinations.findIndex(
-      (marker) =>
-        marker.latitude === currMarker.latitude &&
-        marker.longitude === currMarker.longitude
-    );
+    // Find the marker index by comparing IDs (if available), else by coordinates.
+    const markerIndex = currentTrip.destinations.findIndex((marker) => {
+      if ((marker as any).id && (currMarker as any).id) {
+        return (marker as any).id === (currMarker as any).id;
+      }
+      return marker.latitude === currMarker.latitude && marker.longitude === currMarker.longitude;
+    });
 
     if (markerIndex === -1) {
       Alert.alert("Error", "Marker not found in the current trip.");
       return;
     }
 
-    currMarker.description = description; //TODO: if more info added to Marker(Destination) editor, need to add here.
-    const updatedMarker = {
-      ...currentTrip.destinations[markerIndex],
-      description: description, //TODO: and here
-    };
-
-    updateDestinationInTrip(updatedMarker, markerIndex);
-
-
+    // Assume updateDestinationInTrip expects (destinationId, updatedData).
+    if ((currMarker as any).id) {
+      try {
+        await updateDestinationInTrip((currMarker as any).id, { description });
+      } catch (error) {
+        console.error("Error updating destination:", error);
+        Alert.alert("Error", "Failed to update destination.");
+        return;
+      }
+    } else {
+      Alert.alert("Error", "Destination ID not found.");
+      return;
+    }
 
     setEditModalVisible(false);
     setDescription('');
     setTime('');
-  }
-
+  };
 
 
   return (

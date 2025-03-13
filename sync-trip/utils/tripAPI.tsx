@@ -25,10 +25,12 @@ export const updateTrip = async (tripId: string, updatedData: Partial<Trip>) => 
 // Add a destination to a trip.
 export const addDestinationToTrip = async (tripId: string, destination: any) => {
     const destinationsRef = collection(firestore, 'trips', tripId, 'destinations');
-    await addDoc(destinationsRef, {
+    const docRef = await addDoc(destinationsRef, {
         ...destination,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
     });
+    return docRef.id;
 };
 
 // Get a trip with real-time updates.
@@ -55,5 +57,18 @@ export const updateDestination = async (
 
     // Get a reference to the destination document in the subcollection 'destinations'
     const destinationRef = doc(firestore, 'trips', tripId, 'destinations', destinationId);
-    await updateDoc(destinationRef, updatedData);
+    await updateDoc(destinationRef, {
+        ...updatedData,
+        updatedAt: serverTimestamp(),
+    });
+};
+
+
+const convertTimestampToDate = (ts: any): Date => {
+    // If ts is an instance of Timestamp, use its toDate() method.
+    if (ts instanceof Timestamp) {
+        return ts.toDate();
+    }
+    // Otherwise, assume it has seconds and nanoseconds properties.
+    return new Date(ts.seconds * 1000);
 };
