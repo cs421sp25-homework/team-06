@@ -6,7 +6,7 @@ import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
 
 // Generate an array of dates from the start to the end date (inclusive)
-const getDatesInRange = (start, end) => {
+const getDatesInRange = (start: Date, end: Date) => {
   const date = new Date(start);
   const dates = [];
   while (date <= end) {
@@ -17,19 +17,18 @@ const getDatesInRange = (start, end) => {
 };
 
 const CurrentTripScreen = () => {
-  const { currentTrip } = useTrip();
+  const { currentTrip, setCurrentTrip, updateTrip, updateDestinationInTrip, subscribeToTrip } = useTrip();
   // Using local state to manage trip data; in production, update data through context or an API
-  const [trip, setTrip] = useState(currentTrip);
   const {tabIndex, setTabIndex} = useTabs();
   // Control the assign date dialog and store the destination to be assigned
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [destinationToAssign, setDestinationToAssign] = useState(null);
 
   useEffect(() => {
-    setTrip(currentTrip);
+    setCurrentTrip(currentTrip);
   }, [currentTrip]);
 
-  if (!trip) {
+  if (!currentTrip) {
     return (
       <View style={styles.emptyContainer}>
         <Title>No Current Trip</Title>
@@ -42,40 +41,40 @@ const CurrentTripScreen = () => {
   }
 
   // Get an array of dates for the trip
-  const tripDates = getDatesInRange(trip.startDate, trip.endDate);
+  const tripDates = getDatesInRange(currentTrip.startDate, currentTrip.endDate);
   // Filter out destinations that are not yet assigned a date
-  const unassignedDestinations = trip.destinations.filter(
+  const unassignedDestinations = currentTrip.destinations.filter(
     (dest) => !dest.date
   );
 
   // Open the assign dialog and store the destination that needs a date assignment
-  const handleOpenAssignModal = (destination) => {
+  const handleOpenAssignModal = (destination: Destination) => {
     setDestinationToAssign(destination);
     setAssignModalVisible(true);
   };
 
   // When the user selects a date in the dialog, update the destination's date
   const handleAssignDate = (date) => {
-    const updatedDestinations = trip.destinations.map((dest) => {
+    const updatedDestinations = currentTrip.destinations.map((dest) => {
       if (dest === destinationToAssign) {
         return { ...dest, date: date };
       }
       return dest;
     });
-    setTrip({ ...trip, destinations: updatedDestinations });
+    setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
     setAssignModalVisible(false);
     setDestinationToAssign(null);
   };
 
   // Remove (unassign) a destination by setting its date to null
   const handleRemoveDestination = (destination) => {
-    const updatedDestinations = trip.destinations.map((dest) => {
+    const updatedDestinations = currentTrip.destinations.map((dest) => {
       if (dest === destination) {
         return { ...dest, date: null };
       }
       return dest;
     });
-    setTrip({ ...trip, destinations: updatedDestinations });
+    setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
   };
 
   return (
@@ -83,14 +82,14 @@ const CurrentTripScreen = () => {
       <ScrollView style={styles.container}>
         <Card style={styles.card}>
           <Card.Content>
-            <Title>{trip.title}</Title>
+            <Title>{currentTrip.title}</Title>
             <Text>
               <Text style={styles.bold}>From: </Text>
-              {new Date(trip.startDate).toLocaleDateString()}
+              {new Date(currentTrip.startDate).toLocaleDateString()}
             </Text>
             <Text>
               <Text style={styles.bold}>To: </Text>
-              {new Date(trip.endDate).toLocaleDateString()}
+              {new Date(currentTrip.endDate).toLocaleDateString()}
             </Text>
           </Card.Content>
         </Card>
@@ -121,7 +120,7 @@ const CurrentTripScreen = () => {
         <Text style={styles.sectionTitle}>Destinations by Date</Text>
         {tripDates.map((date, index) => {
           // Filter out destinations assigned to the current date (comparing only the date portion)
-          const destinationsForDate = trip.destinations.filter(
+          const destinationsForDate = currentTrip.destinations.filter(
             (dest) =>
               dest.date &&
               new Date(dest.date).toDateString() === date.toDateString()
