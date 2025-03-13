@@ -64,7 +64,7 @@ export const updateDestination = async (
 };
 
 
-const convertTimestampToDate = (ts: any): Date => {
+export const convertTimestampToDate = (ts: any): Date => {
     // If ts is an instance of Timestamp, use its toDate() method.
     if (ts instanceof Timestamp) {
         return ts.toDate();

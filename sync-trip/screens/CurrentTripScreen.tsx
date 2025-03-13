@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, ScrollView, View } from "react-native";
+import { StyleSheet, ScrollView, View, Alert } from "react-native";
 import { Text, Card, List, Button, Title, IconButton, Portal, Dialog } from "react-native-paper";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
+import { convertTimestampToDate } from "../utils/tripAPI";
 
 // Generate an array of dates from the start to the end date (inclusive)
 const getDatesInRange = (start: Date, end: Date) => {
@@ -19,21 +20,42 @@ const getDatesInRange = (start: Date, end: Date) => {
 const CurrentTripScreen = () => {
   const { currentTrip, setCurrentTrip, updateTrip, updateDestinationInTrip, subscribeToTrip } = useTrip();
   // Using local state to manage trip data; in production, update data through context or an API
-  const {tabIndex, setTabIndex} = useTabs();
+  const { tabIndex, setTabIndex } = useTabs();
   // Control the assign date dialog and store the destination to be assigned
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [destinationToAssign, setDestinationToAssign] = useState(null);
 
   useEffect(() => {
-    setCurrentTrip(currentTrip);
-  }, [currentTrip]);
+    if (currentTrip && currentTrip.id) {
+      const unsubscribe = subscribeToTrip(currentTrip.id, (tripData) => {
+        if (tripData) {
+          const updatedTrip = {
+            ...tripData,
+            startDate: convertTimestampToDate(tripData.startDate),
+            endDate: convertTimestampToDate(tripData.endDate),
+            destinations: tripData.destinations.map((dest: any) => ({
+              ...dest,
+              date: dest.date ? convertTimestampToDate(dest.date) : null,
+            })),
+          };
+          setCurrentTrip(updatedTrip);
+        }
+      });
+      return () => unsubscribe && unsubscribe();
+    }
+  }, [currentTrip?.id]);
+  console.log("Current trip:", currentTrip);
+
 
   if (!currentTrip) {
     return (
       <View style={styles.emptyContainer}>
         <Title>No Current Trip</Title>
-        <Text>You haven't planned for a trip yet. Start planning now!</Text>
-        <Button mode="contained" onPress={() => {setTabIndex(2);}} style={styles.emptyButton}>
+        <Text>You haven't planned for a trip yet.</Text>
+        <Text> Start planning now by: </Text>
+        <Text> 1. Creating a new plan </Text>
+        <Text> 2. Subscribe to an existing plan!</Text>
+        <Button mode="contained" onPress={() => { setTabIndex(2); }} style={styles.emptyButton}>
           Create New Trip
         </Button>
       </View>
@@ -54,27 +76,37 @@ const CurrentTripScreen = () => {
   };
 
   // When the user selects a date in the dialog, update the destination's date
-  const handleAssignDate = (date) => {
-    const updatedDestinations = currentTrip.destinations.map((dest) => {
-      if (dest === destinationToAssign) {
-        return { ...dest, date: date };
-      }
-      return dest;
-    });
-    setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
-    setAssignModalVisible(false);
-    setDestinationToAssign(null);
+  const handleAssignDate = async (date: Date) => {
+    if (!destinationToAssign || !(destinationToAssign as any).id) {
+      Alert.alert("Error", "Destination not found or missing ID.");
+      return;
+    }
+    try {
+      await updateDestinationInTrip((destinationToAssign as any).id, { date });
+      setAssignModalVisible(false);
+      setDestinationToAssign(null);
+    } catch (error) {
+      console.error("Error assigning date:", error);
+      Alert.alert("Error", "Failed to assign date.");
+    }
   };
 
   // Remove (unassign) a destination by setting its date to null
-  const handleRemoveDestination = (destination) => {
-    const updatedDestinations = currentTrip.destinations.map((dest) => {
-      if (dest === destination) {
+  const handleRemoveDestination = async (destination: Destination) => {
+    if (!currentTrip) return;
+    // For the destination to "remove" its assigned date, set its date to null.
+    const updatedDestinations = currentTrip.destinations.map((dest: any) => {
+      if ((dest.id || "") === (destination.id || "")) {
         return { ...dest, date: null };
       }
       return dest;
     });
-    setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
+    try {
+      await updateTrip({ destinations: updatedDestinations });
+    } catch (error) {
+      console.error("Error removing destination:", error);
+      Alert.alert("Error", "Failed to remove destination.");
+    }
   };
 
   return (
@@ -121,10 +153,11 @@ const CurrentTripScreen = () => {
         {tripDates.map((date, index) => {
           // Filter out destinations assigned to the current date (comparing only the date portion)
           const destinationsForDate = currentTrip.destinations.filter(
-            (dest) =>
-              dest.date &&
-              new Date(dest.date).toDateString() === date.toDateString()
-          );
+            (dest) => {
+              if (!dest.date) return false;
+              const destDate = convertTimestampToDate(dest.date);
+              return destDate.toDateString() === date.toDateString();
+            });
           return (
             <List.Accordion
               key={index}
