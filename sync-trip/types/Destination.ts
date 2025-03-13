@@ -1,7 +1,8 @@
-import {Trip} from "./Trip";
+import { Trip } from "./Trip";
 
 
 export interface Destination {
+    id?: string,
     latitude: number;
     longitude: number;
     trip?: Trip
