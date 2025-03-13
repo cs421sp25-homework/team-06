@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 
 const HistoryScreen = () => {
   return (
-    <View style={styles.container}>
+    <View testID="historyScreen" style={styles.container}>
       <Text style={styles.title}>Trip History</Text>
       <Text style={styles.placeholderText}>
         This is your trip history placeholder. You can show past trips, archived itineraries, and

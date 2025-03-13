@@ -1,8 +1,0 @@
-appId: "com.s370101387.synctrip"
----
-- launchApp
-- tapOn: { id: "account" }
-- inputText: "vivanoon6666@gmail.com"
-- tapOn: { id: "password" }
-- inputText: "zhuhanyu666"
-- tapOn: { id: "login" }

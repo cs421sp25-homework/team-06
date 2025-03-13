@@ -31,7 +31,7 @@ const BottomTabsContent = () => {
   });
 
   const renderIcon = ({ route, color, focused }: any) => (
-    <MaterialCommunityIcons name={route.icon} color={color} size={focused ? 28 : 24} />
+    <MaterialCommunityIcons testID={`tab-${route.key}`} name={route.icon} color={color} size={focused ? 28 : 24} />
   );
 
   return (

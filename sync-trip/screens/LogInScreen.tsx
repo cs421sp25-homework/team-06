@@ -180,6 +180,7 @@ const LogInScreen = () => {
 
         <View>
           <Button
+            testID="signUp"
             mode="outlined"
             onPress={() => navigation.navigate('SignUp')}
             style={loginStyles.signUpButton}>

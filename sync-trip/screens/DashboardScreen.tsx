@@ -45,7 +45,7 @@ const DashboardScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView testID="dashboardScreen" contentContainerStyle={styles.container}>
       {/* Greeting Title */}
       <Title style={styles.title}>Hi {username}, enjoy your trip!</Title>
 
@@ -92,13 +92,14 @@ const DashboardScreen = () => {
           </Paragraph>
         </Card.Content>
         <Card.Actions>
-          <Button onPress={handleViewTripHistory}>View More</Button>
+          <Button testID="viewMore" onPress={handleViewTripHistory}>View More</Button>
         </Card.Actions>
       </Card>
 
       {/* Archived History Button */}
       <View style={styles.archivedContainer}>
         <Button
+          testID="archivedTrips"
           mode="contained"
           icon="archive"
           onPress={handleArchivedHistory}

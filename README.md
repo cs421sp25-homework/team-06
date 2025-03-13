@@ -61,6 +61,17 @@ This will allow you quickly run the app when developing.
 
 I have added the firebase information file "google-services.json" into "AndroidApp/android/app/", so the app can directly connect to the Firebase.
 
+### E2E Test
+
+Since we are using expo now, we decided to use Maestro to do E2E test. We setup the flow as shown in
+[maestro-test.yaml](./maestro/maestro-test.yaml).
+```shell
+eas init
+eas build:configure
+eas build --profile maestro-test
+```
+After running commands above, we can check out the result on Expo portal.
+
 ## Deploy
 
 you can simply deploy it on your android phone.
