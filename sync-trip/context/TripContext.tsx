@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { Trip } from "../types/Trip";
 import { Destination } from "../types/Destination";
 import {
@@ -41,8 +41,11 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
     const createTrip = async (tripData: Trip) => {
         try {
             const tripId = await apiCreateTrip(tripData);
+            console.log("Trip created with ID:", tripId);
             // Set the currentTrip with the new id.
-            setCurrentTrip({ ...tripData, id: tripId });
+            const newTrip : Trip = { ...tripData, id: tripId };
+            setCurrentTrip(newTrip);
+            console.log("Current trip state updated:", newTrip);
         } catch (error) {
             console.error("Error creating trip:", error);
             throw error;
@@ -63,14 +66,24 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
 
     // Add a new destination to the current trip.
     const addDestinationToTrip = async (destination: Destination) => {
-        if (!currentTrip || !currentTrip.id) return;
+        if (!currentTrip || !currentTrip.id) {
+            console.error("No current trip found:", currentTrip);
+            return;
+        }
         try {
-            await apiAddDestinationToTrip(currentTrip.id, destination);
+            const destId = await apiAddDestinationToTrip(currentTrip.id, destination);
             setCurrentTrip((prevTrip) =>
                 prevTrip
-                    ? { ...prevTrip, destinations: [...prevTrip.destinations, destination] }
+                    ? {
+                        ...prevTrip, destinations: [...prevTrip.destinations,
+                            {
+                                ...destination, 
+                                id: destId,
+                            }]
+                    }
                     : prevTrip
             );
+            console.log("Destination added with ID:", destId);
         } catch (error) {
             console.error("Error adding destination:", error);
             throw error;
@@ -79,7 +92,10 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
 
     // Update a destination within the current trip.
     const updateDestinationInTrip = async (destinationId: string, updatedData: Partial<Destination>) => {
-        if (!currentTrip || !currentTrip.id) return;
+        if (!currentTrip || !currentTrip.id) {
+            console.error("No current trip found:", currentTrip);
+            return;
+        }
         try {
             await apiUpdateDestination(currentTrip.id, destinationId, updatedData);
             // Update local state by mapping over existing destinations.
