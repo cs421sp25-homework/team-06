@@ -1,0 +1,48 @@
+name: Maestro Test
+
+on:
+  push:
+    branches:
+      - hanyu_test_maestro
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '23'
+
+      # Install all dependencies (from package.json in sync-trip)
+      - name: Install Dependencies
+        working-directory: ./sync-trip
+        run: npm install
+
+      - name: Install Expo CLI
+        run: npm install -g expo-cli
+
+      - name: Authenticate with Expo
+        run: npx expo login -u vivanoon -p Zhuhanyu666
+
+      - name: Run Emulator
+        run: npx expo run:android
+
+      - name: Init eas
+        run: eas init
+
+      - name: Build Configure
+        run: eas build:configure
+
+      - name: Run Maestro test file
+        working-directory: ./sync-trip/maestro
+        run: npx maestro test ./dashboardScreen_test.yaml
