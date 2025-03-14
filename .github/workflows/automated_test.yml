@@ -34,11 +34,13 @@ jobs:
 
       - name: Authenticate with Expo
         working-directory: ./sync-trip
-        run: npx expo login -u vivanoon -p Zhuhanyu666
+        run: npx expo login -u ${{ secrets.EXPO_USERNAME }} -p ${{ secrets.EXPO_PASSWORD }}
 
-      - name: Run Emulator
-        working-directory: ./sync-trip
-        run: npx expo run:android
+      # Install Maestro CLI
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          maestro --version
 
       - name: Init eas
         working-directory: ./sync-trip
@@ -48,6 +50,14 @@ jobs:
         working-directory: ./sync-trip
         run: eas build:configure
 
-      - name: Run Maestro test file
-        working-directory: ./sync-trip/maestro
-        run: npx maestro test ./dashboardScreen_test.yaml
+      - name: Start Android Emulator and Run Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: true
+          emulator-options: "-no-window -gpu swiftshader_indirect"
+          script: |
+            cd ./sync-trip/maestro
+            maestro test dashboardScreen_test.yaml
