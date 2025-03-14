@@ -6,7 +6,7 @@ on:
       - hanyu_test_maestro
 
 jobs:
-  build:
+  Auto_Test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -49,7 +49,7 @@ jobs:
 
       - name: Build Configure
         working-directory: ./sync-trip
-        run: eas build:configure
+        run: eas build:configure --platform android
 
       - name: Start Android Emulator and Run Tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -62,5 +62,4 @@ jobs:
           script: |
             cd ./sync-trip
             npx expo start
-            cd maestro
-            maestro test dashboardScreen_test.yaml
+            maestro test maestro/dashboardScreen_test.yaml
