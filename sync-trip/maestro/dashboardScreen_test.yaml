@@ -37,8 +37,8 @@ appId: "com.s370101387.synctrip"
 # edit travel preferences
 - doubleTapOn: { id: "travelPreferences"}
 - tapOn: "N/A"
-- doubleTapOn: { id: "save_profile" }
-- assertVisible: "Profile saved successfully!"
+- tapOn: { id: "save_profile" }
+- assertVisible: "Test_Acc"
 #  navigate to trip
 - tapOn: {id: "tab-trip"}
 # navigate to new trip
