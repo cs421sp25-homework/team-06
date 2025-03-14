@@ -131,6 +131,7 @@ const LogInScreen = () => {
           </Text>
 
           <TextInput
+            testID="account"
             label="Email"
             mode="outlined"
             value={email}
@@ -141,6 +142,7 @@ const LogInScreen = () => {
           />
 
           <TextInput
+            testID="password"
             label="Password"
             mode="outlined"
             value={password}
@@ -156,7 +158,7 @@ const LogInScreen = () => {
           {loading ? (
             <ActivityIndicator animating size="large" color="#007A8C" />
           ) : (
-            <Button mode="contained" onPress={handleLogIn} style={loginStyles.signInButton}>
+            <Button testID="login" mode="contained" onPress={handleLogIn} style={loginStyles.signInButton}>
               Sign In
             </Button>
           )}
@@ -178,6 +180,7 @@ const LogInScreen = () => {
 
         <View>
           <Button
+            testID="signUp"
             mode="outlined"
             onPress={() => navigation.navigate('SignUp')}
             style={loginStyles.signUpButton}>

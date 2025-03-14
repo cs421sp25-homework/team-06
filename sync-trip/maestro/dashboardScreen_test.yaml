@@ -1,0 +1,57 @@
+appId: "com.s370101387.synctrip"
+---
+# launch App
+- launchApp
+# login
+- tapOn: { id: "account" }
+- inputText: "vivanoon6666@gmail.com"
+- tapOn: { id: "password" }
+- inputText: "zhuhanyu666"
+- doubleTapOn: { id: "login" }
+# navigate to dashboard and check the function of the buttons
+- assertVisible: { id: "dashboardScreen"}
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: {id: "archivedTrips"}
+    direction: DOWN
+- tapOn: { id: "viewMore" }
+- assertVisible: { id: "historyScreen" }
+- assertVisible: "Trip History"
+- back
+- tapOn: { id: "archivedTrips" }
+- assertVisible: {id: "archivedHistoryScreen"}
+- assertVisible: "Archived Trips"
+- back
+# navigate to profile
+- tapOn: { id: "tab-profile" }
+- assertVisible: { id: "profileScreen" }
+- tapOn: { id: "profile_edit" }
+# edit name
+- tapOn: { id: "name" }
+- eraseText
+- inputText: "Test_Acc"
+# edit bio
+- tapOn: { id: "bio" }
+- eraseText
+- inputText: "Hello World!"
+# edit travel preferences
+- doubleTapOn: { id: "travelPreferences"}
+- tapOn: "N/A"
+- tapOn: { id: "save_profile" }
+- assertVisible: "Test_Acc"
+#  navigate to trip
+- tapOn: {id: "tab-trip"}
+# navigate to new trip
+- tapOn: { id: "tab-plus" }
+- tapOn: { id: "tripTitle" }
+- inputText: "Test Trip"
+- tapOn: { id: "selectDates" }
+- tapOn: "2"
+- tapOn: "5"
+- tapOn: "Save"
+- tapOn: { id: "createTrip" }
+- assertVisible: "Test Trip"
+# navigate to map
+- tapOn: { id: "tab-map" }
+# logout
+- tapOn: { id: "tab-profile" }

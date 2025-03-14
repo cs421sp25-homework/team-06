@@ -1,0 +1,8 @@
+appId: "com.s370101387.synctrip"
+---
+- launchApp
+- tapOn: {id: "signUp"}
+- assertVisible: { id: "signUpScreen" }
+- tapOn: { id: "email" }
+- tapOn: { id: "pwd" }
+- tapOn: { id: "confirmPwd" }

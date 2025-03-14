@@ -37,10 +37,11 @@ const SignUpScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View testID="signUpScreen" style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
 
       <TextInput
+        testID="email"
         label="Email"
         mode="outlined"
         value={email}
@@ -51,6 +52,7 @@ const SignUpScreen = () => {
       />
 
       <TextInput
+        testID="pwd"
         label="Password"
         mode="outlined"
         value={password}
@@ -60,6 +62,7 @@ const SignUpScreen = () => {
       />
 
       <TextInput
+        testID="confirmPwd"
         label="Confirm Password"
         mode="outlined"
         value={confirmPassword}

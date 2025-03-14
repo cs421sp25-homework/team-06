@@ -33,7 +33,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.s370101387.synctrip"
     },
     "android": {
       "googleServicesFile": "./google-services.json",
@@ -55,6 +56,7 @@
       "googleMaps": {
         "apiKey": "AIzaSyCSDzZzv6ML01c-nMlVaFc4wiBXwe8ERuI"
       }
-    }
+    },
+    "owner": "s370101387"
   }
 }
