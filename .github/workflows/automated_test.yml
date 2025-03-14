@@ -38,6 +38,7 @@ jobs:
 
       # Install Maestro CLI
       - name: Install Maestro CLI
+        working-directory: ./sync-trip
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           maestro --version
