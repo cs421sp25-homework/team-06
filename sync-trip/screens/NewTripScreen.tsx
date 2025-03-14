@@ -5,10 +5,12 @@ import { DatePickerModal } from 'react-native-paper-dates';
 import { useTrip } from "../context/TripContext";
 import { CalendarDate } from "react-native-paper-dates/lib/typescript/Date/Calendar";
 import { useMessageDialog } from '../components/MessageDialog';
-import { useAppNavigation, useTabs } from '../navigation/useAppNavigation';
+import { useTabs } from '../navigation/useAppNavigation';
+import { auth } from '../utils/firebase';
+import { Trip } from '../types/Trip';
+
 
 const TripCreationScreen = () => {
-    const navigation = useAppNavigation();
     const { showMessage } = useMessageDialog();
 
     const [title, setTitle] = useState('');
@@ -16,7 +18,7 @@ const TripCreationScreen = () => {
     const [endDate, setEndDate] = useState<CalendarDate>(undefined);
     const [visible, setVisible] = useState(false);
 
-    const { setCurrentTrip } = useTrip();
+    const { createTrip } = useTrip();
     const { setTabIndex } = useTabs();
 
     const onDismiss = () => setVisible(false);
@@ -32,10 +34,21 @@ const TripCreationScreen = () => {
         setVisible(false);
     };
 
-    const handleCreateTrip = () => {
-        if (title && startDate && endDate) {
-            setCurrentTrip({ title, startDate, endDate, destinations: [] });
-            //navigation.navigate('App');
+    const handleCreateTrip = async () => {
+        if (title && startDate && endDate && auth.currentUser) {
+            const newTrip: Trip = {
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                ownerId: auth.currentUser.uid, // Ensure a user is signed in
+                collaborators: [],
+                destinations: [],
+            };
+            try {
+                await createTrip(newTrip);
+            } catch (err) {
+                console.error('Error creating trip');
+            }
             setTabIndex(1);
         } else {
             showMessage("Please enter a title and select dates.");
