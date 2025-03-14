@@ -80,6 +80,7 @@ const MapScreen = () => {
   }
 
   const handleMapLongPress = async (event: LongPressEvent) => {
+    const GoogleMapsApiKey = 'AIzaSyCxVwP81cM9LIzPA3PXMFTqDifQi00WIQk';
     if (!currentTrip) {
       // No current trip exists; show a dialog prompting trip creation
       Alert.alert(
@@ -95,15 +96,18 @@ const MapScreen = () => {
 
     // TODO: make the location information auto filled by Google Map.
     const { latitude, longitude } = event.nativeEvent.coordinate;
+    console.log("[LongPress] Coordinates:", { latitude, longitude });
+
     let address = 'Unknown Location';
     try {
       const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
-      console.log("Latitude:", latitude, "Longitude:", longitude);
+      console.log("[ReverseGeocode] Result:", reverseGeocode);
       if (reverseGeocode.length > 0) {
         address = `${reverseGeocode[0].name || ''}, ${reverseGeocode[0].city || ''}`;
+        console.log("[ReverseGeocode] Parsed address:", address);
       }
     } catch (error) {
-      console.log('Error getting address:', error);
+      console.log("[ReverseGeocode] Error getting address:", error);
     }
 
     //using google map for detailed information
@@ -111,30 +115,52 @@ const MapScreen = () => {
     let placeDescription = "";
 
     try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10&key=${googleMapsApiKey}`
-      );
-      const result = await response.json();
-      
-      console.log("Nearby search result:", JSON.stringify(result, null, 2));
+      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GoogleMapsApiKey}`;
+      console.log("[Geocode] Request URL:", geocodeUrl);
 
-      if (result.results.length > 0) {
-        placeName = result.results[0].name;
-        placeDescription = result.results[0].types.join(", ");
+      const geocodeResponse = await fetch(geocodeUrl);
+      const geocodeData = await geocodeResponse.json();
+      console.log("[Geocode] Response Data:", geocodeData);
+
+       if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
+        const formattedAddress = geocodeData.results[0].formatted_address;
+        console.log("[Geocode] Formatted Address:", formattedAddress);
+
+        const placeId = geocodeData.results[0].place_id;
+        console.log("[Geocode] Obtained Place ID:", placeId);
+        
+        const fields = "id,displayName,formattedAddress,plusCode";
+        const placesUrl = `https://places.googleapis.com/v1/places/${placeId}?fields=${fields}&key=${GoogleMapsApiKey}`;
+        console.log("[Places] Request URL:", placesUrl);
+
+        const placesResponse = await fetch(placesUrl, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const placesData = await placesResponse.json();
+        console.log("[Places] Response Data:", placesData);
+        
+        const placeName = placesData.displayName?.text || "Unknown Place";
+        const placeAddress = placesData.formattedAddress || "";
+        console.log("[Places] Parsed Place Name:", placeName);
+        console.log("[Places] Parsed Place Address:", placeAddress);
+        
+        setCurrMarker({
+          latitude,
+          longitude,
+          address: placeName,
+          description: placeAddress,
+          coords: `${latitude}, ${longitude}`,
+        });
+        setModalVisible(true);
+      } else {
+        console.log("Geocoding API unable to return");
       }
     } catch (error) {
-      console.log("Error fetching place details:", error);
+      console.log("[Error] Fetching geocode or place details failed:", error);
     }
-
-    setCurrMarker({
-      latitude,
-      longitude,
-      address: placeName,
-      description: placeDescription,
-      coords: `${latitude}, ${longitude}`,
-    });
-
-    setModalVisible(true);
   };
 
   const handleMarkerPress = (marker: Destination) => {
