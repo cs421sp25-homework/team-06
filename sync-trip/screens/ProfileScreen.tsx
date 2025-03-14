@@ -112,6 +112,7 @@ const ProfileScreen = () => {
         travelPreferences,
         profilePicture,
         updatedAt: serverTimestamp(),
+
       }, { merge: true });
 
       setSavedProfile({ name, bio, travelPreferences, profilePicture });

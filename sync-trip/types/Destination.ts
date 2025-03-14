@@ -6,9 +6,10 @@ export interface Destination {
     id?: string;
     latitude: number;
     longitude: number;
-    trip?: Trip
+    tripId?: string;
     address?: string;
     description?: string;
     date?: Date;
-    name?: string
+    name?: string;
+    createdByUid: string;
 }
