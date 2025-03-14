@@ -28,10 +28,6 @@ jobs:
         working-directory: ./sync-trip
         run: npm install
 
-      - name: Install Expo CLI
-        working-directory: ./sync-trip
-        run: npm install -g expo-cli
-
       - name: Authenticate with Expo
         working-directory: ./sync-trip
         run: npx expo login -u ${{ secrets.EXPO_USERNAME }} -p ${{ secrets.EXPO_PASSWORD }}
@@ -43,6 +39,9 @@ jobs:
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           export PATH="$PATH":"$HOME/.maestro/bin"
           maestro --version
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Init eas
         working-directory: ./sync-trip
