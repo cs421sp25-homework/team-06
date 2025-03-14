@@ -61,7 +61,7 @@ This will allow you quickly run the app when developing.
 
 I have added the firebase information file "google-services.json" into "AndroidApp/android/app/", so the app can directly connect to the Firebase.
 
-### E2E Test
+## E2E Test
 
 Since we are using expo now, we decided to use Maestro to do E2E test. We setup the flow as shown in
 [maestro-test.yaml](./maestro/maestro-test.yaml).
@@ -85,6 +85,12 @@ npx expo run:android
 maestro test ./maestro/dashboardScreen_test.yaml
 ```
 After running commands above, we can check out the result on Expo portal.
+
+## Automated Test
+For automated test, we run the workflow in Github Actions. In the yaml file, we run the E2E test
+on Expo portal since we will experience emulator errors and some adb errors which are hard to resolve.
+To trigger the Automated Test, we run the yaml file when create the pull request, so we can merge
+branched in to the main branch with more confidence.
 
 ## Deploy
 

@@ -1,9 +1,10 @@
 name: Maestro Test
 
 on:
-  push:
+  pull_request:
+    types: [ opened ]
     branches:
-      - hanyu_test_maestro
+      - dev
 
 jobs:
   Auto_Test:
@@ -53,7 +54,7 @@ jobs:
 
       - name: Run Build On Expo
         working-directory: ./sync-trip
-        run: eas build --profile maestro-test --platform android
+        run: eas build --profile maestro-test --platform android --non-interactive
 
       - name: Export Expo App
         run: npx expo export
