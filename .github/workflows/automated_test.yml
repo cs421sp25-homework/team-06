@@ -29,18 +29,23 @@ jobs:
         run: npm install
 
       - name: Install Expo CLI
+        working-directory: ./sync-trip
         run: npm install -g expo-cli
 
       - name: Authenticate with Expo
+        working-directory: ./sync-trip
         run: npx expo login -u vivanoon -p Zhuhanyu666
 
       - name: Run Emulator
+        working-directory: ./sync-trip
         run: npx expo run:android
 
       - name: Init eas
+        working-directory: ./sync-trip
         run: eas init
 
       - name: Build Configure
+        working-directory: ./sync-trip
         run: eas build:configure
 
       - name: Run Maestro test file
