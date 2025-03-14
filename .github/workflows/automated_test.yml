@@ -51,19 +51,19 @@ jobs:
         working-directory: ./sync-trip
         run: eas build:configure --platform android
 
-      - name: Start Android Emulator & Server
+      - name: Start Android Emulator & Test
         env:
           ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: true
+          api-level: 31
+          profile: pixel_4a
+          arch: arm64-v8a
+          force-avd-creation: false
+          avd-name: macOS-avd-arm64-v8a-31
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: |
             cd ./sync-trip
-            # Start Expo server in background so it persists beyond this step
-            nohup npx expo start > expo.log 2>&1 &
-            # Wait to allow Expo to fully boot up
-            sleep 30
+            npx expo start
             maestro test dashboardScreen_test.yaml
