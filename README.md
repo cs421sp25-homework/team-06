@@ -88,7 +88,8 @@ After running commands above, we can check out the result on Expo portal.
 
 ## Automated Test
 For automated test, we run the workflow in Github Actions. In the yaml file, we run the E2E test
-on Expo portal since we will experience emulator errors and some adb errors which are hard to resolve.
+on Expo portal.
+
 To trigger the Automated Test, we run the yaml file when create the pull request, so we can merge
 branched in to the main branch with more confidence.
 
