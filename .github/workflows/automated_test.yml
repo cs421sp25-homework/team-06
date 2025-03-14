@@ -41,6 +41,7 @@ jobs:
         working-directory: ./sync-trip
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH":"$HOME/.maestro/bin"
           maestro --version
 
       - name: Init eas
@@ -60,5 +61,7 @@ jobs:
           force-avd-creation: true
           emulator-options: "-no-window -gpu swiftshader_indirect"
           script: |
-            cd ./sync-trip/maestro
+            cd ./sync-trip
+            npx expo start
+            cd maestro
             maestro test dashboardScreen_test.yaml
