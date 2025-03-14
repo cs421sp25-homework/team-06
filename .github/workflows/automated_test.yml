@@ -51,7 +51,7 @@ jobs:
         working-directory: ./sync-trip
         run: eas build:configure --platform android
 
-      - name: Start Android Emulator and Run Tests
+      - name: Start Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
@@ -59,7 +59,13 @@ jobs:
           arch: x86_64
           force-avd-creation: true
           emulator-options: "-no-window -gpu swiftshader_indirect"
-          script: |
-            cd ./sync-trip
-            npx expo start
-            maestro test maestro/dashboardScreen_test.yaml
+          startup-wait-time: 120
+
+      - name: Start Expo Server
+        working-directory: ./sync-trip
+        run: |
+          npx expo start
+
+      - name: Run Maestro Test
+        working-directory: ./sync-trip/maestro
+        run: maestro test dashboardScreen_test.yaml

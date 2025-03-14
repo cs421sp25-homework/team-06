@@ -55,4 +55,3 @@ appId: "com.s370101387.synctrip"
 - tapOn: { id: "tab-map" }
 # logout
 - tapOn: { id: "tab-profile" }
-- tapOn: { id: "logout" }
