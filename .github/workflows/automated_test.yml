@@ -55,6 +55,3 @@ jobs:
       - name: Run Build On Expo
         working-directory: ./sync-trip
         run: eas build --profile maestro-test --platform android --non-interactive
-
-      - name: Export Expo App
-        run: npx expo export
