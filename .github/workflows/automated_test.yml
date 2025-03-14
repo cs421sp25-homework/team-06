@@ -52,17 +52,18 @@ jobs:
         run: eas build:configure --platform android
 
       - name: Start Android Emulator & Server
+        env:
+          ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 35
           target: google_apis
           arch: x86_64
           force-avd-creation: true
-          emulator-options: "-no-window -gpu swiftshader_indirect"
           script: |
             cd ./sync-trip
-            npx expo start
-
-      - name: Run Maestro Test
-        working-directory: ./sync-trip/maestro
-        run: maestro test dashboardScreen_test.yaml
+            # Start Expo server in background so it persists beyond this step
+            nohup npx expo start > expo.log 2>&1 &
+            # Wait to allow Expo to fully boot up
+            sleep 30
+            maestro test dashboardScreen_test.yaml

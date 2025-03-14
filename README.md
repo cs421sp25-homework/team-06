@@ -65,10 +65,24 @@ I have added the firebase information file "google-services.json" into "AndroidA
 
 Since we are using expo now, we decided to use Maestro to do E2E test. We setup the flow as shown in
 [maestro-test.yaml](./maestro/maestro-test.yaml).
+
 ```shell
+npm install -g eas-cli
+brew install maestro
+export PATH="$PATH":"$HOME/.maestro/bin"
 eas init
 eas build:configure
 eas build --profile maestro-test
+```
+Or we can test the app locally
+```shell
+brew install maestro
+export PATH="$PATH":"$HOME/.maestro/bin"
+npm install -g eas-cli
+eas init
+eas build:configure --platform android
+npx expo run:android
+maestro test ./maestro/dashboardScreen_test.yaml
 ```
 After running commands above, we can check out the result on Expo portal.
 
