@@ -171,7 +171,7 @@ const ProfileScreen = () => {
   const closeMenu = () => setMenuVisible(false);
 
   return (
-    <ScrollView contentContainerStyle={styles.outerContainer}>
+    <ScrollView testID="profileScreen" contentContainerStyle={styles.outerContainer}>
       <View style={styles.root}>
         {/* background layer */}
         {avatarCenterY !== null && (
@@ -207,8 +207,9 @@ const ProfileScreen = () => {
 
           {isEditing ? (
             <>
-              <TextInput label="Name" value={name} onChangeText={setName} style={styles.input} />
+              <TextInput testID="name" label="Name" value={name} onChangeText={setName} style={styles.input} />
               <TextInput
+                testID="bio"
                 label="Bio"
                 value={bio}
                 onChangeText={setBio}
@@ -223,6 +224,7 @@ const ProfileScreen = () => {
                   anchor={
                     <TouchableOpacity onPress={openMenu}>
                       <TextInput
+                        testID="travelPreferences"
                         label="Travel Preferences"
                         value={travelPreferences}
                         style={styles.input}
@@ -244,6 +246,7 @@ const ProfileScreen = () => {
                 </Menu>
               </View>
               <Button
+                testID="save_profile"
                 mode="contained"
                 onPress={handleSaveProfile}
                 style={[styles.button, { marginTop: '4%' }]}>
@@ -271,6 +274,7 @@ const ProfileScreen = () => {
               </View>
               <Divider style={styles.divider} />
               <Button
+                testID="profile_edit"
                 mode="contained"
                 onPress={() => setIsEditing(true)}
                 style={[styles.button, { marginTop: '20%' }]}>
@@ -278,7 +282,7 @@ const ProfileScreen = () => {
               </Button>
             </>
           )}
-          <Button mode="outlined" onPress={handleLogout} style={styles.button}>
+          <Button testID="logout" mode="outlined" onPress={handleLogout} style={styles.button}>
             Log Out
           </Button>
           {/* delete account button */}

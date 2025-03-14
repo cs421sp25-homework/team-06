@@ -59,6 +59,7 @@ const TripCreationScreen = () => {
         <View style={styles.container}>
             <View style={styles.form}>
                 <TextInput
+                    testID="tripTitle"
                     label="Trip Title"
                     value={title}
                     onChangeText={setTitle}
@@ -66,7 +67,7 @@ const TripCreationScreen = () => {
                     style={styles.input}
                 />
 
-                <Button onPress={openDatePicker} mode="outlined" style={styles.input}>
+                <Button testID="selectDates" onPress={openDatePicker} mode="outlined" style={styles.input}>
                     {startDate && endDate
                         ? `${startDate.toDateString()} - ${endDate.toDateString()}`
                         : 'Select Dates'}
@@ -84,7 +85,7 @@ const TripCreationScreen = () => {
                     />
                 {/*</Portal>*/}
 
-                <Button mode="contained" onPress={handleCreateTrip}>
+                <Button testID="createTrip" mode="contained" onPress={handleCreateTrip}>
                     Create Trip
                 </Button>
             </View>

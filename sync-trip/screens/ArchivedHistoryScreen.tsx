@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 
 const ArchivedHistoryScreen = () => {
   return (
-    <View style={styles.container}>
+    <View testID="archivedHistoryScreen" style={styles.container}>
       <Text style={styles.title}>Archived Trips</Text>
       <Text style={styles.placeholderText}>
         This is your archived trips placeholder. You can show archived trips, archived itineraries,
