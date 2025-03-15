@@ -1,6 +1,7 @@
 import React from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { TripProvider } from "./context/TripContext";
+import { UserProvider } from "./context/UserContext";
 
 import { MessageDialogProvider } from './components/MessageDialog';
 import AppNavigator from './navigation/AppNavigator';
@@ -15,9 +16,11 @@ const App = () => {
     return (
         <PaperProvider>
             <MessageDialogProvider>
-                <TripProvider>
-                    <AppNavigator />
-                </TripProvider>
+                <UserProvider>
+                    <TripProvider>
+                        <AppNavigator />
+                    </TripProvider>
+                </UserProvider>
             </MessageDialogProvider>
         </PaperProvider>
     );

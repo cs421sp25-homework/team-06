@@ -23,7 +23,7 @@ const CurrentTripScreen = () => {
   const { tabIndex, setTabIndex } = useTabs();
   // Control the assign date dialog and store the destination to be assigned
   const [assignModalVisible, setAssignModalVisible] = useState(false);
-  const [destinationToAssign, setDestinationToAssign] = useState(null);
+  const [destinationToAssign, setDestinationToAssign] = useState<Destination | null>(null);
 
   useEffect(() => {
     if (currentTrip) {

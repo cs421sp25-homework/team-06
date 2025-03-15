@@ -1,7 +1,24 @@
 import { firestore } from './firebase';
-import { collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp, Timestamp, } from '@react-native-firebase/firestore';
+import { collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp, Timestamp, getDoc } from '@react-native-firebase/firestore';
 import { Trip } from '../types/Trip';
 import { Destination } from '../types/Destination';
+
+
+export const fetchTripsByIds = async (tripIds: string[]): Promise<Trip[]> => {
+    // If there are no IDs, return an empty array.
+    if (tripIds.length === 0) return [];
+
+    const tripPromises = tripIds.map(async (id) => {
+        const tripRef = doc(firestore, 'trips', id);
+        const tripSnap = await getDoc(tripRef);
+        return tripSnap.exists
+            ? ({ id: tripSnap.id, ...tripSnap.data() } as Trip)
+            : null;
+    });
+    const tripResults = await Promise.all(tripPromises);
+    // Filter out any null values (in case a trip was not found)
+    return tripResults.filter((trip) => trip !== null) as Trip[];
+};
 
 // Create a new trip and return its document ID.
 export const createTrip = async (tripData: Trip): Promise<string> => {

@@ -11,6 +11,11 @@ import {
 
 import { useUser } from "./UserContext"
 
+import {
+    addTripToUser as apiAddTripToUser,
+    setCurrentTripId as apiSetCurrentTripId,
+} from "../utils/userAPI";
+
 interface TripContextType {
     currentTrip: Trip | null;
     setCurrentTrip: (trip: Trip | null) => void;
@@ -26,7 +31,7 @@ const TripContext = createContext<TripContextType | undefined>(undefined);
 export const TripProvider = ({ children }: { children: ReactNode }) => {
     const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
 
-    const { currentUser, addTripToUser, updateCurrentTrip } = useUser();
+    const { getCurrentUserId } = useUser();
 
     // If a currentTrip exists, subscribe to its changes in Firestore:
     useEffect(() => {
@@ -49,8 +54,11 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
             // Set the currentTrip with the new id.
             const newTrip : Trip = { ...tripData, id: tripId };
             setCurrentTrip(newTrip);
-            await addTripToUser(tripId);
-            await updateCurrentTrip(tripId);
+
+            //update firestore, and User Context will update by "snapshot" listener.
+            await apiAddTripToUser(getCurrentUserId(), tripId);
+            await apiSetCurrentTripId(getCurrentUserId(), tripId);
+
             console.log("Current trip state updated:", newTrip);
         } catch (error) {
             console.error("Error creating trip:", error);

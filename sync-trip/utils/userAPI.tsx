@@ -45,7 +45,7 @@ export const getCurrentUser = async ()=> {
 
 
 // Set the currentTripId for a user
-export const setCurrentTrip = async (userId: string, tripId: string | null): Promise<void> => {
+export const setCurrentTripId = async (userId: string, tripId: string | null): Promise<void> => {
     const userRef = doc(firestore, 'users', userId);
     await updateDoc(userRef, {
         currentTripId: tripId,
@@ -53,11 +53,11 @@ export const setCurrentTrip = async (userId: string, tripId: string | null): Pro
     });
 };
 
-export const addTripToUser = async (tripId: string): Promise<void> => {
-    const user = auth.currentUser;
-    if (!user) throw new Error("No authenticated user found");
+export const addTripToUser = async (userId: string, tripId: string): Promise<void> => {
+    // const user = auth.currentUser;
+    // if (!user) throw new Error("No authenticated user found");
 
-    const userRef = doc(collection(firestore, "users"), user.uid);
+    const userRef = doc(collection(firestore, "users"), userId);
     await updateDoc(userRef, {
         tripsId: arrayUnion(tripId), // Adds tripId to the array
         updatedAt: serverTimestamp(),
