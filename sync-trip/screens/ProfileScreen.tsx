@@ -104,19 +104,23 @@ const ProfileScreen = () => {
     }
 
     try {
+      const user = auth.currentUser;
+      if(!user) {
+        setError("Auth User doesn't exist");
+        return;
+      }
       const userDocRef = getUserDocRef();
       await setDoc(userDocRef, {
-        ownerId: auth.currentUser.uid,
+        uid: user.uid,
         name,
         bio,
         travelPreferences,
         profilePicture,
-        updatedAt: serverTimestamp(),
-
+        updatedAt: serverTimestamp()
       }, { merge: true });
 
       setSavedProfile({ name, bio, travelPreferences, profilePicture });
-      setError('Profile saved successfully!');
+      setError('Profile saved successfully!'); //TODO: coding style: change setError to showMessage.
       setSnackbarVisible(true);
       setIsEditing(false);
     } catch (err) {

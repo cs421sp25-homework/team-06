@@ -19,9 +19,14 @@ import {
 import { Destination } from "../types/Destination";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
+import {auth} from "../utils/firebase";
+
+import { useUser} from "../context/UserContext";
+import {getCurrentUser} from "../utils/userAPI";
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
+  const { getCurrentUserId } = useUser();
 
   const [location, setLocation] = useState<any>(null);
   // const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]); //TODO: show route.
@@ -105,7 +110,7 @@ const MapScreen = () => {
       console.log('Error getting address:', error);
     }
 
-    setCurrMarker({ latitude, longitude, address, description: '' });
+    setCurrMarker({ latitude, longitude, address, description: '', createdByUid: getCurrentUserId() });
     setModalVisible(true);
   };
 
@@ -120,7 +125,7 @@ const MapScreen = () => {
       return;
     }
     if (currentTrip) {
-      currMarker.trip = currentTrip;
+      currMarker.tripId = currentTrip.id;
     }
     const newDestination: Destination = {
       ...currMarker,
@@ -145,6 +150,10 @@ const MapScreen = () => {
   }
 
   const updateMarker = async () => {
+    if (!currentTrip) {
+      Alert.alert("Error", "current trip not found");
+      throw new Error("Current trip does not exist");
+    }
     if (!currMarker || !description.trim()) {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
