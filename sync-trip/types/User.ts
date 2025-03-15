@@ -5,5 +5,5 @@ export interface User {
     travelPreference?: string;
     currentTripId?: string;
     profilePicture?: string; //TODO: picture data type
-    tripsId: string[];
+    tripsIdList: string[];
 }

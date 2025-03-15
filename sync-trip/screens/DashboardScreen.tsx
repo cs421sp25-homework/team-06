@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, SectionList } from 'react-native';
-import { Text, Button } from 'react-native-paper';
-import { useUser } from '../context/UserContext';
-import { useTrip } from '../context/TripContext';
-import { Trip } from '../types/Trip';
+import React, {useEffect, useState} from 'react';
+import {SectionList, View} from 'react-native';
+import {Button, Text} from 'react-native-paper';
+import {useUser} from '../context/UserContext';
+import {useTrip} from '../context/TripContext';
+import {Trip, TripStatus} from '../types/Trip';
 import {fetchTripsByIds} from "../utils/tripAPI";
 
 const DashboardScreen = () => {
@@ -12,23 +12,21 @@ const DashboardScreen = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
 
   useEffect(() => {
-    const loadTrips = async () => {
-      try {
-        const tripIdList = currentUser?.tripsId||[];
-        const userTrips = await fetchTripsByIds(tripIdList);
-        setTrips(userTrips);
-      } catch (error) {
-        console.error("Error fetching trips:", error);
-      }
-    };
+      if (!currentUser || !currentUser.tripsIdList) return;
 
-    loadTrips();
-  }, []);
+      // Fetch trips when user data updates
+      const fetchTrips = async () => {
+          const fetchedTrips = await fetchTripsByIds(currentUser.tripsIdList);
+          setTrips(fetchedTrips);
+      };
+
+      fetchTrips();
+  }, [currentUser?.tripsIdList]);  // Updates automatically when tripsIdList changes
 
   const sections = [
-    { title: 'Planning', data: trips.filter(trip => trip.status === 'planning') },
-    { title: 'Ongoing', data: trips.filter(trip => trip.status === 'ongoing') },
-    { title: 'Completed', data: trips.filter(trip => trip.status === 'completed') },
+    { title: 'Planning', data: trips.filter(trip => trip.status === TripStatus.PLANNING) },
+    { title: 'Ongoing', data: trips.filter(trip => trip.status === TripStatus.ONGOING) },
+    { title: 'Completed', data: trips.filter(trip => trip.status === TripStatus.COMPLETED) },
   ];
 
   const renderItem = ({ item }: { item: Trip }) => (
