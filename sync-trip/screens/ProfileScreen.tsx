@@ -112,6 +112,7 @@ const ProfileScreen = () => {
       const userDocRef = getUserDocRef();
       await setDoc(userDocRef, {
         uid: user.uid,
+        email: user.email,
         name,
         bio,
         travelPreferences,

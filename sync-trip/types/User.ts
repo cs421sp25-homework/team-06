@@ -1,9 +1,10 @@
 export interface User {
     uid: string;
+    email: string;
     name?: string;
     bio?: string;
     travelPreference?: string;
     currentTripId?: string;
-    profilePicture?: string; //TODO: picture data type
+    profilePicture?: string; //picture link?
     tripsIdList: string[];
 }
