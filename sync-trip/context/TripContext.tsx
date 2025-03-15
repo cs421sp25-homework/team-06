@@ -6,7 +6,7 @@ import {
     updateTrip as apiUpdateTrip,
     addDestinationToTrip as apiAddDestinationToTrip,
     updateDestination as apiUpdateDestination,
-    subscribeToTrip as apiSubscribeToTrip,
+    subscribeToTrip as apiSubscribeToTrip, getATripById,
 } from "../utils/tripAPI";
 
 import { useUser } from "./UserContext"
@@ -31,7 +31,23 @@ const TripContext = createContext<TripContextType | undefined>(undefined);
 export const TripProvider = ({ children }: { children: ReactNode }) => {
     const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
 
-    const { getCurrentUserId } = useUser();
+    const { currentUser, getCurrentUserId } = useUser();
+
+    // Watch for changes in currentUser's currentTripId and call setCurrentTrip
+    useEffect(() => {
+        const fetchTrip = async () => {
+            if (currentUser && currentUser.currentTripId) {
+                try {
+                    const newCurrentTrip = await getATripById(currentUser.currentTripId);
+                    setCurrentTrip(newCurrentTrip);
+                } catch (error) {
+                    console.error("Error fetching trip:", error);
+                }
+            }
+        };
+
+        fetchTrip(); // Call the async function
+    }, [currentUser?.currentTripId, setCurrentTrip]);  // Re-run when currentTripId changes
 
     // If a currentTrip exists, subscribe to its changes in Firestore:
     useEffect(() => {

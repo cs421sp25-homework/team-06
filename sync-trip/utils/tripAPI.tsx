@@ -4,11 +4,19 @@ import { Trip } from '../types/Trip';
 import { Destination } from '../types/Destination';
 
 
-export const fetchTripsByIds = async (tripIds: string[]): Promise<Trip[]> => {
+export const getATripById = async (tripId: string): Promise<Trip> => {
+    const tripRef = doc(firestore, 'trips', tripId);
+    const tripSnap = await getDoc(tripRef);
+    if (!tripSnap.exists) {
+        throw new Error(`Trip with ${tripId} doesn't exist`);
+    }
+    return { id: tripSnap.id, ...tripSnap.data() } as Trip;
+}
+export const fetchTripsByIds = async (tripIdsList: string[]): Promise<Trip[]> => {
     // If there are no IDs, return an empty array.
-    if (tripIds.length === 0) return [];
+    if (tripIdsList.length === 0) return [];
 
-    const tripPromises = tripIds.map(async (id) => {
+    const tripPromises = tripIdsList.map(async (id) => {
         const tripRef = doc(firestore, 'trips', id);
         const tripSnap = await getDoc(tripRef);
         return tripSnap.exists

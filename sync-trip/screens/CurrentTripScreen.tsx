@@ -55,7 +55,7 @@ const CurrentTripScreen = () => {
       }
     }
   }, [currentTrip]);
-  console.log("Current trip:", currentTrip);
+  // console.log("Current trip:", currentTrip);
 
 
   if (!currentTrip) {

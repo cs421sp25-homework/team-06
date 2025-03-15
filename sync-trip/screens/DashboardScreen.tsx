@@ -1,15 +1,20 @@
-import React, {useEffect, useState} from 'react';
-import {SectionList, View} from 'react-native';
-import {Button, Text} from 'react-native-paper';
-import {useUser} from '../context/UserContext';
-import {useTrip} from '../context/TripContext';
-import {Trip, TripStatus} from '../types/Trip';
-import {fetchTripsByIds} from "../utils/tripAPI";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { Card, Text, Button, Paragraph, Portal, Dialog, TextInput } from "react-native-paper";
+import { FlatList } from "react-native";
+import { useUser } from "../context/UserContext";
+import { useTrip } from "../context/TripContext";
+import { addCollaboratorByEmail, setCurrentTripId } from "../utils/userAPI";
+import { fetchTripsByIds } from "../utils/tripAPI";
+import {TripStatus} from "../types/Trip";
 
 const DashboardScreen = () => {
-  const { setCurrentTrip } = useTrip();
-  const { currentUser } = useUser();
-  const [trips, setTrips] = useState<Trip[]>([]);
+    const { currentUser, getCurrentUserId } = useUser();
+    // const { setCurrentTrip } = useTrip();
+    const [trips, setTrips] = useState<any[]>([]);
+    const [inviteDialogVisible, setInviteDialogVisible] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [tripIdForInvite, setTripIdForInvite] = useState<string | null>(null);
 
   useEffect(() => {
       if (!currentUser || !currentUser.tripsIdList) return;
@@ -21,35 +26,126 @@ const DashboardScreen = () => {
       };
 
       fetchTrips();
-  }, [currentUser?.tripsIdList]);  // Updates automatically when tripsIdList changes
+  }, [currentUser]);  // Updates automatically when current user changes (like currentUserId changes or tripsIdList changes)
 
-  const sections = [
-    { title: 'Planning', data: trips.filter(trip => trip.status === TripStatus.PLANNING) },
-    { title: 'Ongoing', data: trips.filter(trip => trip.status === TripStatus.ONGOING) },
-    { title: 'Completed', data: trips.filter(trip => trip.status === TripStatus.COMPLETED) },
-  ];
 
-  const renderItem = ({ item }: { item: Trip }) => (
-      <View style={{ padding: 10 }}>
-        <Text>{item.title}</Text>
-          <Button mode="contained" onPress={() => setCurrentTrip(item)}>
-              Set as Current Trip
-          </Button>
-      </View>
-  );
 
-  return (
-      <View style={{ flex: 1, padding: 20 }}>
-        <SectionList
-            sections={sections}
-            keyExtractor={(item) => item.id || item.title}
-            renderItem={renderItem}
-            renderSectionHeader={({ section }) => (
-                <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{section.title}</Text>
-            )}
-        />
-      </View>
-  );
+    const categorizedTrips = {
+        planning: trips.filter((trip) => trip.status === TripStatus.PLANNING),
+        ongoing: trips.filter((trip) => trip.status === TripStatus.ONGOING),
+        completed: trips.filter((trip) => trip.status === TripStatus.COMPLETED),
+    };
+
+    // Function to handle setting a trip as the current trip
+    const handleSetCurrentTrip = (trip: any) => {
+        setCurrentTripId(getCurrentUserId(), trip.id);
+    };
+
+    // Open the invite dialog for a specific trip.
+    const showInviteDialog = (tripId: string) => {
+        setTripIdForInvite(tripId);
+        setInviteDialogVisible(true);
+    };
+
+    // Close the invite dialog and reset state.
+    const hideInviteDialog = () => {
+        setInviteDialogVisible(false);
+        setInviteEmail("");
+        setTripIdForInvite(null);
+    };
+
+    // Send an invitation by email for the given trip.
+    const handleInviteCollaborator = async () => {
+        if (!inviteEmail.trim()) {
+            alert("Please enter a valid email");
+            return;
+        }
+        try {
+            await addCollaboratorByEmail(tripIdForInvite!, inviteEmail.trim());
+            alert(`Invitation sent to ${inviteEmail.trim()}`);
+            hideInviteDialog();
+        } catch (error: any) {
+            alert(`Error inviting collaborator: ${error.message}`);
+        }
+    };
+
+    // Render each trip as a Card.
+    const renderItem = ({ item }: { item: any }) => {
+        const isCurrentTrip = item.id === currentUser?.currentTripId;
+        return (
+            <Card style={styles.card} elevation={3}>
+                <Card.Title title={item.title} subtitle={item.status} />
+                <Card.Content>
+                    {/*<Paragraph>{`Start: ${new Date(item.startDate).toLocaleDateString()}`}</Paragraph>*/}
+                    {/*<Paragraph>{`End: ${new Date(item.endDate).toLocaleDateString()}`}</Paragraph>*/}
+                    <Paragraph>{`Destinations: ${item.destinations?.length || 0}`}</Paragraph>
+                    <Paragraph>{`members: ${item.collaborators?.length || 1}`}</Paragraph>
+                </Card.Content>
+                <Card.Actions style={styles.cardActions}>
+                    {!isCurrentTrip && (
+                        <Button mode="contained" onPress={() => handleSetCurrentTrip(item)}>
+                            Set as Current
+                        </Button>
+                    )}
+                    <Button mode="outlined" onPress={() => showInviteDialog(item.id)}>
+                        Invite
+                    </Button>
+                </Card.Actions>
+            </Card>
+        );
+    };
+
+    const renderSection = (title: string, trips: any[]) => {
+        return (
+            <>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                {trips.length > 0 ? (
+                    <FlatList
+                        data={trips}
+                        keyExtractor={(item) => item.id}
+                        renderItem={renderItem}
+                    />
+                ) : (
+                    <Text style={styles.emptyText}>No {title.toLowerCase()} trips</Text>
+                )}
+            </>
+        );
+    };
+
+    return (
+        <View style={styles.container}>
+            {renderSection("Planning", categorizedTrips.planning)}
+            {renderSection("Ongoing", categorizedTrips.ongoing)}
+            {renderSection("Completed", categorizedTrips.completed)}
+
+            <Portal>
+                <Dialog visible={inviteDialogVisible} onDismiss={hideInviteDialog}>
+                    <Dialog.Title>Invite Collaborator</Dialog.Title>
+                    <Dialog.Content>
+                        <TextInput
+                            label="Email"
+                            mode="outlined"
+                            value={inviteEmail}
+                            onChangeText={setInviteEmail}
+                        />
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={hideInviteDialog}>Cancel</Button>
+                        <Button onPress={handleInviteCollaborator}>Invite</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
+        </View>
+    );
 };
+
+const styles = StyleSheet.create({
+    container: { flex: 1, padding: 10, backgroundColor: "#f5f5f5" },
+    card: { marginBottom: 10 },
+    cardActions: { justifyContent: "flex-end" },
+    emptyText: { textAlign: "center", marginTop: 20 },
+    sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 10 },
+});
+
 
 export default DashboardScreen;

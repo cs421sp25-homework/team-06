@@ -9,6 +9,8 @@ import { User } from "../types/User";
 import firebase from "firebase/compat";
 import {auth, firestore} from "../utils/firebase";
 import {doc, onSnapshot} from "@react-native-firebase/firestore";
+// import { useTrip } from "./TripContext"
+import {getATripById} from "../utils/tripAPI";
 
 
 interface UserContextType {
@@ -25,6 +27,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    // const { setCurrentTrip} = useTrip();
 
 
     useEffect(() => {
@@ -33,7 +36,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
         const userRef = doc(firestore, "users", user.uid);
 
-        // 🔴 Set up Firestore listener
+        // Set up Firestore listener
         const unsubscribe = onSnapshot(userRef, (docSnap) => {
             if (docSnap.exists) {
                 setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
