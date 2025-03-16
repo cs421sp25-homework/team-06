@@ -4,7 +4,6 @@ import {Destination} from "../types/Destination";
 import {
     addDestinationToTrip as apiAddDestinationToTrip,
     createTrip as apiCreateTrip,
-    subscribeToTrip as apiSubscribeToTrip,
     updateDestination as apiUpdateDestination,
     updateTrip as apiUpdateTrip,
 } from "../utils/tripAPI";
@@ -22,7 +21,6 @@ interface TripContextType {
     updateTrip: (updatedData: Partial<Trip>) => Promise<void>;
     addDestinationToTrip: (destination: Destination) => Promise<void>;
     updateDestinationInTrip: (destinationId: string, updatedData: Partial<Destination>) => Promise<void>;
-    subscribeToTrip: (tripId: string, callback: (trip: Trip | null) => void) => () => void;
     logout: () => void;
 }
 
@@ -116,7 +114,6 @@ export const TripProvider = ({children}: { children: ReactNode }) => {
         try {
             await apiUpdateTrip(currentTrip.id, updatedData);
             // The Firestore snapshot listener will update the local state.
-            // setCurrentTrip((prevTrip) => (prevTrip ? { ...prevTrip, ...updatedData } : prevTrip));
         } catch (error) {
             console.error("Error updating trip:", error);
             throw error;
@@ -131,18 +128,7 @@ export const TripProvider = ({children}: { children: ReactNode }) => {
         }
         try {
             const destId = await apiAddDestinationToTrip(currentTrip.id, destination);
-            // The Firestore snapshot listener will update the local state.
-            // setCurrentTrip((prevTrip) =>
-            //     prevTrip
-            //         ? {
-            //             ...prevTrip, destinations: [...prevTrip.destinations,
-            //                 {
-            //                     ...destination,
-            //                     id: destId,
-            //                 }]
-            //         }
-            //         : prevTrip
-            // );
+            // dont need to update local status.
             console.log("Destination added with ID:", destId);
         } catch (error) {
             console.error("Error adding destination:", error);
@@ -159,24 +145,12 @@ export const TripProvider = ({children}: { children: ReactNode }) => {
         try {
             await apiUpdateDestination(currentTrip.id, destinationId, updatedData);
             // dont need to update local status.
-            // const updatedDestinations = currentTrip.destinations.map((dest) => {
-            //     // Assume each destination document has an "id" property.
-            //     if ((dest as any).id === destinationId) {
-            //         return { ...dest, ...updatedData };
-            //     }
-            //     return dest;
-            // });
-            // setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
         } catch (error) {
             console.error("Error updating destination:", error);
             throw error;
         }
     };
 
-    // Expose subscribeToTrip for screens/components that need to subscribe manually.
-    const subscribeToTrip = (tripId: string, callback: (trip: Trip | null) => void) => {
-        return apiSubscribeToTrip(tripId, callback);
-    };
 
     const logout = () => {
         setCurrentTrip(null); // Clear the current trip
@@ -192,7 +166,6 @@ export const TripProvider = ({children}: { children: ReactNode }) => {
                 updateTrip,
                 addDestinationToTrip,
                 updateDestinationInTrip,
-                subscribeToTrip,
                 logout
             }}
         >
