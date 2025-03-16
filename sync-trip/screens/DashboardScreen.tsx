@@ -1,136 +1,169 @@
-import { auth, firestore, getUserDocRef } from "../utils/firebase";
-import { onSnapshot } from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, View } from 'react-native';
-import { Button, Card, Title, Paragraph } from 'react-native-paper';
-
-import type { RootStackParamList } from '../navigation/useAppNavigation';
-
-type DashboardNavigationProp = StackNavigationProp<RootStackParamList, 'App'>;
+import React, {useEffect, useState} from "react";
+import {FlatList, StyleSheet, View} from "react-native";
+import {Button, Card, Dialog, Paragraph, Portal, Text, TextInput} from "react-native-paper";
+import {useUser} from "../context/UserContext";
+import {addCollaboratorByEmail, setCurrentTripId} from "../utils/userAPI";
+import {TripStatus} from "../types/Trip";
+import {doc, collection, onSnapshot} from "@react-native-firebase/firestore";
+import {firestore} from "../utils/firebase";
 
 const DashboardScreen = () => {
-  const navigation = useNavigation<DashboardNavigationProp>();
-  const [username, setUsername] = useState<string>('User');
+    const {currentUser, getCurrentUserId} = useUser();
+    // const { setCurrentTrip } = useTrip();
+    const [trips, setTrips] = useState<any[]>([]);
+    const [inviteDialogVisible, setInviteDialogVisible] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [tripIdForInvite, setTripIdForInvite] = useState<string | null>(null);
 
-  // Retrieve the user's name from Firestore (adjust the collection/document as needed)
-  useEffect(() => {
-    const userDocRef = getUserDocRef();
-    if (!userDocRef) return; // Ensure it's not null
-    const unsubscribe = onSnapshot(
-      userDocRef,
-      (docSnap) => {
-        if (docSnap.exists) {
-          const data = docSnap.data();
-          if (data?.name) {
-            setUsername(data.name);
-          }
+    useEffect(() => {
+        if (!currentUser || !currentUser.tripsIdList) return;
+
+        // Array to hold unsubscribe functions
+        const unsubscribeFuncs: Array<() => void> = [];
+
+        // Object to accumulate trips data
+        const tripsMap: { [key: string]: any } = {};
+
+        // Listener for each trip
+        currentUser.tripsIdList.forEach((tripId: string) => {
+            const tripRef = doc(collection(firestore, "trips"), tripId);
+
+            const unsubscribe = onSnapshot(tripRef, (docSnap) => {
+                if (!docSnap || !docSnap.exists) {
+                    console.warn(`Trip document with ID ${tripId} does not exist.`);
+                    return;
+                }
+
+                tripsMap[tripId] = { id: tripId, ...docSnap.data() };
+                setTrips(Object.values(tripsMap));
+            });
+
+            unsubscribeFuncs.push(unsubscribe);
+        });
+
+        // Cleanup all listeners on unmount or when tripsIdList changes
+        return () => {
+            unsubscribeFuncs.forEach((unsubscribe) => unsubscribe());
+        };
+    }, [currentUser]);  // Updates automatically when current user changes (like currentUserId changes or tripsIdList changes)
+
+
+    const categorizedTrips = {
+        planning: trips.filter((trip) => trip.status === TripStatus.PLANNING),
+        ongoing: trips.filter((trip) => trip.status === TripStatus.ONGOING),
+        completed: trips.filter((trip) => trip.status === TripStatus.COMPLETED),
+    };
+
+    // Function to handle setting a trip as the current trip
+    const handleSetCurrentTrip = (trip: any) => {
+        setCurrentTripId(getCurrentUserId(), trip.id);
+    };
+
+    // Open the invite dialog for a specific trip.
+    const showInviteDialog = (tripId: string) => {
+        setTripIdForInvite(tripId);
+        setInviteDialogVisible(true);
+    };
+
+    // Close the invite dialog and reset state.
+    const hideInviteDialog = () => {
+        setInviteDialogVisible(false);
+        setInviteEmail("");
+        setTripIdForInvite(null);
+    };
+
+    // Send an invitation by email for the given trip.
+    const handleInviteCollaborator = async () => {
+        if (!inviteEmail.trim()) {
+            alert("Please enter a valid email");
+            return;
         }
-      },
-      (err) => {
-        console.error('Error fetching user data:', err);
-      }
+        try {
+            await addCollaboratorByEmail(tripIdForInvite!, inviteEmail.trim());
+            alert(`Invitation sent to ${inviteEmail.trim()}`);
+            hideInviteDialog();
+        } catch (error: any) {
+            alert(`Error inviting collaborator: ${error.message}`);
+        }
+    };
+
+    // Render each trip as a Card.
+    const renderItem = ({item}: { item: any }) => {
+        const isCurrentTrip = item.id === currentUser?.currentTripId;
+        return (
+            <Card style={styles.card} elevation={3}>
+                <Card.Title title={item.title}/>
+                <Card.Content>
+                    {/*<Paragraph>{`Start: ${new Date(item.startDate).toLocaleDateString()}`}</Paragraph>*/}
+                    {/*<Paragraph>{`End: ${new Date(item.endDate).toLocaleDateString()}`}</Paragraph>*/}
+                    {/*<Paragraph>{`Destinations: ${item.destinations?.length || 0}`}</Paragraph>*/}
+                    <Paragraph>{`members: ${item.collaborators?.length + 1 || 1}`}</Paragraph>
+                </Card.Content>
+                <Card.Actions style={styles.cardActions}>
+                    {!isCurrentTrip && (
+                        <Button mode="contained" onPress={() => handleSetCurrentTrip(item)}>
+                            Set as Current
+                        </Button>
+                    )}
+                    <Button mode="outlined" onPress={() => showInviteDialog(item.id)}>
+                        Invite
+                    </Button>
+                </Card.Actions>
+            </Card>
+        );
+    };
+
+    const renderSection = (title: string, trips: any[]) => {
+        return (
+            <>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                {trips.length > 0 ? (
+                    <FlatList
+                        data={trips}
+                        keyExtractor={(item) => item.id}
+                        renderItem={renderItem}
+                    />
+                ) : (
+                    <Text style={styles.emptyText}>No {title.toLowerCase()} trips</Text>
+                )}
+            </>
+        );
+    };
+
+    return (
+        <View style={styles.container}>
+            {renderSection("Planning", categorizedTrips.planning)}
+            {renderSection("Ongoing", categorizedTrips.ongoing)}
+            {renderSection("Completed", categorizedTrips.completed)}
+
+            <Portal>
+                <Dialog visible={inviteDialogVisible} onDismiss={hideInviteDialog}>
+                    <Dialog.Title>Invite Collaborator</Dialog.Title>
+                    <Dialog.Content>
+                        <TextInput
+                            label="Email"
+                            mode="outlined"
+                            defaultValue={inviteEmail}
+                            onChangeText={setInviteEmail}
+                        />
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={hideInviteDialog}>Cancel</Button>
+                        <Button onPress={handleInviteCollaborator}>Invite</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
+        </View>
     );
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleViewTripHistory = () => {
-    navigation.navigate('History'); // Navigates to the full trip history page
-  };
-
-  const handleArchivedHistory = () => {
-    navigation.navigate('ArchivedHistory'); // Navigates to archived trips (ensure this route exists)
-  };
-
-  return (
-    <ScrollView testID="dashboardScreen" contentContainerStyle={styles.container}>
-      {/* Greeting Title */}
-      <Title style={styles.title}>Hi {username}, enjoy your trip!</Title>
-
-      {/* Bulletin Component */}
-      <Card style={styles.card}>
-        <Card.Title title="Bulletin" />
-        <Card.Content>
-          <Paragraph>
-            • Buy tickets for museum {/* TODO: Replace with dynamic bulletin data */}
-          </Paragraph>
-          <Paragraph>
-            • Confirm hotel reservation {/* TODO: Replace with dynamic bulletin data */}
-          </Paragraph>
-          <Paragraph>• Pack essentials {/* TODO: Replace with dynamic bulletin data */}</Paragraph>
-        </Card.Content>
-      </Card>
-
-      {/* Today's Digest Component */}
-      <Card style={styles.card}>
-        <Card.Title title="Today's Digest" />
-        <Card.Content>
-          <Paragraph>
-            TODO: Add digest content here {/* TODO: Replace with actual digest data */}
-          </Paragraph>
-        </Card.Content>
-      </Card>
-
-      {/* Weather Component */}
-      <Card style={styles.card}>
-        <Card.Title title="Today's Weather" />
-        <Card.Content>
-          <Paragraph>Sunny, 25°C {/* TODO: Replace with real weather data */}</Paragraph>
-        </Card.Content>
-      </Card>
-
-      {/* Trip History Preview */}
-      <Card style={styles.card}>
-        <Card.Title title="Last Completed Trip" subtitle="Trip to Paris" />
-        <Card.Content>
-          <Paragraph>Finished on: 2023-02-28 {/* TODO: Replace with actual trip date */}</Paragraph>
-          <Paragraph>
-            Highlights: Eiffel Tower, Louvre, Seine Cruise{' '}
-            {/* TODO: Replace with actual trip highlights */}
-          </Paragraph>
-        </Card.Content>
-        <Card.Actions>
-          <Button testID="viewMore" onPress={handleViewTripHistory}>View More</Button>
-        </Card.Actions>
-      </Card>
-
-      {/* Archived History Button */}
-      <View style={styles.archivedContainer}>
-        <Button
-          testID="archivedTrips"
-          mode="contained"
-          icon="archive"
-          onPress={handleArchivedHistory}
-          style={styles.archivedButton}>
-          Archived Trips
-        </Button>
-      </View>
-    </ScrollView>
-  );
 };
 
-export default DashboardScreen;
-
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  title: {
-    marginBottom: 16,
-  },
-  card: {
-    width: '100%',
-    marginVertical: 8,
-  },
-  archivedContainer: {
-    marginVertical: 8,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-  },
-  archivedButton: {
-    width: '80%',
-  },
+    container: {flex: 1, padding: 10, backgroundColor: "#f5f5f5"},
+    card: {marginBottom: 10},
+    cardActions: {justifyContent: "flex-end"},
+    emptyText: {textAlign: "center", marginTop: 20},
+    sectionTitle: {fontSize: 18, fontWeight: "bold", marginVertical: 10},
 });
+
+
+export default DashboardScreen;

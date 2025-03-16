@@ -1,4 +1,11 @@
-import { Destination } from "./Destination";
+import {Destination} from "./Destination";
+
+export enum TripStatus {
+    PLANNING = "planning",
+    ONGOING = "ongoing",
+    COMPLETED = 'completed',
+    ARCHIVED = "archived",
+}
 
 export interface Trip {
     id?: string;
@@ -8,4 +15,5 @@ export interface Trip {
     destinations: Destination[];
     ownerId: string;
     collaborators: string[];
+    status: TripStatus;
 }

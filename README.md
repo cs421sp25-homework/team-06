@@ -33,28 +33,32 @@ npm install  @react-native-firebase/firestore @react-native-firebase/auth  @reac
 ```
 
 ### Run the app locally
+
 Now, we can use Expo to run the app.
 
 ```shell
 git clone https://github.com/cs421sp25-homework/team-06.git
 cd ./sync-trip
 npx expo install
-npx expo prebuild --clean
+npx expo prebuild --platform android --clean
 npx expo run:android
 ```
 
-
 ### Build the app with EAS to get a release
+
 ```shell
 npm install -g eas-cli
 eas build --profile development --platform android
 ```
+
 This will build a apk for any devices to install.
 
 ### Build a development version quickly
+
 ```shell
 npx expo start
 ```
+
 This will allow you quickly run the app when developing.
 
 ### Firebase support
@@ -74,7 +78,9 @@ eas init
 eas build:configure
 eas build --profile maestro-test
 ```
+
 Or we can test the app locally
+
 ```shell
 brew install maestro
 export PATH="$PATH":"$HOME/.maestro/bin"
@@ -84,11 +90,14 @@ eas build:configure --platform android
 npx expo run:android
 maestro test ./maestro/dashboardScreen_test.yaml
 ```
+
 After running commands above, we can check out the result on Expo portal.
 
 ## Automated Test
+
 For automated test, we run the workflow in Github Actions. In the yaml file, we run the E2E test
-on Expo portal since we will experience emulator errors and some adb errors which are hard to resolve.
+on Expo portal.
+
 To trigger the Automated Test, we run the yaml file when create the pull request, so we can merge
 branched in to the main branch with more confidence.
 
@@ -116,11 +125,12 @@ Scan the QR code or enter the URL after building with Expo.
     - It’s a managed NoSQL cloud database, which reduces the overhead of server management and maintenance.
 
 ## Completed Feature
+
 1. User can sign up with their email and password, or directly sign in with their google accounts.
 2. User can log in, log out and delete their account.
-2. User can use verification email to change password and verify identity.
-3. User can edit and show their profile and information
-4. User can navigate between different screens by the bottom navigator.
+3. User can use verification email to change password and verify identity.
+4. User can edit and show their profile and information
+5. User can navigate between different screens by the bottom navigator.
 
 <!-- ## Developing
 

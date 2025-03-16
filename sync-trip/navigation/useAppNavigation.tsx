@@ -1,6 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import React, { createContext, useContext, useState, PropsWithChildren } from 'react';
+import {useNavigation} from '@react-navigation/native';
+import type {StackNavigationProp} from '@react-navigation/stack';
+import React, {createContext, PropsWithChildren, useContext, useState} from 'react';
 
 type TabsContextType = {
     tabIndex: number;
@@ -9,10 +9,10 @@ type TabsContextType = {
 
 const TabsContext = createContext<TabsContextType | undefined>(undefined);
 
-export const TabsProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
+export const TabsProvider: React.FC<PropsWithChildren<{}>> = ({children}) => {
     const [tabIndex, setTabIndex] = useState<number>(0);
     return (
-        <TabsContext.Provider value={{ tabIndex, setTabIndex }}>
+        <TabsContext.Provider value={{tabIndex, setTabIndex}}>
             {children}
         </TabsContext.Provider>
     );
