@@ -4,7 +4,7 @@ import {Button, Card, Dialog, Paragraph, Portal, Text, TextInput} from "react-na
 import {useUser} from "../context/UserContext";
 import {addCollaboratorByEmail, setCurrentTripId} from "../utils/userAPI";
 import {TripStatus} from "../types/Trip";
-import {doc, onSnapshot} from "@react-native-firebase/firestore";
+import {doc, collection, onSnapshot} from "@react-native-firebase/firestore";
 import {firestore} from "../utils/firebase";
 
 const DashboardScreen = () => {
@@ -26,14 +26,18 @@ const DashboardScreen = () => {
 
         // Listener for each trip
         currentUser.tripsIdList.forEach((tripId: string) => {
-            const tripRef = doc(firestore, "trips", tripId);
+            const tripRef = doc(collection(firestore, "trips"), tripId);
+
             const unsubscribe = onSnapshot(tripRef, (docSnap) => {
-                if (docSnap.exists) {
-                    tripsMap[tripId] = {id: tripId, ...docSnap.data()};
-                    // Update trips state whenever any trip updates
-                    setTrips(Object.values(tripsMap));
+                if (!docSnap || !docSnap.exists) {
+                    console.warn(`Trip document with ID ${tripId} does not exist.`);
+                    return;
                 }
+
+                tripsMap[tripId] = { id: tripId, ...docSnap.data() };
+                setTrips(Object.values(tripsMap));
             });
+
             unsubscribeFuncs.push(unsubscribe);
         });
 
