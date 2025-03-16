@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import Constants from 'expo-constants';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import MapView, { LongPressEvent, Marker, PROVIDER_GOOGLE, Region, } from 'react-native-maps';
@@ -8,6 +9,7 @@ import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { useUser } from "../context/UserContext";
 
+const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey;
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
   const { getCurrentUserId } = useUser();
@@ -62,19 +64,12 @@ const MapScreen = () => {
     }
   }, [currentTrip, tabIndex]);
 
-  useEffect(() => {
-    if (!currentTrip && tabIndex === 3) {
-      setDialogVisible(true);
-    }
-  }, [currentTrip, tabIndex]);
-
   const redirectToNewTrip = () => {
     setTabIndex(2);
     setDialogVisible(false);
   }
 
   const handleMapLongPress = async (event: LongPressEvent) => {
-    const GoogleMapsApiKey = 'AIzaSyCxVwP81cM9LIzPA3PXMFTqDifQi00WIQk';
     if (!currentTrip) {
       // No current trip exists; show a dialog prompting trip creation
       Alert.alert(
@@ -90,31 +85,26 @@ const MapScreen = () => {
 
     // TODO: make the location information auto filled by Google Map.
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    console.log("[LongPress] Coordinates:", { latitude, longitude });
-
+    // console.log("[LongPress] Coordinates:", { latitude, longitude });
     let address = 'Unknown Location';
     try {
       const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
       console.log("[ReverseGeocode] Result:", reverseGeocode);
       if (reverseGeocode.length > 0) {
-        address = `${reverseGeocode[0].name || ''}, ${reverseGeocode[0].city || ''}`;
+        //address = `${reverseGeocode[0].name || ''}, ${reverseGeocode[0].street || ''}, ${reverseGeocode[0].city || ''}`;
+        address = reverseGeocode[0].formattedAddress || "Unknown Location";
         console.log("[ReverseGeocode] Parsed address:", address);
       }
     } catch (error) {
       console.log("[ReverseGeocode] Error getting address:", error);
     }
-
-    //using google map for detailed information
-    let placeName = "Unknown Place";
-    let placeDescription = "";
-
+    /*
+    //using google map API for detailed information
     try {
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GoogleMapsApiKey}`;
-      console.log("[Geocode] Request URL:", geocodeUrl);
-
+      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`;
       const geocodeResponse = await fetch(geocodeUrl);
       const geocodeData = await geocodeResponse.json();
-      console.log("[Geocode] Response Data:", geocodeData);
+      //console.log("[Geocode] Response Data:", geocodeData);
 
       if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
         const formattedAddress = geocodeData.results[0].formatted_address;
@@ -123,39 +113,29 @@ const MapScreen = () => {
         const placeId = geocodeData.results[0].place_id;
         console.log("[Geocode] Obtained Place ID:", placeId);
 
-        const fields = "id,displayName,formattedAddress,plusCode";
+        const fields = "id,displayName,formattedAddress,formatted_phone_number,opening_hours,website,rating,photos";
         const placesUrl = `https://places.googleapis.com/v1/places/${placeId}?fields=${fields}&key=${GoogleMapsApiKey}`;
-        console.log("[Places] Request URL:", placesUrl);
+        //console.log("[Places] Request URL:", placesUrl);
 
         const placesResponse = await fetch(placesUrl, {
           headers: {
             'Content-Type': 'application/json'
           }
         });
-
         const placesData = await placesResponse.json();
         console.log("[Places] Response Data:", placesData);
 
         const placeName = placesData.displayName?.text || "Unknown Place";
-        const placeAddress = placesData.formattedAddress || "";
+        address = placesData.formattedAddress || "Unknown Place";
         console.log("[Places] Parsed Place Name:", placeName);
         console.log("[Places] Parsed Place Address:", placeAddress);
-
-        setCurrMarker({
-          latitude,
-          longitude,
-          address: placeName,
-          description: placeAddress,
-          createdByUid: getCurrentUserId(),
-          coords: `${latitude}, ${longitude}`,
-        });
-        setModalVisible(true);
       } else {
         console.log("Geocoding API unable to return");
       }
     } catch (error) {
       console.log("[Error] Fetching geocode or place details failed:", error);
     }
+    */
     setCurrMarker({ latitude, longitude, address, description: '', createdByUid: getCurrentUserId() });
     setModalVisible(true);
   };
@@ -183,8 +163,8 @@ const MapScreen = () => {
     try {
       await addDestinationToTrip(newDestination);
       setModalVisible(false);
-      setDescription('');
-      setTime('');
+      //setDescription('');
+      //setTime('');
     } catch (error) {
       console.error("Error adding destination:", error);
       Alert.alert("Error", "Failed to add destination. Please try again.");
@@ -234,8 +214,8 @@ const MapScreen = () => {
     }
 
     setEditModalVisible(false);
-    setDescription('');
-    setTime('');
+    //setDescription('');
+    //setTime('');
   };
 
 
