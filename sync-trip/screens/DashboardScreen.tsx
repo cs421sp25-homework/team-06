@@ -28,7 +28,7 @@ const DashboardScreen = () => {
     currentUser.tripsIdList.forEach((tripId: string) => {
       const tripRef = doc(firestore, "trips", tripId);
       const unsubscribe = onSnapshot(tripRef, (docSnap) => {
-        if (!docSnap || docSnap.exists) {
+        if (!docSnap || !docSnap.exists) {
           console.warn(`Trip document with ID ${tripId} does not exist.`);
           return;
         }
