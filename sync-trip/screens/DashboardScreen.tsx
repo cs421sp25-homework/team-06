@@ -4,7 +4,7 @@ import {Button, Card, Dialog, Paragraph, Portal, Text, TextInput} from "react-na
 import {useUser} from "../context/UserContext";
 import {addCollaboratorByEmail, setCurrentTripId} from "../utils/userAPI";
 import {TripStatus} from "../types/Trip";
-import {doc, onSnapshot} from "@react-native-firebase/firestore";
+import {doc, collection, onSnapshot} from "@react-native-firebase/firestore";
 import {firestore} from "../utils/firebase";
 
 const DashboardScreen = () => {
