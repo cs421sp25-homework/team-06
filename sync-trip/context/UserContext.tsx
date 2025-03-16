@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {createContext, ReactNode, useContext, useEffect, useState} from "react";
 // import {
 //     getCurrentUser as apiGetCurrentUser,
 //     updateUser as apiUpdateUser,
 //     setCurrentTrip as apiSetCurrentTrip,
 //     addTripToUser as apiAddTripToUser,
 // } from "../utils/userAPI";
-import { User } from "../types/User";
-import firebase from "firebase/compat";
+import {User} from "../types/User";
 import {auth, firestore} from "../utils/firebase";
 import {doc, onSnapshot} from "@react-native-firebase/firestore";
+
 // import { useTrip } from "./TripContext"
-import {getATripById} from "../utils/tripAPI";
 
 
 interface UserContextType {
@@ -26,7 +25,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider = ({ children }: { children: ReactNode }) => {
+export const UserProvider = ({children}: { children: ReactNode }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     // const { setCurrentTrip} = useTrip();
 
@@ -41,7 +40,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const unsubscribe = onSnapshot(userRef, (docSnap) => {
             if (docSnap.exists) {
                 console.log("user has changed on firestore found, set new user context.");
-                setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
+                setCurrentUser({uid: docSnap.id, ...docSnap.data()} as User);
             } else {
                 setCurrentUser(null);
             }

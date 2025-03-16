@@ -1,7 +1,16 @@
-import { firestore } from './firebase';
-import { collection, doc, addDoc, updateDoc, onSnapshot, serverTimestamp, Timestamp, getDoc } from '@react-native-firebase/firestore';
-import { Trip } from '../types/Trip';
-import { Destination } from '../types/Destination';
+import {firestore} from './firebase';
+import {
+    addDoc,
+    collection,
+    doc,
+    getDoc,
+    onSnapshot,
+    serverTimestamp,
+    Timestamp,
+    updateDoc
+} from '@react-native-firebase/firestore';
+import {Trip} from '../types/Trip';
+import {Destination} from '../types/Destination';
 
 
 export const getATripById = async (tripId: string): Promise<Trip> => {
@@ -10,7 +19,7 @@ export const getATripById = async (tripId: string): Promise<Trip> => {
     if (!tripSnap.exists) {
         throw new Error(`Trip with ${tripId} doesn't exist`);
     }
-    return { id: tripSnap.id, ...tripSnap.data() } as Trip;
+    return {id: tripSnap.id, ...tripSnap.data()} as Trip;
 }
 // export const fetchTripsByIds = async (tripIdsList: string[]): Promise<Trip[]> => {
 //     // If there are no IDs, return an empty array.
@@ -73,7 +82,7 @@ export const subscribeToTrip = (tripId: string, callback: (data: any) => void) =
     const tripRef = doc(firestore, 'trips', tripId);
     return onSnapshot(tripRef, (docSnap) => {
         if (docSnap.exists) {
-            callback({ id: docSnap.id, ...docSnap.data() });
+            callback({id: docSnap.id, ...docSnap.data()});
         } else {
             callback(null);
         }

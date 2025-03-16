@@ -11,15 +11,15 @@ import {Trip, TripStatus} from '../types/Trip';
 
 
 const TripCreationScreen = () => {
-    const { showMessage } = useMessageDialog();
+    const {showMessage} = useMessageDialog();
 
     const [title, setTitle] = useState('');
     const [startDate, setStartDate] = useState<CalendarDate>(undefined);
     const [endDate, setEndDate] = useState<CalendarDate>(undefined);
     const [visible, setVisible] = useState(false);
 
-    const { createTrip } = useTrip();
-    const { setTabIndex } = useTabs();
+    const {createTrip} = useTrip();
+    const {setTabIndex} = useTabs();
 
     const onDismiss = () => setVisible(false);
 
@@ -75,15 +75,15 @@ const TripCreationScreen = () => {
                 </Button>
 
                 {/*<Portal>*/}
-                    <DatePickerModal
-                        locale={"en"}
-                        mode="range"
-                        visible={visible}
-                        onDismiss={onDismiss}
-                        startDate={startDate}
-                        endDate={endDate}
-                        onConfirm={onConfirm}
-                    />
+                <DatePickerModal
+                    locale={"en"}
+                    mode="range"
+                    visible={visible}
+                    onDismiss={onDismiss}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onConfirm={onConfirm}
+                />
                 {/*</Portal>*/}
 
                 <Button testID="createTrip" mode="contained" onPress={handleCreateTrip}>

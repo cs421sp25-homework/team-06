@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
-import { Card, Text, Button, Paragraph, Portal, Dialog, TextInput } from "react-native-paper";
-import { FlatList } from "react-native";
-import { useUser } from "../context/UserContext";
-import { useTrip } from "../context/TripContext";
-import { addCollaboratorByEmail, setCurrentTripId } from "../utils/userAPI";
+import React, {useEffect, useState} from "react";
+import {FlatList, StyleSheet, View} from "react-native";
+import {Button, Card, Dialog, Paragraph, Portal, Text, TextInput} from "react-native-paper";
+import {useUser} from "../context/UserContext";
+import {addCollaboratorByEmail, setCurrentTripId} from "../utils/userAPI";
 import {TripStatus} from "../types/Trip";
 import {doc, onSnapshot} from "@react-native-firebase/firestore";
 import {firestore} from "../utils/firebase";
 
 const DashboardScreen = () => {
-    const { currentUser, getCurrentUserId } = useUser();
+    const {currentUser, getCurrentUserId} = useUser();
     // const { setCurrentTrip } = useTrip();
     const [trips, setTrips] = useState<any[]>([]);
     const [inviteDialogVisible, setInviteDialogVisible] = useState(false);
@@ -31,7 +29,7 @@ const DashboardScreen = () => {
             const tripRef = doc(firestore, "trips", tripId);
             const unsubscribe = onSnapshot(tripRef, (docSnap) => {
                 if (docSnap.exists) {
-                    tripsMap[tripId] = { id: tripId, ...docSnap.data() };
+                    tripsMap[tripId] = {id: tripId, ...docSnap.data()};
                     // Update trips state whenever any trip updates
                     setTrips(Object.values(tripsMap));
                 }
@@ -44,7 +42,6 @@ const DashboardScreen = () => {
             unsubscribeFuncs.forEach((unsubscribe) => unsubscribe());
         };
     }, [currentUser]);  // Updates automatically when current user changes (like currentUserId changes or tripsIdList changes)
-
 
 
     const categorizedTrips = {
@@ -87,11 +84,11 @@ const DashboardScreen = () => {
     };
 
     // Render each trip as a Card.
-    const renderItem = ({ item }: { item: any }) => {
+    const renderItem = ({item}: { item: any }) => {
         const isCurrentTrip = item.id === currentUser?.currentTripId;
         return (
             <Card style={styles.card} elevation={3}>
-                <Card.Title title={item.title} subtitle={item.status} />
+                <Card.Title title={item.title} subtitle={item.status}/>
                 <Card.Content>
                     {/*<Paragraph>{`Start: ${new Date(item.startDate).toLocaleDateString()}`}</Paragraph>*/}
                     {/*<Paragraph>{`End: ${new Date(item.endDate).toLocaleDateString()}`}</Paragraph>*/}
@@ -157,11 +154,11 @@ const DashboardScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 10, backgroundColor: "#f5f5f5" },
-    card: { marginBottom: 10 },
-    cardActions: { justifyContent: "flex-end" },
-    emptyText: { textAlign: "center", marginTop: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 10 },
+    container: {flex: 1, padding: 10, backgroundColor: "#f5f5f5"},
+    card: {marginBottom: 10},
+    cardActions: {justifyContent: "flex-end"},
+    emptyText: {textAlign: "center", marginTop: 20},
+    sectionTitle: {fontSize: 18, fontWeight: "bold", marginVertical: 10},
 });
 
 

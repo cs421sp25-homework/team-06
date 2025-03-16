@@ -1,4 +1,4 @@
-import { Destination } from "./Destination";
+import {Destination} from "./Destination";
 
 export enum TripStatus {
     PLANNING = "planning",

@@ -1,15 +1,16 @@
-import { firestore } from './firebase';
+import {auth, firestore} from './firebase';
 import {
+    arrayUnion,
     collection,
     doc,
-    updateDoc,
     getDoc,
-    onSnapshot,
+    getDocs,
+    query,
     serverTimestamp,
-    setDoc, arrayUnion, query, where, getDocs
+    updateDoc,
+    where
 } from '@react-native-firebase/firestore';
-import { User } from '../types/User';
-import {auth} from "./firebase";
+import {User} from '../types/User';
 import {Alert} from "react-native";
 
 // // Create a new user in Firestore
@@ -21,7 +22,6 @@ import {Alert} from "react-native";
 //         updatedAt: serverTimestamp(),
 //     });
 // };
-
 
 
 // Fetch user by email
@@ -37,7 +37,7 @@ export const getUserByEmail = async (email: string) => {
     }
 
     const userDoc = querySnapshot.docs[0]; // expect only one result.
-    return { uid: userDoc.id, ...userDoc.data() }; // Return the user's data
+    return {uid: userDoc.id, ...userDoc.data()}; // Return the user's data
 };
 
 export const addCollaboratorByEmail = async (tripId: string, email: string): Promise<void> => {
@@ -63,14 +63,14 @@ export const updateUser = async (userId: string, updatedData: Partial<User>): Pr
 };
 
 // Get current user data from Firestore
-export const getCurrentUser = async ()=> {
+export const getCurrentUser = async () => {
     const user = auth.currentUser;
     if (!user) throw new Error("No authenticated user found");
     const userRef = doc(collection(firestore, "users"), user.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists) {
-        return { uid: userSnap.id, ...userSnap.data() } as User;
+        return {uid: userSnap.id, ...userSnap.data()} as User;
     }
     return null;
 };
