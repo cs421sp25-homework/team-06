@@ -1,20 +1,20 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { Trip } from "../types/Trip";
-import { Destination } from "../types/Destination";
+import React, {createContext, ReactNode, useContext, useEffect, useState} from "react";
+import {Trip} from "../types/Trip";
+import {Destination} from "../types/Destination";
 import {
-    createTrip as apiCreateTrip,
-    updateTrip as apiUpdateTrip,
     addDestinationToTrip as apiAddDestinationToTrip,
+    createTrip as apiCreateTrip,
+    getATripById,
+    subscribeToTrip as apiSubscribeToTrip,
     updateDestination as apiUpdateDestination,
-    subscribeToTrip as apiSubscribeToTrip, getATripById,
+    updateTrip as apiUpdateTrip,
 } from "../utils/tripAPI";
 
-import { useUser } from "./UserContext"
+import {useUser} from "./UserContext"
 
-import {
-    addTripToUser as apiAddTripToUser,
-    setCurrentTripId as apiSetCurrentTripId,
-} from "../utils/userAPI";
+import {addTripToUser as apiAddTripToUser, setCurrentTripId as apiSetCurrentTripId,} from "../utils/userAPI";
+import {firestore} from "../utils/firebase";
+import {collection, doc, getDocs, onSnapshot} from "@react-native-firebase/firestore";
 
 interface TripContextType {
     currentTrip: Trip | null;
@@ -31,15 +31,30 @@ const TripContext = createContext<TripContextType | undefined>(undefined);
 export const TripProvider = ({ children }: { children: ReactNode }) => {
     const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
 
-    const { currentUser, getCurrentUserId } = useUser();
+    const { currentUser, setCurrentUser, getCurrentUserId } = useUser();
 
-    // Watch for changes in currentUser's currentTripId and call setCurrentTrip
+    const currentTripId = currentUser?.currentTripId;
+
+    // Watch for changes in currentUser's currentTripId and set local currentTrip
     useEffect(() => {
         const fetchTrip = async () => {
-            if (currentUser && currentUser.currentTripId) {
+            if (currentUser && currentTripId) {
                 try {
-                    const newCurrentTrip = await getATripById(currentUser.currentTripId);
-                    setCurrentTrip(newCurrentTrip);
+                    console.log("current User's currentTripId has changed on firestore found, set new current Trip Context.");
+                    const tripData  = await getATripById(currentTripId);
+                    // setCurrentTrip(tripData);
+
+                    // Fetch the initial destinations
+                    const destinationsRef = collection(firestore, "trips", currentTripId, "destinations");
+                    const snapshot = await getDocs(destinationsRef);
+                    tripData.destinations = snapshot.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    })) as Destination[];
+
+                    setCurrentTrip(tripData);
+
+
                 } catch (error) {
                     console.error("Error fetching trip:", error);
                 }
@@ -47,20 +62,63 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         };
 
         fetchTrip(); // Call the async function
-    }, [currentUser?.currentTripId, setCurrentTrip]);  // Re-run when currentTripId changes
+    }, [currentTripId, setCurrentTrip]);  // Re-run when currentTripId changes
 
-    // If a currentTrip exists, subscribe to its changes in Firestore:
+
+    //watch for changes in any field of the current Trip
     useEffect(() => {
-        let unsubscribe: () => void;
-        if (currentTrip?.id) {
-            unsubscribe = apiSubscribeToTrip(currentTrip.id, (tripData) => {
-                setCurrentTrip(tripData);
-            });
-        }
+        if (!currentTripId) return;
+
+        const tripRef = doc(firestore, "trips", currentTripId);
+        console.log("Listening for Firestore changes on trip:", currentTripId);
+
+        const unsubscribe = onSnapshot(tripRef, (docSnap) => {
+            if (docSnap.exists) {
+                console.log("Trip updated from Firestore:", docSnap.data());
+                setCurrentTrip({ id: currentTripId, ...docSnap.data() } as Trip);
+            } else {
+                console.warn("Trip document deleted.");
+                setCurrentTrip(null);
+            }
+        });
+
         return () => {
-            if (unsubscribe) unsubscribe();
+            console.log("Unsubscribing from trip listener.");
+            unsubscribe();
         };
-    }, [currentTrip?.id]);
+    }, [currentTripId]); // Runs once per tripId change but listens to all field updates!
+
+    // listen to sub collection of destinations in each trip.
+    useEffect(() => {
+        if (!currentTripId) return;
+
+        // Listen to the "destinations" sub-collection under the current trip.
+        const destinationsRef = collection(firestore, "trips", currentTripId, "destinations");
+
+        console.log("Listening for Firestore changes on destinations for trip:", currentTripId);
+
+        const unsubscribe = onSnapshot(destinationsRef, (snapshot) => {
+            // Map over the documents in the destinations collection and include the document ID
+            const updatedDestinations = snapshot.docs.map((doc) => ({
+                id: doc.id,  // Firestore document ID
+                ...doc.data(), // Actual document data
+            })) as Destination[];
+
+            setCurrentTrip((prevTrip) =>
+                prevTrip ? { ...prevTrip, destinations: updatedDestinations } : prevTrip
+            );
+
+            console.log("Destinations updated from Firestore:", updatedDestinations);
+        });
+
+        return () => {
+            console.log("Unsubscribing from destinations listener.");
+            unsubscribe();
+        };
+    }, [currentTripId]); // Runs whenever currentTripId changes
+
+
+
 
     // Create a new trip document in Firestore and update local state.
     const createTrip = async (tripData: Trip) => {
@@ -68,14 +126,14 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
             const tripId = await apiCreateTrip(tripData);
             console.log("Trip created with ID:", tripId);
             // Set the currentTrip with the new id.
-            const newTrip : Trip = { ...tripData, id: tripId };
-            setCurrentTrip(newTrip);
+            // const newTrip : Trip = { ...tripData, id: tripId };
+            // setCurrentTrip(newTrip);
 
             //update firestore, and User Context will update by "snapshot" listener.
             await apiAddTripToUser(getCurrentUserId(), tripId);
             await apiSetCurrentTripId(getCurrentUserId(), tripId);
 
-            console.log("Current trip state updated:", newTrip);
+            console.log("trip created on firestore:", tripData);
         } catch (error) {
             console.error("Error creating trip:", error);
             throw error;
@@ -87,7 +145,8 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         if (!currentTrip || !currentTrip.id) return;
         try {
             await apiUpdateTrip(currentTrip.id, updatedData);
-            setCurrentTrip((prevTrip) => (prevTrip ? { ...prevTrip, ...updatedData } : prevTrip));
+            // The Firestore snapshot listener will update the local state.
+            // setCurrentTrip((prevTrip) => (prevTrip ? { ...prevTrip, ...updatedData } : prevTrip));
         } catch (error) {
             console.error("Error updating trip:", error);
             throw error;
@@ -102,17 +161,18 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         }
         try {
             const destId = await apiAddDestinationToTrip(currentTrip.id, destination);
-            setCurrentTrip((prevTrip) =>
-                prevTrip
-                    ? {
-                        ...prevTrip, destinations: [...prevTrip.destinations,
-                            {
-                                ...destination, 
-                                id: destId,
-                            }]
-                    }
-                    : prevTrip
-            );
+            // The Firestore snapshot listener will update the local state.
+            // setCurrentTrip((prevTrip) =>
+            //     prevTrip
+            //         ? {
+            //             ...prevTrip, destinations: [...prevTrip.destinations,
+            //                 {
+            //                     ...destination,
+            //                     id: destId,
+            //                 }]
+            //         }
+            //         : prevTrip
+            // );
             console.log("Destination added with ID:", destId);
         } catch (error) {
             console.error("Error adding destination:", error);
@@ -128,15 +188,15 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         }
         try {
             await apiUpdateDestination(currentTrip.id, destinationId, updatedData);
-            // Update local state by mapping over existing destinations.
-            const updatedDestinations = currentTrip.destinations.map((dest) => {
-                // Assume each destination document has an "id" property.
-                if ((dest as any).id === destinationId) {
-                    return { ...dest, ...updatedData };
-                }
-                return dest;
-            });
-            setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
+            // dont need to update local status.
+            // const updatedDestinations = currentTrip.destinations.map((dest) => {
+            //     // Assume each destination document has an "id" property.
+            //     if ((dest as any).id === destinationId) {
+            //         return { ...dest, ...updatedData };
+            //     }
+            //     return dest;
+            // });
+            // setCurrentTrip({ ...currentTrip, destinations: updatedDestinations });
         } catch (error) {
             console.error("Error updating destination:", error);
             throw error;

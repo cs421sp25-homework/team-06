@@ -39,6 +39,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         // Set up Firestore listener
         const unsubscribe = onSnapshot(userRef, (docSnap) => {
             if (docSnap.exists) {
+                console.log("user has changed on firestore found, set new user context.");
                 setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
             } else {
                 setCurrentUser(null);

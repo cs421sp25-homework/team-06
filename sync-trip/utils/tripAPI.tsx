@@ -12,21 +12,21 @@ export const getATripById = async (tripId: string): Promise<Trip> => {
     }
     return { id: tripSnap.id, ...tripSnap.data() } as Trip;
 }
-export const fetchTripsByIds = async (tripIdsList: string[]): Promise<Trip[]> => {
-    // If there are no IDs, return an empty array.
-    if (tripIdsList.length === 0) return [];
-
-    const tripPromises = tripIdsList.map(async (id) => {
-        const tripRef = doc(firestore, 'trips', id);
-        const tripSnap = await getDoc(tripRef);
-        return tripSnap.exists
-            ? ({ id: tripSnap.id, ...tripSnap.data() } as Trip)
-            : null;
-    });
-    const tripResults = await Promise.all(tripPromises);
-    // Filter out any null values (in case a trip was not found)
-    return tripResults.filter((trip) => trip !== null) as Trip[];
-};
+// export const fetchTripsByIds = async (tripIdsList: string[]): Promise<Trip[]> => {
+//     // If there are no IDs, return an empty array.
+//     if (tripIdsList.length === 0) return [];
+//
+//     const tripPromises = tripIdsList.map(async (id) => {
+//         const tripRef = doc(firestore, 'trips', id);
+//         const tripSnap = await getDoc(tripRef);
+//         return tripSnap.exists
+//             ? ({ id: tripSnap.id, ...tripSnap.data() } as Trip)
+//             : null;
+//     });
+//     const tripResults = await Promise.all(tripPromises);
+//     // Filter out any null values (in case a trip was not found)
+//     return tripResults.filter((trip) => trip !== null) as Trip[];
+// };
 
 // Create a new trip and return its document ID.
 export const createTrip = async (tripData: Trip): Promise<string> => {
@@ -49,13 +49,22 @@ export const updateTrip = async (tripId: string, updatedData: Partial<Trip>) => 
 
 // Add a destination to a trip.
 export const addDestinationToTrip = async (tripId: string, destination: any) => {
-    const destinationsRef = collection(firestore, 'trips', tripId, 'destinations');
-    const docRef = await addDoc(destinationsRef, {
-        ...destination,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
-    return docRef.id;
+    try {
+        if (!tripId) throw new Error("Trip ID is missing");
+
+        const destinationsRef = collection(firestore, 'trips', tripId, 'destinations');
+        const docRef = await addDoc(destinationsRef, {
+            ...destination,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        console.log("Destination added successfully on firestore with ID:", docRef.id, "in tripId:", tripId);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding destination:", error);
+        throw error;
+    }
 };
 
 // Get a trip with real-time updates.

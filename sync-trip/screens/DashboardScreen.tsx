@@ -5,8 +5,9 @@ import { FlatList } from "react-native";
 import { useUser } from "../context/UserContext";
 import { useTrip } from "../context/TripContext";
 import { addCollaboratorByEmail, setCurrentTripId } from "../utils/userAPI";
-import { fetchTripsByIds } from "../utils/tripAPI";
 import {TripStatus} from "../types/Trip";
+import {doc, onSnapshot} from "@react-native-firebase/firestore";
+import {firestore} from "../utils/firebase";
 
 const DashboardScreen = () => {
     const { currentUser, getCurrentUserId } = useUser();
@@ -16,17 +17,33 @@ const DashboardScreen = () => {
     const [inviteEmail, setInviteEmail] = useState("");
     const [tripIdForInvite, setTripIdForInvite] = useState<string | null>(null);
 
-  useEffect(() => {
-      if (!currentUser || !currentUser.tripsIdList) return;
+    useEffect(() => {
+        if (!currentUser || !currentUser.tripsIdList) return;
 
-      // Fetch trips when user data updates
-      const fetchTrips = async () => {
-          const fetchedTrips = await fetchTripsByIds(currentUser.tripsIdList);
-          setTrips(fetchedTrips);
-      };
+        // Array to hold unsubscribe functions
+        const unsubscribeFuncs: Array<() => void> = [];
 
-      fetchTrips();
-  }, [currentUser]);  // Updates automatically when current user changes (like currentUserId changes or tripsIdList changes)
+        // Object to accumulate trips data
+        const tripsMap: { [key: string]: any } = {};
+
+        // Listener for each trip
+        currentUser.tripsIdList.forEach((tripId: string) => {
+            const tripRef = doc(firestore, "trips", tripId);
+            const unsubscribe = onSnapshot(tripRef, (docSnap) => {
+                if (docSnap.exists) {
+                    tripsMap[tripId] = { id: tripId, ...docSnap.data() };
+                    // Update trips state whenever any trip updates
+                    setTrips(Object.values(tripsMap));
+                }
+            });
+            unsubscribeFuncs.push(unsubscribe);
+        });
+
+        // Cleanup all listeners on unmount or when tripsIdList changes
+        return () => {
+            unsubscribeFuncs.forEach((unsubscribe) => unsubscribe());
+        };
+    }, [currentUser]);  // Updates automatically when current user changes (like currentUserId changes or tripsIdList changes)
 
 
 
@@ -78,8 +95,8 @@ const DashboardScreen = () => {
                 <Card.Content>
                     {/*<Paragraph>{`Start: ${new Date(item.startDate).toLocaleDateString()}`}</Paragraph>*/}
                     {/*<Paragraph>{`End: ${new Date(item.endDate).toLocaleDateString()}`}</Paragraph>*/}
-                    <Paragraph>{`Destinations: ${item.destinations?.length || 0}`}</Paragraph>
-                    <Paragraph>{`members: ${item.collaborators?.length || 1}`}</Paragraph>
+                    {/*<Paragraph>{`Destinations: ${item.destinations?.length || 0}`}</Paragraph>*/}
+                    <Paragraph>{`members: ${item.collaborators?.length + 1 || 1}`}</Paragraph>
                 </Card.Content>
                 <Card.Actions style={styles.cardActions}>
                     {!isCurrentTrip && (
@@ -125,7 +142,7 @@ const DashboardScreen = () => {
                         <TextInput
                             label="Email"
                             mode="outlined"
-                            value={inviteEmail}
+                            defaultValue={inviteEmail}
                             onChangeText={setInviteEmail}
                         />
                     </Dialog.Content>
