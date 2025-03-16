@@ -1,24 +1,15 @@
 import React, {createContext, ReactNode, useContext, useEffect, useState} from "react";
-// import {
-//     getCurrentUser as apiGetCurrentUser,
-//     updateUser as apiUpdateUser,
-//     setCurrentTrip as apiSetCurrentTrip,
-//     addTripToUser as apiAddTripToUser,
-// } from "../utils/userAPI";
+
 import {User} from "../types/User";
 import {auth, firestore} from "../utils/firebase";
 import {doc, onSnapshot} from "@react-native-firebase/firestore";
 
-// import { useTrip } from "./TripContext"
 
 
 interface UserContextType {
     currentUser: User | null;
     setCurrentUser: (user: User | null) => void;
-    // refreshUser: () => Promise<void>;
-    // updateCurrentTrip: (tripId: string) => Promise<void>;
-    // updateUserInfo: (updatedData: Partial<User>) => Promise<void>;
-    // addTripToUser: (tripId: string) => Promise<void>;
+
     getCurrentUserId: () => string;
     logout: () => void;
 }
@@ -66,10 +57,7 @@ export const UserProvider = ({children}: { children: ReactNode }) => {
     const value: UserContextType = {
         currentUser,
         setCurrentUser,
-        // refreshUser,
-        // updateCurrentTrip: updateCurrentTripId,
-        // updateUserInfo,
-        // addTripToUser,
+
         getCurrentUserId,
         logout,
     };
