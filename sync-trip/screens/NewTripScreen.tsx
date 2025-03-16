@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, Portal } from 'react-native-paper';
-import { DatePickerModal } from 'react-native-paper-dates';
-import { useTrip } from "../context/TripContext";
-import { CalendarDate } from "react-native-paper-dates/lib/typescript/Date/Calendar";
-import { useMessageDialog } from '../components/MessageDialog';
-import { useTabs } from '../navigation/useAppNavigation';
-import { auth } from '../utils/firebase';
-import { Trip } from '../types/Trip';
+import React, {useState} from 'react';
+import {StyleSheet, View} from 'react-native';
+import {Button, TextInput} from 'react-native-paper';
+import {DatePickerModal} from 'react-native-paper-dates';
+import {useTrip} from "../context/TripContext";
+import {CalendarDate} from "react-native-paper-dates/lib/typescript/Date/Calendar";
+import {useMessageDialog} from '../components/MessageDialog';
+import {useTabs} from '../navigation/useAppNavigation';
+import {auth} from '../utils/firebase';
+import {Trip, TripStatus} from '../types/Trip';
 
 
 const TripCreationScreen = () => {
-    const { showMessage } = useMessageDialog();
+    const {showMessage} = useMessageDialog();
 
     const [title, setTitle] = useState('');
     const [startDate, setStartDate] = useState<CalendarDate>(undefined);
     const [endDate, setEndDate] = useState<CalendarDate>(undefined);
     const [visible, setVisible] = useState(false);
 
-    const { createTrip } = useTrip();
-    const { setTabIndex } = useTabs();
+    const {createTrip} = useTrip();
+    const {setTabIndex} = useTabs();
 
     const onDismiss = () => setVisible(false);
 
@@ -43,6 +43,7 @@ const TripCreationScreen = () => {
                 ownerId: auth.currentUser.uid, // Ensure a user is signed in
                 collaborators: [],
                 destinations: [],
+                status: TripStatus.PLANNING
             };
             try {
                 await createTrip(newTrip);
@@ -74,15 +75,15 @@ const TripCreationScreen = () => {
                 </Button>
 
                 {/*<Portal>*/}
-                    <DatePickerModal
-                        locale={"en"}
-                        mode="range"
-                        visible={visible}
-                        onDismiss={onDismiss}
-                        startDate={startDate}
-                        endDate={endDate}
-                        onConfirm={onConfirm}
-                    />
+                <DatePickerModal
+                    locale={"en"}
+                    mode="range"
+                    visible={visible}
+                    onDismiss={onDismiss}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onConfirm={onConfirm}
+                />
                 {/*</Portal>*/}
 
                 <Button testID="createTrip" mode="contained" onPress={handleCreateTrip}>
