@@ -24,6 +24,7 @@ interface TripContextType {
     addDestinationToTrip: (destination: Destination) => Promise<void>;
     updateDestinationInTrip: (destinationId: string, updatedData: Partial<Destination>) => Promise<void>;
     subscribeToTrip: (tripId: string, callback: (trip: Trip | null) => void) => () => void;
+    logout: () => void;
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
@@ -180,6 +181,11 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         return apiSubscribeToTrip(tripId, callback);
     };
 
+    const logout = () => {
+        setCurrentTrip(null); // Clear the current trip
+        console.log('Trip context cleared');
+    };
+
     return (
         <TripContext.Provider
             value={{
@@ -190,6 +196,7 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
                 addDestinationToTrip,
                 updateDestinationInTrip,
                 subscribeToTrip,
+                logout
             }}
         >
             {children}

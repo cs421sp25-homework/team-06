@@ -21,6 +21,7 @@ interface UserContextType {
     // updateUserInfo: (updatedData: Partial<User>) => Promise<void>;
     // addTripToUser: (tripId: string) => Promise<void>;
     getCurrentUserId: () => string;
+    logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -49,67 +50,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return () => unsubscribe();  // Cleanup listener when unmounting
     }, []);
 
-
-
-
-    // // Refresh the current user from Firestore using getCurrentUser from userAPI.
-    // const refreshUser = async () => {
-    //     try {
-    //         const userData = await apiGetCurrentUser();
-    //         setCurrentUser(userData);
-    //     } catch (error) {
-    //         console.error("Error refreshing user:", error);
-    //     }
-    // };
-    //
-    // useEffect(() => {
-    //     // Load user data when the provider mounts.
-    //     refreshUser();
-    // }, []);
-
-    // // Update the currentTripId in Firestore and local state.
-    // const updateCurrentTripId = async (tripId: string) => {
-    //     if (!currentUser) return;
-    //     try {
-    //         await apiSetCurrentTrip(currentUser.uid, tripId);
-    //         setCurrentUser({ ...currentUser, currentTripId: tripId });
-    //     } catch (error) {
-    //         console.error("Error updating current trip:", error);
-    //     }
-    // };
-    //
-    // // Update other user details.
-    // const updateUserInfo = async (updatedData: Partial<User>) => {
-    //     if (!currentUser) return;
-    //     try {
-    //         await apiUpdateUser(currentUser.uid, updatedData);
-    //         setCurrentUser({ ...currentUser, ...updatedData });
-    //     } catch (error) {
-    //         console.error("Error updating user info:", error);
-    //     }
-    // };
-    //
-    // // Function to add a trip to the user's tripsId list
-    // const addTripToUser = async (tripId: string) => {
-    //     if (!currentUser) {
-    //         throw new Error("Current user does not exist");
-    //     }
-    //     try {
-    //         await apiAddTripToUser(tripId);
-    //         setCurrentUser((prevUser) =>
-    //             prevUser ? { ...prevUser, tripsId: [...(prevUser.tripsId || []), tripId] } : prevUser
-    //         );
-    //     } catch (error) {
-    //         console.error("Error adding trip to user:", error);
-    //     }
-    // };
-
     const getCurrentUserId = (): string => {
         if (!currentUser) {
             throw new Error("Current user does not exist");
         }
         return currentUser.uid;
     }
+
+    // Logout function to clear user data
+    const logout = () => {
+        setCurrentUser(null); // Clear currentUser in the context
+        // Additional cleanup logic, e.g., clearing localStorage, Firebase auth sign-out
+        console.log('User logged out');
+    };
 
     const value: UserContextType = {
         currentUser,
@@ -119,6 +72,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         // updateUserInfo,
         // addTripToUser,
         getCurrentUserId,
+        logout,
     };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

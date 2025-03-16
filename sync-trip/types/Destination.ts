@@ -9,7 +9,7 @@ export interface Destination {
     tripId?: string;
     address?: string;
     description?: string;
-    date?: Date;
+    date?: Date | null;
     name?: string;
     createdByUid: string;
 }

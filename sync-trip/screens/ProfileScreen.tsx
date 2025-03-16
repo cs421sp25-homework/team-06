@@ -17,6 +17,9 @@ import {
 
 import { useAppNavigation } from '../navigation/useAppNavigation';
 
+import {useUser} from "../context/UserContext";
+import {useTrip} from "../context/TripContext";
+
 const ProfileScreen = () => {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -33,6 +36,9 @@ const ProfileScreen = () => {
   const offset = 100;
   // Use the hook to get navigation if needed:
   const navigation = useAppNavigation();
+
+  const {logout:userLogout} = useUser();
+  const {logout:tripLogout} = useTrip();
 
   const [savedProfile, setSavedProfile] = useState({
     name: '',
@@ -142,6 +148,8 @@ const ProfileScreen = () => {
   const handleLogout = async () => {
     try {
       await auth.signOut();
+      userLogout();
+      tripLogout();
       navigation.navigate('Login');
     } catch (err) {
       setError('Error logging out');

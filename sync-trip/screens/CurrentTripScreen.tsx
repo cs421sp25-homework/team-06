@@ -103,17 +103,24 @@ const CurrentTripScreen = () => {
   };
 
   // Remove (unassign) a destination by setting its date to null
-  const handleRemoveDestination = async (destination: Destination) => {
+  const handleRemoveDestinationDate = async (destination: Destination) => {
     if (!currentTrip) return;
-    // For the destination to "remove" its assigned date, set its date to null.
-    const updatedDestinations = currentTrip.destinations.map((dest: any) => {
-      if ((dest.id || "") === (destination.id || "")) {
-        return { ...dest, date: null };
-      }
-      return dest;
-    });
+    // // For the destination to "remove" its assigned date, set its date to null.
+    // const updatedDestinations = currentTrip.destinations.map((dest: any) => {
+    //   if ((dest.id || "") === (destination.id || "")) {
+    //     return { ...dest, date: null };
+    //   }
+    //   return dest;
+    // });
+
+
     try {
-      await updateTrip({ destinations: updatedDestinations });
+
+      const destinationId = destination.id;
+      if (!destinationId) {
+        throw new Error("Destination missing ID.");
+      }
+      await updateDestinationInTrip(destinationId, {date: null});
     } catch (error) {
       console.error("Error removing destination:", error);
       Alert.alert("Error", "Failed to remove destination.");
@@ -186,7 +193,7 @@ const CurrentTripScreen = () => {
                     right={() => (
                       <IconButton
                         icon="delete"
-                        onPress={() => handleRemoveDestination(destination)}
+                        onPress={() => handleRemoveDestinationDate(destination)}
                       />
                     )}
                   />

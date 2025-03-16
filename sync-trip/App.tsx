@@ -16,11 +16,7 @@ const App = () => {
     return (
         <PaperProvider>
             <MessageDialogProvider>
-                <UserProvider>
-                    <TripProvider>
-                        <AppNavigator />
-                    </TripProvider>
-                </UserProvider>
+                <AppNavigator />
             </MessageDialogProvider>
         </PaperProvider>
     );

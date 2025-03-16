@@ -45,6 +45,7 @@ export const updateTrip = async (tripId: string, updatedData: Partial<Trip>) => 
         ...updatedData,
         updatedAt: serverTimestamp(),
     });
+
 };
 
 // Add a destination to a trip.
