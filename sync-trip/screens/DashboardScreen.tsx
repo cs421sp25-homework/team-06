@@ -28,11 +28,13 @@ const DashboardScreen = () => {
         currentUser.tripsIdList.forEach((tripId: string) => {
             const tripRef = doc(firestore, "trips", tripId);
             const unsubscribe = onSnapshot(tripRef, (docSnap) => {
-                if (docSnap.exists) {
-                    tripsMap[tripId] = {id: tripId, ...docSnap.data()};
-                    // Update trips state whenever any trip updates
-                    setTrips(Object.values(tripsMap));
+                if (!docSnap || docSnap.exists) {
+                    console.warn(`Trip document with ID ${tripId} does not exist.`);
+                    return;
                 }
+                tripsMap[tripId] = {id: tripId, ...docSnap.data()};
+                // Update trips state whenever any trip updates
+                setTrips(Object.values(tripsMap));
             });
             unsubscribeFuncs.push(unsubscribe);
         });
