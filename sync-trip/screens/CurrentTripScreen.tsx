@@ -146,7 +146,7 @@ const CurrentTripScreen = () => {
                     <Text>No destinations added yet.</Text>
                 ) : (
                     currentTrip.destinations.map((destination) => (
-                        <View style={styles.container}>
+                        <View key={destination.id} style={styles.container}>
                             <List.Item
                                 key={destination.id}
                                 title={destination.description}
