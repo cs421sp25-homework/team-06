@@ -88,7 +88,7 @@ const DashboardScreen = () => {
         const isCurrentTrip = item.id === currentUser?.currentTripId;
         return (
             <Card style={styles.card} elevation={3}>
-                <Card.Title title={item.title} subtitle={item.status}/>
+                <Card.Title title={item.title}/>
                 <Card.Content>
                     {/*<Paragraph>{`Start: ${new Date(item.startDate).toLocaleDateString()}`}</Paragraph>*/}
                     {/*<Paragraph>{`End: ${new Date(item.endDate).toLocaleDateString()}`}</Paragraph>*/}

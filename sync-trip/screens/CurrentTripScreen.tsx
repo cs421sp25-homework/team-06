@@ -1,12 +1,12 @@
-import React, {useEffect, useState} from "react";
-import {Alert, ScrollView, StyleSheet, View} from "react-native";
-import {Button, Card, Dialog, IconButton, List, Portal, Text, Title} from "react-native-paper";
-import {useTrip} from "../context/TripContext";
-import {useTabs} from "../navigation/useAppNavigation";
-import {Destination} from "../types/Destination";
-import {convertTimestampToDate} from "../utils/tripAPI";
+import React, { useEffect, useState } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Button, Card, Dialog, IconButton, List, Portal, Text, Title } from "react-native-paper";
+import { useTrip } from "../context/TripContext";
+import { useTabs } from "../navigation/useAppNavigation";
+import { Destination } from "../types/Destination";
+import { convertTimestampToDate, deleteDestinationInTrip } from "../utils/tripAPI";
 
-// Generate an array of dates from the start to the end date (inclusive)
+// Helper to generate an array of dates from start to end (inclusive)
 const getDatesInRange = (start: Date, end: Date) => {
     const date = new Date(start);
     const dates = [];
@@ -18,13 +18,14 @@ const getDatesInRange = (start: Date, end: Date) => {
 };
 
 const CurrentTripScreen = () => {
-    const {currentTrip, setCurrentTrip, updateTrip, updateDestinationInTrip, subscribeToTrip} = useTrip();
-    // Using local state to manage trip data; in production, update data through context or an API
-    const {tabIndex, setTabIndex} = useTabs();
-    // Control the assign date dialog and store the destination to be assigned
+    const { currentTrip, setCurrentTrip, updateDestinationInTrip } = useTrip();
+    const { setTabIndex } = useTabs();
+
+    // For showing the assign date dialog
     const [assignModalVisible, setAssignModalVisible] = useState(false);
     const [destinationToAssign, setDestinationToAssign] = useState<Destination | null>(null);
 
+    // Convert timestamps to Date objects if necessary
     useEffect(() => {
         if (currentTrip) {
             let needUpdate = false;
@@ -40,7 +41,7 @@ const CurrentTripScreen = () => {
             const destinationsConverted = currentTrip.destinations.map((dest: any) => {
                 if (dest.date && !(dest.date instanceof Date)) {
                     needUpdate = true;
-                    return {...dest, date: convertTimestampToDate(dest.date)};
+                    return { ...dest, date: convertTimestampToDate(dest.date) };
                 }
                 return dest;
             });
@@ -55,47 +56,36 @@ const CurrentTripScreen = () => {
             }
         }
     }, [currentTrip]);
-    // console.log("Current trip:", currentTrip);
-
 
     if (!currentTrip) {
         return (
             <View style={styles.emptyContainer}>
                 <Title>No Current Trip</Title>
                 <Text>You haven't planned for a trip yet.</Text>
-                <Text> Start planning now by: </Text>
-                <Text> 1. Creating a new plan </Text>
-                <Text> 2. Subscribe to an existing plan!</Text>
-                <Button mode="contained" onPress={() => {
-                    setTabIndex(2);
-                }} style={styles.emptyButton}>
+                <Text>Start planning now by:</Text>
+                <Text>1. Creating a new plan</Text>
+                <Text>2. Subscribing to an existing plan!</Text>
+                <Button mode="contained" onPress={() => setTabIndex(2)} style={styles.emptyButton}>
                     Create New Trip
                 </Button>
             </View>
         );
     }
 
-    // Get an array of dates for the trip
-    const tripDates = getDatesInRange(currentTrip.startDate, currentTrip.endDate);
-    // Filter out destinations that are not yet assigned a date
-    const unassignedDestinations = currentTrip.destinations.filter(
-        (dest) => !dest.date
-    );
-
-    // Open the assign dialog and store the destination that needs a date assignment
+    // Open assign dialog for a destination without a date
     const handleOpenAssignModal = (destination: Destination) => {
         setDestinationToAssign(destination);
         setAssignModalVisible(true);
     };
 
-    // When the user selects a date in the dialog, update the destination's date
+    // When a user selects a date in the dialog, update the destination
     const handleAssignDate = async (date: Date) => {
-        if (!destinationToAssign || !(destinationToAssign as any).id) {
+        if (!destinationToAssign || !destinationToAssign.id) {
             Alert.alert("Error", "Destination not found or missing ID.");
             return;
         }
         try {
-            await updateDestinationInTrip((destinationToAssign as any).id, {date});
+            await updateDestinationInTrip(destinationToAssign.id, { date });
             setAssignModalVisible(false);
             setDestinationToAssign(null);
         } catch (error) {
@@ -104,36 +94,41 @@ const CurrentTripScreen = () => {
         }
     };
 
-    // Remove (unassign) a destination by setting its date to null
+    // Remove an assigned date by setting it to null
     const handleRemoveDestinationDate = async (destination: Destination) => {
-        if (!currentTrip) return;
-        // // For the destination to "remove" its assigned date, set its date to null.
-        // const updatedDestinations = currentTrip.destinations.map((dest: any) => {
-        //   if ((dest.id || "") === (destination.id || "")) {
-        //     return { ...dest, date: null };
-        //   }
-        //   return dest;
-        // });
-
-
+        if (!destination.id) {
+            Alert.alert("Error", "Destination missing ID.");
+            return;
+        }
         try {
-
-            const destinationId = destination.id;
-            if (!destinationId) {
-                throw new Error("Destination missing ID.");
-            }
-            await updateDestinationInTrip(destinationId, {date: null});
+            await updateDestinationInTrip(destination.id, { date: null });
         } catch (error) {
-            console.error("Error removing destination:", error);
-            Alert.alert("Error", "Failed to remove destination.");
+            console.error("Error removing destination date:", error);
+            Alert.alert("Error", "Failed to remove destination date.");
         }
     };
+
+    const handleDeleteDestination = (destination: Destination) => {
+        Alert.alert(
+            "Delete Destination",
+            "Are you sure you want to delete this destination?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => {
+                        if (!currentTrip.id || !destination.id) throw new Error("currentTrip missing ID, or destination missing id.");
+                        deleteDestinationInTrip(currentTrip.id, destination.id);
+                        console.log("Delete destination:", destination.id);
+                    }
+                }
+            ]
+        );
+    }
 
     return (
         <>
             <ScrollView style={styles.container}>
                 <Card style={styles.card}>
-                    <Card.Content>
+                    <Card.Content style={{alignItems: 'center'}}>
                         <Title>{currentTrip.title}</Title>
                         <Text>
                             <Text style={styles.bold}>From: </Text>
@@ -146,75 +141,50 @@ const CurrentTripScreen = () => {
                     </Card.Content>
                 </Card>
 
-                {/* Display unassigned destinations */}
-                <Text style={styles.sectionTitle}>Unassigned Destinations</Text>
-                {unassignedDestinations.length === 0 ? (
-                    <Text>All destinations have been assigned</Text>
+                <Text style={styles.sectionTitle}>Destinations</Text>
+                {currentTrip.destinations.length === 0 ? (
+                    <Text>No destinations added yet.</Text>
                 ) : (
-                    unassignedDestinations.map((destination, idx) => (
-                        <List.Item
-                            key={idx}
-                            title={destination.description}
-                            description={destination.address}
-                            right={() => (
-                                <Button
-                                    mode="outlined"
-                                    onPress={() => handleOpenAssignModal(destination)}
-                                >
-                                    Assign Date
-                                </Button>
-                            )}
-                        />
+                    currentTrip.destinations.map((destination) => (
+                        <View style={styles.container}>
+                            <List.Item
+                                key={destination.id}
+                                title={destination.description}
+                                description={destination.address}
+                            />
+
+                            <View style={styles.buttonContainer}>
+                                {destination.date ? (
+                                    <View style={styles.dateWrapper}>
+                                        <Text style={styles.dateText}>{new Date(destination.date).toLocaleDateString()}</Text>
+                                        <IconButton
+                                            icon="calendar-remove"
+                                            onPress={() => handleRemoveDestinationDate(destination)}
+                                        />
+                                    </View>
+                                ) : (
+                                    <Button mode="outlined" onPress={() => handleOpenAssignModal(destination)}>
+                                        Assign Date
+                                    </Button>
+                                )}
+
+                                <IconButton
+                                    icon="trash-can"
+                                    onPress={() => handleDeleteDestination(destination)}
+                                />
+                            </View>
+                        </View>
+
                     ))
                 )}
 
-                {/* Display destinations grouped by date */}
-                <Text style={styles.sectionTitle}>Destinations by Date</Text>
-                {tripDates.map((date, index) => {
-                    // Filter out destinations assigned to the current date (comparing only the date portion)
-                    const destinationsForDate = currentTrip.destinations.filter(
-                        (dest) => {
-                            if (!dest.date) return false;
-                            const destDate = dest.date instanceof Date ? dest.date : convertTimestampToDate(dest.date);
-                            return destDate.toDateString() === date.toDateString();
-                        });
-                    return (
-                        <List.Accordion
-                            key={index}
-                            title={date.toLocaleDateString()}
-                            style={styles.accordion}
-                        >
-                            {destinationsForDate.length === 0 ? (
-                                <List.Item title="No destinations for this day"/>
-                            ) : (
-                                destinationsForDate.map((destination, idx) => (
-                                    <List.Item
-                                        key={idx}
-                                        title={destination.description}
-                                        description={destination.address}
-                                        right={() => (
-                                            <IconButton
-                                                icon="delete"
-                                                onPress={() => handleRemoveDestinationDate(destination)}
-                                            />
-                                        )}
-                                    />
-                                ))
-                            )}
-                            {/* Optional: Allow adding unassigned destinations under each date */}
-                        </List.Accordion>
-                    );
-                })}
-
-                <Button
-                    mode="contained"
-                    onPress={() => {
-                        /* Handle Edit Trip */
-                    }}
-                    style={styles.button}
-                >
-                    Edit Trip
-                </Button>
+                {/* TODO: handle trip deletion and edit */}
+                {/*<Button mode="contained" onPress={() => {  }} style={styles.button}>*/}
+                {/*    Edit Trip*/}
+                {/*</Button>*/}
+                {/*<Button mode="contained" buttonColor="#D32F2F" onPress={() => {  }} style={styles.button}>*/}
+                {/*    Delete Trip*/}
+                {/*</Button>*/}
             </ScrollView>
 
             {/* Dialog for assigning a date to a destination */}
@@ -226,9 +196,10 @@ const CurrentTripScreen = () => {
                         setDestinationToAssign(null);
                     }}
                 >
-                    <Dialog.Title>Select a Date to Assign Destination</Dialog.Title>
+                    <Dialog.Title>Select a Date to Assign</Dialog.Title>
                     <Dialog.Content>
-                        {tripDates.map((date, idx) => (
+                        {/* Generate a list of dates based on the trip's date range */}
+                        {getDatesInRange(new Date(currentTrip.startDate), new Date(currentTrip.endDate)).map((date, idx) => (
                             <List.Item
                                 key={idx}
                                 title={date.toLocaleDateString()}
@@ -253,12 +224,34 @@ const CurrentTripScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 16,
-    },
     card: {
-        marginBottom: 16,
+        margin: 15,
+    },
+    container: {
+        backgroundColor: 'white',
+        padding: 15,
+        marginVertical: 5,
+        borderRadius: 8,
+        elevation: 3,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 0,
+    },
+    dateWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f4f4f4',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 16,
+    },
+    dateText: {
+        marginRight: 5,
+        fontSize: 14,
+        color: '#333',
     },
     sectionTitle: {
         fontSize: 20,
@@ -267,16 +260,6 @@ const styles = StyleSheet.create({
     },
     bold: {
         fontWeight: "bold",
-    },
-    button: {
-        marginTop: 16,
-    },
-    accordion: {
-        marginBottom: 8,
-        backgroundColor: "#f0f0f0",
-    },
-    addButton: {
-        margin: 8,
     },
     emptyContainer: {
         flex: 1,

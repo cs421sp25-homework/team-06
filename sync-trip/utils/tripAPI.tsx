@@ -1,7 +1,7 @@
 import {firestore} from './firebase';
 import {
     addDoc,
-    collection,
+    collection, deleteDoc,
     doc,
     getDoc,
     onSnapshot,
@@ -69,13 +69,27 @@ export const addDestinationToTrip = async (tripId: string, destination: any) => 
             updatedAt: serverTimestamp(),
         });
 
-        console.log("Destination added successfully on firestore with ID:", docRef.id, "in tripId:", tripId);
+        // console.log("Destination added successfully on firestore with ID:", docRef.id, "in tripId:", tripId);
         return docRef.id;
     } catch (error) {
         console.error("Error adding destination:", error);
         throw error;
     }
 };
+
+export const deleteDestinationInTrip = async (tripId: string, destinationId:string) => {
+    try {
+        if (!tripId) throw new Error("Trip ID is missing");
+
+        const destinationRef = doc(firestore, 'trips', tripId, 'destinations', destinationId);
+        await deleteDoc(destinationRef);
+        console.log(`Destination was deleted with ID ${destinationRef.id}`);
+
+    } catch (error) {
+        console.error("Error deleting destination:", error);
+        throw error;
+    }
+}
 
 // Get a trip with real-time updates.
 export const subscribeToTrip = (tripId: string, callback: (data: any) => void) => {
