@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
-import { Button, Card, Dialog, IconButton, List, Portal, Text, Title } from "react-native-paper";
+import { Button, Card, Dialog, IconButton, List, Portal, Text, Title, TextInput, SegmentedButtons } from "react-native-paper";
+import {DatePickerModal} from 'react-native-paper-dates';
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
 import { convertTimestampToDate, deleteDestinationInTrip } from "../utils/tripAPI";
+import {TripStatus} from "../types/Trip";
 
 // Helper to generate an array of dates from start to end (inclusive)
 const getDatesInRange = (start: Date, end: Date) => {
@@ -18,12 +20,20 @@ const getDatesInRange = (start: Date, end: Date) => {
 };
 
 const CurrentTripScreen = () => {
-    const { currentTrip, setCurrentTrip, updateDestinationInTrip } = useTrip();
+    const { currentTrip, setCurrentTrip, updateDestinationInTrip, updateTrip } = useTrip();
     const { setTabIndex } = useTabs();
 
     // For showing the assign date dialog
     const [assignModalVisible, setAssignModalVisible] = useState(false);
     const [destinationToAssign, setDestinationToAssign] = useState<Destination | null>(null);
+
+    //edit trip mode parameters
+    const [editMode, setEditMode] = useState(false);
+    const [title, setTitle] = useState(currentTrip?.title);
+    const [startDate, setStartDate] = useState(currentTrip?.startDate);
+    const [endDate, setEndDate] = useState(currentTrip?.endDate);
+    const [tripStatus, setTripStatus] = useState(currentTrip?.status || "");
+    const [pickerVisible, setPickerVisible] = useState(false);
 
     // Convert timestamps to Date objects if necessary
     useEffect(() => {
@@ -108,15 +118,15 @@ const CurrentTripScreen = () => {
         }
     };
 
-    const handleDeleteDestination = (destination: Destination) => {
+    const handleDeleteDestination = async (destination: Destination) => {
         Alert.alert(
             "Delete Destination",
             "Are you sure you want to delete this destination?",
             [
                 { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => {
+                { text: "Delete", style: "destructive", onPress: async () => {
                         if (!currentTrip.id || !destination.id) throw new Error("currentTrip missing ID, or destination missing id.");
-                        deleteDestinationInTrip(currentTrip.id, destination.id);
+                        await deleteDestinationInTrip(currentTrip.id, destination.id);
                         console.log("Delete destination:", destination.id);
                     }
                 }
@@ -124,22 +134,97 @@ const CurrentTripScreen = () => {
         );
     }
 
+    const handleBeginEditCurrentTrip = ()=> {
+        setTitle(currentTrip.title);
+        setStartDate(currentTrip.startDate);
+        setEndDate(currentTrip.endDate);
+        setEditMode(true);
+    }
+
+    const handleSaveTrip = async () => {
+        if (!title || !startDate || !endDate || !tripStatus) {
+            Alert.alert("Please enter a title and select dates.");
+            return;
+        }
+        const status  = tripStatus as TripStatus;
+
+        try {
+            await updateTrip({ title, startDate, endDate, status });
+            setEditMode(false);
+        } catch (error) {
+            console.error("Error updating trip:", error);
+            Alert.alert("Error", "Failed to update trip.");
+        }
+    }
+
     return (
         <>
             <ScrollView style={styles.container}>
-                <Card style={styles.card}>
-                    <Card.Content style={{alignItems: 'center'}}>
-                        <Title>{currentTrip.title}</Title>
-                        <Text>
-                            <Text style={styles.bold}>From: </Text>
-                            {new Date(currentTrip.startDate).toLocaleDateString()}
-                        </Text>
-                        <Text>
-                            <Text style={styles.bold}>To: </Text>
-                            {new Date(currentTrip.endDate).toLocaleDateString()}
-                        </Text>
-                    </Card.Content>
-                </Card>
+                {editMode? (
+                    <View style={styles.form}>
+                        <TextInput
+                            label="Trip Title"
+                            value={title}
+                            onChangeText={setTitle}
+                            mode="outlined"
+                            style={{ marginBottom: 10 }}
+                        />
+                        <Button mode="outlined" onPress={() => setPickerVisible(true)}>
+                            {startDate && endDate
+                                ? `${startDate.toDateString()} - ${endDate.toDateString()}`
+                                : "Select Dates"}
+                        </Button>
+
+                        <SegmentedButtons
+                            value={tripStatus}
+                            onValueChange={setTripStatus}
+                            style={{ marginTop: 10 }}
+                            buttons={[
+                                { value: TripStatus.PLANNING, label: 'plan', },
+                                { value: TripStatus.ONGOING, label: 'ongoing', },
+                                { value: TripStatus.COMPLETED, label: 'complete' },
+                            ]}
+                        />
+
+                        <DatePickerModal
+                            locale="en"
+                            mode="range"
+                            visible={pickerVisible}
+                            onDismiss={() => setPickerVisible(false)}
+                            startDate={startDate}
+                            endDate={endDate}
+                            onConfirm={() => {
+                                setStartDate(startDate);
+                                setEndDate(endDate);
+                                setPickerVisible(false);
+                            }}
+                        />
+                    </View>
+                ):(
+                    <Card style={styles.card}>
+                        <Card.Content style={{alignItems: 'center'}}>
+                            <Title>{currentTrip.title}</Title>
+                            <Text>
+                                <Text style={styles.bold}>From: </Text>
+                                {new Date(currentTrip.startDate).toLocaleDateString()}
+                            </Text>
+                            <Text>
+                                <Text style={styles.bold}>To: </Text>
+                                {new Date(currentTrip.endDate).toLocaleDateString()}
+                            </Text>
+                        </Card.Content>
+                    </Card>
+                )}
+
+                {editMode ? (
+                    <Button mode="contained" onPress={handleSaveTrip}>
+                        save changes
+                    </Button>
+                    ) : (
+                        <Button mode="contained"  onPress={ handleBeginEditCurrentTrip }>
+                            Edit Trip
+                        </Button>)
+                }
 
                 <Text style={styles.sectionTitle}>Destinations</Text>
                 {currentTrip.destinations.length === 0 ? (
@@ -178,10 +263,7 @@ const CurrentTripScreen = () => {
                     ))
                 )}
 
-                {/* TODO: handle trip deletion and edit */}
-                {/*<Button mode="contained" onPress={() => {  }} style={styles.button}>*/}
-                {/*    Edit Trip*/}
-                {/*</Button>*/}
+                {/* TODO: handle trip deletion */}
                 {/*<Button mode="contained" buttonColor="#D32F2F" onPress={() => {  }} style={styles.button}>*/}
                 {/*    Delete Trip*/}
                 {/*</Button>*/}
@@ -269,6 +351,12 @@ const styles = StyleSheet.create({
     },
     emptyButton: {
         marginTop: 16,
+    },
+    form: {
+        backgroundColor: 'white',
+        padding: 9,
+        borderRadius: 10,
+        elevation: 3, // Adds a shadow effect
     },
 });
 
