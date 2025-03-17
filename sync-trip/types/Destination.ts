@@ -8,4 +8,5 @@ export interface Destination {
     date?: Date | null;
     name?: string;
     createdByUid: string;
+    coords?: string;
 }
