@@ -4,7 +4,9 @@
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": ["react-native-maps"]
+        "exclude": [
+          "react-native-maps"
+        ]
       }
     }
   },
