@@ -54,7 +54,8 @@
         "projectId": "fc9dba69-ea25-43d7-85b1-ab5321ac4588"
       },
       "googleMaps": {
-        "apiKey": "AIzaSyCSDzZzv6ML01c-nMlVaFc4wiBXwe8ERuI"
+        "apiKey": "AIzaSyCSDzZzv6ML01c-nMlVaFc4wiBXwe8ERuI",
+        "apiKey2": "AIzaSyCxVwP81cM9LIzPA3PXMFTqDifQi00WIQk"
       }
     },
     "owner": "s370101387"
