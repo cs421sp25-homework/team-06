@@ -53,6 +53,8 @@ eas build --profile development --platform android
 
 This will build a apk for any devices to install.
 
+For iteration 2, we have released our app on expo. You can simply download the apk from: https://expo.dev/accounts/s370101387/projects/sync-trip/builds/7953db98-7477-4ed1-9ac3-ecfeb68a1ae3
+
 ### Build a development version quickly
 
 ```shell
