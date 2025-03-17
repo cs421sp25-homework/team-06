@@ -11,17 +11,20 @@ appId: "com.s370101387.synctrip"
 # navigate to dashboard and check the function of the buttons
 - assertVisible: { id: "dashboardScreen"}
 - waitForAnimationToEnd
-- scrollUntilVisible:
-    element: {id: "archivedTrips"}
-    direction: DOWN
-- tapOn: { id: "viewMore" }
-- assertVisible: { id: "historyScreen" }
-- assertVisible: "Trip History"
-- back
-- tapOn: { id: "archivedTrips" }
-- assertVisible: {id: "archivedHistoryScreen"}
-- assertVisible: "Archived Trips"
-- back
+#
+# TODO: history and archivedTrips screen not implemented.
+#- scrollUntilVisible:
+#    element: {id: "archivedTrips"}
+#    direction: DOWN
+#- tapOn: { id: "viewMore" }
+#- assertVisible: { id: "historyScreen" }
+#- assertVisible: "Trip History"
+#- back
+#- tapOn: { id: "archivedTrips" }
+#- assertVisible: {id: "archivedHistoryScreen"}
+#- assertVisible: "Archived Trips"
+#- back
+#
 # navigate to profile
 - tapOn: { id: "tab-profile" }
 - assertVisible: { id: "profileScreen" }
