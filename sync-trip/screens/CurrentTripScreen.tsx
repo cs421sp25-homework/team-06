@@ -205,9 +205,9 @@ const CurrentTripScreen = () => {
               onDismiss={() => setPickerVisible(false)}
               startDate={startDate}
               endDate={endDate}
-              onConfirm={() => {
-                setStartDate(startDate);
-                setEndDate(endDate);
+              onConfirm={({ startDate: newStartDate, endDate: newEndDate }) => {
+                setStartDate(newStartDate);
+                setEndDate(newEndDate);
                 setPickerVisible(false);
               }}
             />

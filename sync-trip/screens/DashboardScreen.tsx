@@ -129,7 +129,7 @@ const DashboardScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View testID="dashboardScreen" style={styles.container}>
       {renderSection("Planning", categorizedTrips.planning)}
       {renderSection("Ongoing", categorizedTrips.ongoing)}
       {renderSection("Completed", categorizedTrips.completed)}
