@@ -107,6 +107,26 @@ you can simply deploy it on your android phone.
 
 Scan the QR code or enter the URL after building with Expo.
 
+## Completed Feature in Iteration 1
+
+1. User can sign up with their email and password, or directly sign in with their google accounts.
+2. User can log in, log out and delete their account.
+3. User can use verification email to change password and verify identity.
+4. User can edit and show their profile and information
+5. User can navigate between different screens by the bottom navigator.
+
+## Completed Feature in Iteration 2
+
+1. User can create a new Trip with a title and a date range in "+" screen.
+2. User can edit the title and date range and the trip status (planning, ongoing, completed) in trip screen.
+3. User can see all the trips in dashboard screen, and invite others to a trip by input email.
+4. User can select any of the trips to be the current trip to edit or see.
+5. User can see the map and long press the map to add a destination to the current trip, it will show on the map as a marker and show on current trip screen as a destination item.
+6. User can press the marker to see and edit the description of the destination on the map.
+7. User can assign date for any destination on the current trip screen.
+8. User can delete a destination on the current trip screen.
+9. Differnet Users can edit the trip and destinations together **in real-time**, they can see the updated changes with no latency.
+
 ## Tech Stacks
 
 1. **Framework: React Native (with React Native CLI)**
@@ -124,13 +144,6 @@ Scan the QR code or enter the URL after building with Expo.
     - Firebase integrates well with mobile apps and scales automatically, allowing us to focus on feature development rather than infrastructure concerns.
     - It’s a managed NoSQL cloud database, which reduces the overhead of server management and maintenance.
 
-## Completed Feature
-
-1. User can sign up with their email and password, or directly sign in with their google accounts.
-2. User can log in, log out and delete their account.
-3. User can use verification email to change password and verify identity.
-4. User can edit and show their profile and information
-5. User can navigate between different screens by the bottom navigator.
 
 <!-- ## Developing
 
