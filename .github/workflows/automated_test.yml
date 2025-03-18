@@ -1,0 +1,57 @@
+name: Maestro Test
+
+on:
+  pull_request:
+    types: [ opened ]
+    branches:
+      - dev
+
+jobs:
+  Auto_Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '23'
+
+      # Install all dependencies (from package.json in sync-trip)
+      - name: Install Dependencies
+        working-directory: ./sync-trip
+        run: npm install
+
+      - name: Authenticate with Expo
+        working-directory: ./sync-trip
+        run: npx expo login -u ${{ secrets.EXPO_USERNAME }} -p ${{ secrets.EXPO_PASSWORD }}
+
+      # Install Maestro CLI
+      - name: Install Maestro CLI
+        working-directory: ./sync-trip
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH":"$HOME/.maestro/bin"
+          maestro --version
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Init eas
+        working-directory: ./sync-trip
+        run: eas init
+
+      - name: Build Configure
+        working-directory: ./sync-trip
+        run: eas build:configure --platform android
+
+      - name: Run Build On Expo
+        working-directory: ./sync-trip
+        run: eas build --profile maestro-test --platform android --non-interactive

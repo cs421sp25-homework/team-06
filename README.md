@@ -34,57 +34,100 @@ npm install  @react-native-firebase/firestore @react-native-firebase/auth  @reac
 
 ### Run the app locally
 
+Now, we can use Expo to run the app.
+
 ```shell
 git clone https://github.com/cs421sp25-homework/team-06.git
-cd ./AndroidApp
-
-npm install -g yarn
-
-
-
-
-## For npm user
-npm install
-#run metro first
-npm start
-#run the app
-npx react-native run-android
-
-# or use yarn to run the app
-yarn android
+cd ./sync-trip
+npx expo install
+npx expo prebuild --platform android --clean
+npx expo run:android
 ```
-This will compile the native part of the project while starting the Metro service in another command line to bundle the JavaScript code in real-time.
 
-If you are confronted with some error, try the following:
+### Build the app with EAS to get a release
 
 ```shell
-cd ./android
-chmod +x ./gradlew
-./gradlew clean
-cd ../
-yarn android
+npm install -g eas-cli
+eas build --profile development --platform android
 ```
+
+This will build a apk for any devices to install.
+
+For iteration 2, we have released our app on expo. You can simply download the apk from: https://expo.dev/accounts/s370101387/projects/sync-trip/builds/7953db98-7477-4ed1-9ac3-ecfeb68a1ae3
+
+### Build a development version quickly
+
+```shell
+npx expo start
+```
+
+This will allow you quickly run the app when developing.
 
 ### Firebase support
 
 I have added the firebase information file "google-services.json" into "AndroidApp/android/app/", so the app can directly connect to the Firebase.
 
+## E2E Test
+
+Since we are using expo now, we decided to use Maestro to do E2E test. We setup the flow as shown in
+[maestro-test.yaml](./maestro/maestro-test.yaml).
+
+```shell
+npm install -g eas-cli
+brew install maestro
+export PATH="$PATH":"$HOME/.maestro/bin"
+eas init
+eas build:configure
+eas build --profile maestro-test
+```
+
+Or we can test the app locally
+
+```shell
+brew install maestro
+export PATH="$PATH":"$HOME/.maestro/bin"
+npm install -g eas-cli
+eas init
+eas build:configure --platform android
+npx expo run:android
+maestro test ./maestro/dashboardScreen_test.yaml
+```
+
+After running commands above, we can check out the result on Expo portal.
+
+## Automated Test
+
+For automated test, we run the workflow in Github Actions. In the yaml file, we run the E2E test
+on Expo portal.
+
+To trigger the Automated Test, we run the yaml file when create the pull request, so we can merge
+branched in to the main branch with more confidence.
+
 ## Deploy
 
 you can simply deploy it on your android phone.
 
-- Make sure your Android device is connected to your laptop via USB and that USB debugging is enabled on your Android phone.
-- Start the React Native Metro bundler
+Scan the QR code or enter the URL after building with Expo.
 
-```shell
-npx react-native start
-```
+## Completed Feature in Iteration 1
 
-- Run the App
+1. User can sign up with their email and password, or directly sign in with their google accounts.
+2. User can log in, log out and delete their account.
+3. User can use verification email to change password and verify identity.
+4. User can edit and show their profile and information
+5. User can navigate between different screens by the bottom navigator.
 
-```shell
-npx react-native run-android
-```
+## Completed Feature in Iteration 2
+
+1. User can create a new Trip with a title and a date range in "+" screen.
+2. User can edit the title and date range and the trip status (planning, ongoing, completed) in trip screen.
+3. User can see all the trips in dashboard screen, and invite others to a trip by input email.
+4. User can select any of the trips to be the current trip to edit or see.
+5. User can see the map and long press the map to add a destination to the current trip, it will show on the map as a marker and show on current trip screen as a destination item.
+6. User can press the marker to see and edit the description of the destination on the map.
+7. User can assign date for any destination on the current trip screen.
+8. User can delete a destination on the current trip screen.
+9. Differnet Users can edit the trip and destinations together **in real-time**, they can see the updated changes with no latency.
 
 ## Tech Stacks
 
@@ -103,12 +146,6 @@ npx react-native run-android
     - Firebase integrates well with mobile apps and scales automatically, allowing us to focus on feature development rather than infrastructure concerns.
     - It’s a managed NoSQL cloud database, which reduces the overhead of server management and maintenance.
 
-## Completed Feature
-1. User can sign up with their email and password, or directly sign in with their google accounts.
-2. User can log in, log out and delete their account.
-2. User can use verification email to change password and verify identity.
-3. User can edit and show their profile and information
-4. User can navigate between different screens by the bottom navigator.
 
 <!-- ## Developing
 
