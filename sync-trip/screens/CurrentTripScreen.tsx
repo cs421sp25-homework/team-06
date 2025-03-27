@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import {Alert, ScrollView, StyleSheet, View} from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import {
   Button,
   Card,
@@ -12,14 +12,21 @@ import {
   TextInput,
   SegmentedButtons
 } from "react-native-paper";
-import {DatePickerModal} from 'react-native-paper-dates';
-import {useTrip} from "../context/TripContext";
-import {useTabs} from "../navigation/useAppNavigation";
-import {Destination} from "../types/Destination";
-import {convertTimestampToDate, deleteDestinationInTrip} from "../utils/tripAPI";
-import {TripStatus} from "../types/Trip";
+import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
+import { useTrip } from "../context/TripContext";
+import { useTabs } from "../navigation/useAppNavigation";
+import { Destination } from "../types/Destination";
+import {
+  convertTimestampToDate,
+  deleteDestinationInTrip,
+  deleteTrip,
+  addDestinationToTrip,
+  updateDestination
+} from "../utils/tripAPI";
+import { TripStatus } from "../types/Trip";
 
-// Helper to generate an array of dates from start to end (inclusive)
+// A simple helper if you need to generate an array of dates between two dates.
+// (Not used in this UI, but retained from previous logic.)
 const getDatesInRange = (start: Date, end: Date) => {
   const date = new Date(start);
   const dates = [];
@@ -31,14 +38,10 @@ const getDatesInRange = (start: Date, end: Date) => {
 };
 
 const CurrentTripScreen = () => {
-  const {currentTrip, setCurrentTrip, updateDestinationInTrip, updateTrip} = useTrip();
-  const {setTabIndex} = useTabs();
+  const { currentTrip, setCurrentTrip, updateTrip } = useTrip();
+  const { setTabIndex } = useTabs();
 
-  // For showing the assign date dialog
-  const [assignModalVisible, setAssignModalVisible] = useState(false);
-  const [destinationToAssign, setDestinationToAssign] = useState<Destination | null>(null);
-
-  //edit trip mode parameters
+  // ============ TRIP EDITING ============
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState(currentTrip?.title);
   const [startDate, setStartDate] = useState(currentTrip?.startDate);
@@ -46,7 +49,16 @@ const CurrentTripScreen = () => {
   const [tripStatus, setTripStatus] = useState(currentTrip?.status || "");
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  // Convert timestamps to Date objects if necessary
+  // ============ DESTINATION DIALOG (Add or Edit) ============
+  const [destinationDialogVisible, setDestinationDialogVisible] = useState(false);
+  const [editingDestinationId, setEditingDestinationId] = useState<string | null>(null);
+  const [destinationName, setDestinationName] = useState("");
+  const [destinationAddress, setDestinationAddress] = useState("");
+  const [destinationDate, setDestinationDate] = useState<Date | null>(null);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
+
+  // ========= Convert Firestore Timestamps to Date objects =========
   useEffect(() => {
     if (currentTrip) {
       let needUpdate = false;
@@ -60,11 +72,12 @@ const CurrentTripScreen = () => {
           : (needUpdate = true, convertTimestampToDate(currentTrip.endDate));
 
       const destinationsConverted = currentTrip.destinations.map((dest: any) => {
+        let convertedDest = { ...dest };
         if (dest.date && !(dest.date instanceof Date)) {
+          convertedDest.date = convertTimestampToDate(dest.date);
           needUpdate = true;
-          return {...dest, date: convertTimestampToDate(dest.date)};
         }
-        return dest;
+        return convertedDest;
       });
 
       if (needUpdate) {
@@ -82,7 +95,7 @@ const CurrentTripScreen = () => {
     return (
       <View style={styles.emptyContainer}>
         <Title>No Current Trip</Title>
-        <Text>You haven't planned for a trip yet.</Text>
+        <Text>You haven't planned a trip yet.</Text>
         <Text>Start planning now by:</Text>
         <Text>1. Creating a new plan</Text>
         <Text>2. Subscribing to an existing plan!</Text>
@@ -93,65 +106,14 @@ const CurrentTripScreen = () => {
     );
   }
 
-  // Open assign dialog for a destination without a date
-  const handleOpenAssignModal = (destination: Destination) => {
-    setDestinationToAssign(destination);
-    setAssignModalVisible(true);
-  };
-
-  // When a user selects a date in the dialog, update the destination
-  const handleAssignDate = async (date: Date) => {
-    if (!destinationToAssign || !destinationToAssign.id) {
-      Alert.alert("Error", "Destination not found or missing ID.");
-      return;
-    }
-    try {
-      await updateDestinationInTrip(destinationToAssign.id, {date});
-      setAssignModalVisible(false);
-      setDestinationToAssign(null);
-    } catch (error) {
-      console.error("Error assigning date:", error);
-      Alert.alert("Error", "Failed to assign date.");
-    }
-  };
-
-  // Remove an assigned date by setting it to null
-  const handleRemoveDestinationDate = async (destination: Destination) => {
-    if (!destination.id) {
-      Alert.alert("Error", "Destination missing ID.");
-      return;
-    }
-    try {
-      await updateDestinationInTrip(destination.id, {date: null});
-    } catch (error) {
-      console.error("Error removing destination date:", error);
-      Alert.alert("Error", "Failed to remove destination date.");
-    }
-  };
-
-  const handleDeleteDestination = async (destination: Destination) => {
-    Alert.alert(
-      "Delete Destination",
-      "Are you sure you want to delete this destination?",
-      [
-        {text: "Cancel", style: "cancel"},
-        {
-          text: "Delete", style: "destructive", onPress: async () => {
-            if (!currentTrip.id || !destination.id) throw new Error("currentTrip missing ID, or destination missing id.");
-            await deleteDestinationInTrip(currentTrip.id, destination.id);
-            console.log("Delete destination:", destination.id);
-          }
-        }
-      ]
-    );
-  }
-
+  // ========== Edit Current Trip ==========
   const handleBeginEditCurrentTrip = () => {
     setTitle(currentTrip.title);
     setStartDate(currentTrip.startDate);
     setEndDate(currentTrip.endDate);
+    setTripStatus(currentTrip.status);
     setEditMode(true);
-  }
+  };
 
   const handleSaveTrip = async () => {
     if (!title || !startDate || !endDate || !tripStatus) {
@@ -161,17 +123,128 @@ const CurrentTripScreen = () => {
     const status = tripStatus as TripStatus;
 
     try {
-      await updateTrip({title, startDate, endDate, status});
+      await updateTrip(currentTrip.id!, { title, startDate, endDate, status });
       setEditMode(false);
     } catch (error) {
       console.error("Error updating trip:", error);
       Alert.alert("Error", "Failed to update trip.");
     }
-  }
+  };
+
+  // ========== DELETE CURRENT TRIP ==========
+  const handleDeleteTrip = async () => {
+    if (!currentTrip.id) {
+      Alert.alert("Error", "Trip is missing an ID.");
+      return;
+    }
+    Alert.alert(
+      "Delete Trip",
+      "Are you sure you want to delete this entire trip?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteTrip(currentTrip.id);
+              setCurrentTrip(null);
+              setTabIndex(0);
+            } catch (err) {
+              console.error("Error deleting trip:", err);
+              Alert.alert("Error", "Failed to delete trip.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ========== DESTINATIONS ADD/EDIT/REMOVE ==========
+  const openDestinationDialogForNew = () => {
+    setEditingDestinationId(null);
+    setDestinationName("");
+    setDestinationAddress("");
+    setDestinationDate(null);
+    setDestinationTime(null);
+    setDestinationDialogVisible(true);
+  };
+
+  const openDestinationDialogForEdit = (destination: Destination) => {
+    setEditingDestinationId(destination.id || null);
+    setDestinationName(destination.description || "");
+    setDestinationAddress(destination.address || "");
+    setDestinationDate(destination.date ? new Date(destination.date) : null);
+    // You can also parse the time from destination.date if stored separately.
+    setDestinationDialogVisible(true);
+  };
+
+  const handleSaveDestination = async () => {
+    if (!destinationName) {
+      Alert.alert("Please provide a name for the destination.");
+      return;
+    }
+    if (!destinationDate) {
+      Alert.alert("Please select a date for the destination.");
+      return;
+    }
+    // Combine date with time (if time is provided)
+    let finalDate = new Date(destinationDate.getTime());
+    if (destinationTime) {
+      finalDate.setHours(destinationTime.hours, destinationTime.minutes, 0, 0);
+    }
+    const newData: Partial<Destination> = {
+      description: destinationName,
+      address: destinationAddress,
+      date: finalDate,
+    };
+    try {
+      if (editingDestinationId) {
+        // Update existing destination via tripAPI
+        await updateDestination(currentTrip.id!, editingDestinationId, newData);
+      } else {
+        // Create new destination via tripAPI
+        if (!currentTrip.id) throw new Error("currentTrip missing ID");
+        await addDestinationToTrip(currentTrip.id, newData);
+      }
+      setDestinationDialogVisible(false);
+    } catch (error) {
+      console.error("Error saving destination:", error);
+      Alert.alert("Error", "Failed to save destination.");
+    }
+  };
+
+  const handleDeleteDestination = async (destination: Destination) => {
+    if (!destination.id) {
+      Alert.alert("Error", "Destination missing ID.");
+      return;
+    }
+    Alert.alert(
+      "Delete Destination",
+      "Are you sure you want to delete this destination?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!currentTrip.id) throw new Error("currentTrip missing ID");
+            await deleteDestinationInTrip(currentTrip.id, destination.id);
+          },
+        },
+      ]
+    );
+  };
+
+  // ========== TIME PICKER ==========
+  const onConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
+    setDestinationTime({ hours, minutes });
+    setTimePickerVisible(false);
+  };
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.scrollContainer}>
         {editMode ? (
           <View style={styles.form}>
             <TextInput
@@ -179,7 +252,7 @@ const CurrentTripScreen = () => {
               value={title}
               onChangeText={setTitle}
               mode="outlined"
-              style={{marginBottom: 10}}
+              style={{ marginBottom: 10 }}
             />
             <Button mode="outlined" onPress={() => setPickerVisible(true)}>
               {startDate && endDate
@@ -190,11 +263,11 @@ const CurrentTripScreen = () => {
             <SegmentedButtons
               value={tripStatus}
               onValueChange={setTripStatus}
-              style={{marginTop: 10}}
+              style={{ marginTop: 10 }}
               buttons={[
-                {value: TripStatus.PLANNING, label: 'plan',},
-                {value: TripStatus.ONGOING, label: 'ongoing',},
-                {value: TripStatus.COMPLETED, label: 'complete'},
+                { value: TripStatus.PLANNING, label: "plan" },
+                { value: TripStatus.ONGOING, label: "ongoing" },
+                { value: TripStatus.COMPLETED, label: "complete" },
               ]}
             />
 
@@ -214,7 +287,7 @@ const CurrentTripScreen = () => {
           </View>
         ) : (
           <Card style={styles.card}>
-            <Card.Content style={{alignItems: 'center'}}>
+            <Card.Content style={{ alignItems: "center" }}>
               <Title>{currentTrip.title}</Title>
               <Text>
                 <Text style={styles.bold}>From: </Text>
@@ -229,87 +302,128 @@ const CurrentTripScreen = () => {
         )}
 
         {editMode ? (
-          <Button mode="contained" onPress={handleSaveTrip}>
-            save changes
+          <Button mode="contained" onPress={handleSaveTrip} style={{ margin: 15 }}>
+            Save Changes
           </Button>
         ) : (
-          <Button mode="contained" onPress={handleBeginEditCurrentTrip}>
+          <Button mode="contained" onPress={handleBeginEditCurrentTrip} style={{ margin: 15 }}>
             Edit Trip
-          </Button>)
-        }
+          </Button>
+        )}
 
-        <Text style={styles.sectionTitle}>Destinations</Text>
+        {/* --- Destinations Section --- */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginHorizontal: 15,
+            marginVertical: 16
+          }}
+        >
+          <Text style={styles.sectionTitle}>Destinations</Text>
+          <Button onPress={openDestinationDialogForNew}>+ Add Destination</Button>
+        </View>
+
         {currentTrip.destinations.length === 0 ? (
-          <Text>No destinations added yet.</Text>
+          <Text style={{ marginHorizontal: 15 }}>No destinations added yet.</Text>
         ) : (
           currentTrip.destinations.map((destination) => (
-            <View key={destination.id} style={styles.container}>
+            <View key={destination.id} style={styles.destinationCard}>
               <List.Item
-                key={destination.id}
                 title={destination.description}
-                description={destination.address}
-              />
-
-              <View style={styles.buttonContainer}>
-                {destination.date ? (
-                  <View style={styles.dateWrapper}>
-                    <Text style={styles.dateText}>{new Date(destination.date).toLocaleDateString()}</Text>
-                    <IconButton
-                      icon="calendar-remove"
-                      onPress={() => handleRemoveDestinationDate(destination)}
-                    />
-                  </View>
-                ) : (
-                  <Button mode="outlined" onPress={() => handleOpenAssignModal(destination)}>
-                    Assign Date
-                  </Button>
+                description={() => (
+                  <Text>
+                    {destination.address ? destination.address + "\n" : ""}
+                    {destination.date
+                      ? new Date(destination.date).toLocaleString()
+                      : "No date/time"}
+                  </Text>
                 )}
-
+              />
+              <View style={styles.buttonContainer}>
+                <IconButton
+                  icon="pencil"
+                  onPress={() => openDestinationDialogForEdit(destination)}
+                />
                 <IconButton
                   icon="trash-can"
                   onPress={() => handleDeleteDestination(destination)}
                 />
               </View>
             </View>
-
           ))
         )}
 
-        {/* TODO: handle trip deletion */}
-        {/*<Button mode="contained" buttonColor="#D32F2F" onPress={() => {  }} style={styles.button}>*/}
-        {/*    Delete Trip*/}
-        {/*</Button>*/}
+        {/* --- DELETE TRIP BUTTON --- */}
+        {!editMode && (
+          <Button
+            mode="contained"
+            onPress={handleDeleteTrip}
+            buttonColor="#e53935"
+            style={{ margin: 15 }}
+          >
+            Delete Trip
+          </Button>
+        )}
       </ScrollView>
 
-      {/* Dialog for assigning a date to a destination */}
+      {/* ---- ADD/EDIT DESTINATION DIALOG ---- */}
       <Portal>
         <Dialog
-          visible={assignModalVisible}
-          onDismiss={() => {
-            setAssignModalVisible(false);
-            setDestinationToAssign(null);
-          }}
+          visible={destinationDialogVisible}
+          onDismiss={() => setDestinationDialogVisible(false)}
         >
-          <Dialog.Title>Select a Date to Assign</Dialog.Title>
+          <Dialog.Title>
+            {editingDestinationId ? "Edit Destination" : "Add Destination"}
+          </Dialog.Title>
           <Dialog.Content>
-            {/* Generate a list of dates based on the trip's date range */}
-            {getDatesInRange(new Date(currentTrip.startDate), new Date(currentTrip.endDate)).map((date, idx) => (
-              <List.Item
-                key={idx}
-                title={date.toLocaleDateString()}
-                onPress={() => handleAssignDate(date)}
-              />
-            ))}
+            <TextInput
+              label="Event / Destination Name"
+              value={destinationName}
+              onChangeText={setDestinationName}
+              mode="outlined"
+              style={{ marginBottom: 8 }}
+            />
+            <TextInput
+              label="Address (optional)"
+              value={destinationAddress}
+              onChangeText={setDestinationAddress}
+              mode="outlined"
+              style={{ marginBottom: 8 }}
+            />
+            <Button onPress={() => setPickerVisible(true)}>
+              {destinationDate
+                ? `Date: ${destinationDate.toDateString()}`
+                : "Select Date"}
+            </Button>
+            <DatePickerModal
+              locale="en"
+              mode="single"
+              visible={pickerVisible}
+              onDismiss={() => setPickerVisible(false)}
+              date={destinationDate || undefined}
+              onConfirm={({ date }) => {
+                setDestinationDate(date);
+                setPickerVisible(false);
+              }}
+            />
+            <Button onPress={() => setTimePickerVisible(true)} style={{ marginTop: 8 }}>
+              {destinationTime
+                ? `Time: ${destinationTime.hours}:${String(destinationTime.minutes).padStart(2, "0")}`
+                : "Select Time"}
+            </Button>
+            <TimePickerModal
+              visible={timePickerVisible}
+              onDismiss={() => setTimePickerVisible(false)}
+              onConfirm={onConfirmTime}
+              hours={destinationTime?.hours || 12}
+              minutes={destinationTime?.minutes || 0}
+            />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button
-              onPress={() => {
-                setAssignModalVisible(false);
-                setDestinationToAssign(null);
-              }}
-            >
-              Cancel
-            </Button>
+            <Button onPress={() => setDestinationDialogVisible(false)}>Cancel</Button>
+            <Button onPress={handleSaveDestination}>Save</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -318,58 +432,47 @@ const CurrentTripScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: "#fff"
+  },
   card: {
-    margin: 15,
+    margin: 15
   },
-  container: {
-    backgroundColor: 'white',
-    padding: 15,
-    marginVertical: 5,
-    borderRadius: 8,
-    elevation: 3,
+  form: {
+    backgroundColor: "white",
+    padding: 9,
+    borderRadius: 10,
+    elevation: 3
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 0,
-  },
-  dateWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f4f4f4',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-  },
-  dateText: {
-    marginRight: 5,
-    fontSize: 14,
-    color: '#333',
+  bold: {
+    fontWeight: "bold"
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 16,
+    fontWeight: "bold"
   },
-  bold: {
-    fontWeight: "bold",
+  destinationCard: {
+    backgroundColor: "white",
+    padding: 15,
+    marginVertical: 5,
+    marginHorizontal: 15,
+    borderRadius: 8,
+    elevation: 3
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end"
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    padding: 16
   },
   emptyButton: {
-    marginTop: 16,
-  },
-  form: {
-    backgroundColor: 'white',
-    padding: 9,
-    borderRadius: 10,
-    elevation: 3, // Adds a shadow effect
-  },
+    marginTop: 16
+  }
 });
 
 export default CurrentTripScreen;
