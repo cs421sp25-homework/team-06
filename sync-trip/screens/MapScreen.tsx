@@ -232,14 +232,23 @@ const MapScreen = () => {
         onLongPress={handleMapLongPress}
         region={mapRegion}>
         {/* Show existing markers */}
-        {(currentTrip?.destinations || []).map((marker, index) => (
-          <Marker
-            key={index}
-            coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-            description={`${marker.description}\nDate: ${marker.date}`}
-            onPress={() => handleMarkerPress(marker)}
-          />
-        ))}
+        {(currentTrip?.destinations || []).map((marker, index) => {
+          // Check that both latitude and longitude are defined and are numbers.
+          const latitude = Number(marker.latitude);
+          const longitude = Number(marker.longitude);
+          if (isNaN(latitude) || isNaN(longitude)) {
+            console.warn(`Skipping marker at index ${index} due to invalid coordinate`, marker);
+            return null;
+          }
+          return (
+            <Marker
+              key={index}
+              coordinate={{ latitude, longitude }}
+              description={`${marker.description}\nDate: ${marker.date}`}
+              onPress={() => handleMarkerPress(marker)}
+            />
+          );
+        })}
       </MapView>
 
       {loading && (

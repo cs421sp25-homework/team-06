@@ -26,7 +26,6 @@ import {
 import { TripStatus } from "../types/Trip";
 
 // A simple helper if you need to generate an array of dates between two dates.
-// (Not used in this UI, but retained from previous logic.)
 const getDatesInRange = (start: Date, end: Date) => {
   const date = new Date(start);
   const dates = [];
@@ -44,10 +43,11 @@ const CurrentTripScreen = () => {
   // ============ TRIP EDITING ============
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState(currentTrip?.title);
-  const [startDate, setStartDate] = useState(currentTrip?.startDate);
-  const [endDate, setEndDate] = useState(currentTrip?.endDate);
+  // Local trip date states (we ensure they are Date objects)
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [tripStatus, setTripStatus] = useState(currentTrip?.status || "");
-  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false); // For trip date range
 
   // ============ DESTINATION DIALOG (Add or Edit) ============
   const [destinationDialogVisible, setDestinationDialogVisible] = useState(false);
@@ -55,31 +55,38 @@ const CurrentTripScreen = () => {
   const [destinationName, setDestinationName] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
   const [destinationDate, setDestinationDate] = useState<Date | null>(null);
+  const [destPickerVisible, setDestPickerVisible] = useState(false); // For destination date picker
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
 
-  // ========= Convert Firestore Timestamps to Date objects =========
+  // ========= Convert Firestore Timestamps to Date objects and update state =========
   useEffect(() => {
     if (currentTrip) {
       let needUpdate = false;
+      // Convert start and end dates
       const startDateConverted =
         currentTrip.startDate instanceof Date
           ? currentTrip.startDate
-          : (needUpdate = true, convertTimestampToDate(currentTrip.startDate));
+          : convertTimestampToDate(currentTrip.startDate);
       const endDateConverted =
         currentTrip.endDate instanceof Date
           ? currentTrip.endDate
-          : (needUpdate = true, convertTimestampToDate(currentTrip.endDate));
+          : convertTimestampToDate(currentTrip.endDate);
 
+      // Check if conversion was needed for currentTrip dates
+      if (!(currentTrip.startDate instanceof Date)) needUpdate = true;
+      if (!(currentTrip.endDate instanceof Date)) needUpdate = true;
+
+      // Convert each destination's date if needed
       const destinationsConverted = currentTrip.destinations.map((dest: any) => {
-        let convertedDest = { ...dest };
         if (dest.date && !(dest.date instanceof Date)) {
-          convertedDest.date = convertTimestampToDate(dest.date);
           needUpdate = true;
+          return { ...dest, date: convertTimestampToDate(dest.date) };
         }
-        return convertedDest;
+        return dest;
       });
 
+      // Only update currentTrip if any conversion occurred
       if (needUpdate) {
         setCurrentTrip({
           ...currentTrip,
@@ -88,6 +95,9 @@ const CurrentTripScreen = () => {
           destinations: destinationsConverted,
         });
       }
+      // Always update local state so our DatePicker gets proper Date objects
+      setStartDate(startDateConverted);
+      setEndDate(endDateConverted);
     }
   }, [currentTrip]);
 
@@ -109,8 +119,16 @@ const CurrentTripScreen = () => {
   // ========== Edit Current Trip ==========
   const handleBeginEditCurrentTrip = () => {
     setTitle(currentTrip.title);
-    setStartDate(currentTrip.startDate);
-    setEndDate(currentTrip.endDate);
+    setStartDate(
+      currentTrip.startDate instanceof Date
+        ? currentTrip.startDate
+        : convertTimestampToDate(currentTrip.startDate)
+    );
+    setEndDate(
+      currentTrip.endDate instanceof Date
+        ? currentTrip.endDate
+        : convertTimestampToDate(currentTrip.endDate)
+    );
     setTripStatus(currentTrip.status);
     setEditMode(true);
   };
@@ -121,7 +139,6 @@ const CurrentTripScreen = () => {
       return;
     }
     const status = tripStatus as TripStatus;
-
     try {
       await updateTrip(currentTrip.id!, { title, startDate, endDate, status });
       setEditMode(false);
@@ -175,7 +192,7 @@ const CurrentTripScreen = () => {
     setDestinationName(destination.description || "");
     setDestinationAddress(destination.address || "");
     setDestinationDate(destination.date ? new Date(destination.date) : null);
-    // You can also parse the time from destination.date if stored separately.
+    // Optionally, set destinationTime if stored separately.
     setDestinationDialogVisible(true);
   };
 
@@ -188,7 +205,7 @@ const CurrentTripScreen = () => {
       Alert.alert("Please select a date for the destination.");
       return;
     }
-    // Combine date with time (if time is provided)
+    // Combine destinationDate with destinationTime if provided
     let finalDate = new Date(destinationDate.getTime());
     if (destinationTime) {
       finalDate.setHours(destinationTime.hours, destinationTime.minutes, 0, 0);
@@ -276,8 +293,8 @@ const CurrentTripScreen = () => {
               mode="range"
               visible={pickerVisible}
               onDismiss={() => setPickerVisible(false)}
-              startDate={startDate}
-              endDate={endDate}
+              startDate={startDate || undefined}
+              endDate={endDate || undefined}
               onConfirm={({ startDate: newStartDate, endDate: newEndDate }) => {
                 setStartDate(newStartDate);
                 setEndDate(newEndDate);
@@ -392,7 +409,7 @@ const CurrentTripScreen = () => {
               mode="outlined"
               style={{ marginBottom: 8 }}
             />
-            <Button onPress={() => setPickerVisible(true)}>
+            <Button onPress={() => setDestPickerVisible(true)}>
               {destinationDate
                 ? `Date: ${destinationDate.toDateString()}`
                 : "Select Date"}
@@ -400,12 +417,16 @@ const CurrentTripScreen = () => {
             <DatePickerModal
               locale="en"
               mode="single"
-              visible={pickerVisible}
-              onDismiss={() => setPickerVisible(false)}
+              visible={destPickerVisible}
+              onDismiss={() => setDestPickerVisible(false)}
               date={destinationDate || undefined}
               onConfirm={({ date }) => {
                 setDestinationDate(date);
-                setPickerVisible(false);
+                setDestPickerVisible(false);
+              }}
+              validRange={{
+                  startDate: startDate || undefined,
+                  endDate: endDate || undefined,
               }}
             />
             <Button onPress={() => setTimePickerVisible(true)} style={{ marginTop: 8 }}>
