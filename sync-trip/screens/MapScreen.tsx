@@ -76,20 +76,62 @@ const MapScreen = () => {
       );
       return;
     }
+
+    // TODO: make the location information auto filled by Google Map.
     const { latitude, longitude } = event.nativeEvent.coordinate;
     let address = 'Unknown location';
+
+    /*
+    try {
+      const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+      console.log("[ReverseGeocode] Result:", reverseGeocode);
+      if (reverseGeocode.length > 0) {
+        //address = `${reverseGeocode[0].name || ''}, ${reverseGeocode[0].street || ''}, ${reverseGeocode[0].city || ''}`;
+        address = reverseGeocode[0].formattedAddress || "Unknown Location";
+        console.log("[ReverseGeocode] Parsed address:", address);
+      }
+    } catch (error) {
+      console.log("[ReverseGeocode] Error getting address:", error);
+    }
+    */
+    //using google map API for detailed information
 
     try {
       const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`;
       const geocodeResponse = await fetch(geocodeUrl);
       const geocodeData = await geocodeResponse.json();
+      console.log("[Geocode] Response Data:", geocodeData);
 
       if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
-        address = geocodeData.results[0].formatted_address;
+        const formattedAddress = geocodeData.results[0].formatted_address;
+        console.log("[Geocode] Formatted Address:", formattedAddress);
+
+        const placeId = geocodeData.results[0].place_id;
+        console.log("[Geocode] Obtained Place ID:", placeId);
+
+        const fields = "id,displayName,formattedAddress"//,formatted_phone_number,opening_hours,website,rating,photos";
+        const placesUrl = `https://places.googleapis.com/v1/places/${placeId}?fields=${fields}&key=${GOOGLE_API_KEY}`;
+        //console.log("[Places] Request URL:", placesUrl);
+
+        const placesResponse = await fetch(placesUrl, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const placesData = await placesResponse.json();
+        console.log("[Places] Response Data:", placesData);
+
+        const placeName = placesData.displayName?.text || "Unknown Place";
+        address = placesData.formattedAddress || "Unknown Place";
+        console.log("[Places] Parsed Place Name:", placeName);
+        console.log("[Places] Parsed Place Address:", address);
+      } else {
+        console.log("Geocoding API unable to return");
       }
     } catch (error) {
-      console.log("[Error] Fetching address failed:", error);
+      console.log("[Error] Fetching geocode or place details failed:", error);
     }
+    
     setCurrMarker({ latitude, longitude, address, description: '', createdByUid: getCurrentUserId() });
     setModalVisible(true);
   };
