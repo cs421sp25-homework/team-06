@@ -20,27 +20,15 @@ import {
   convertTimestampToDate,
   deleteDestinationInTrip,
   deleteTrip,
-  addDestinationToTrip,
+  // addDestinationToTrip,  <-- removed if we don't want add logic
   updateDestination
 } from "../utils/tripAPI";
 import { TripStatus } from "../types/Trip";
-
-// A simple helper if you need to generate an array of dates between two dates.
-const getDatesInRange = (start: Date, end: Date) => {
-  const date = new Date(start);
-  const dates = [];
-  while (date <= end) {
-    dates.push(new Date(date));
-    date.setDate(date.getDate() + 1);
-  }
-  return dates;
-};
 
 const CurrentTripScreen = () => {
   const { currentTrip, setCurrentTrip, updateTrip } = useTrip();
   const { setTabIndex } = useTabs();
 
-  // ============ TRIP EDITING ============
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState(currentTrip?.title);
   // Local trip date states (we ensure they are Date objects)
@@ -49,17 +37,17 @@ const CurrentTripScreen = () => {
   const [tripStatus, setTripStatus] = useState(currentTrip?.status || "");
   const [pickerVisible, setPickerVisible] = useState(false); // For trip date range
 
-  // ============ DESTINATION DIALOG (Add or Edit) ============
   const [destinationDialogVisible, setDestinationDialogVisible] = useState(false);
   const [editingDestinationId, setEditingDestinationId] = useState<string | null>(null);
   const [destinationName, setDestinationName] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
   const [destinationDate, setDestinationDate] = useState<Date | null>(null);
-  const [destPickerVisible, setDestPickerVisible] = useState(false); // For destination date picker
+  const [destPickerVisible, setDestPickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+
+  // Store hours/minutes. If the user hasn't picked a time yet, it remains null
   const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
 
-  // ========= Convert Firestore Timestamps to Date objects and update state =========
   useEffect(() => {
     if (currentTrip) {
       let needUpdate = false;
@@ -177,26 +165,27 @@ const CurrentTripScreen = () => {
     );
   };
 
-  // ========== DESTINATIONS ADD/EDIT/REMOVE ==========
-  const openDestinationDialogForNew = () => {
-    setEditingDestinationId(null);
-    setDestinationName("");
-    setDestinationAddress("");
-    setDestinationDate(null);
-    setDestinationTime(null);
-    setDestinationDialogVisible(true);
-  };
-
   const openDestinationDialogForEdit = (destination: Destination) => {
     setEditingDestinationId(destination.id || null);
     setDestinationName(destination.description || "");
     setDestinationAddress(destination.address || "");
-    setDestinationDate(destination.date ? new Date(destination.date) : null);
-    // Optionally, set destinationTime if stored separately.
+    if (destination.date) {
+      const d = new Date(destination.date);
+      setDestinationDate(d);
+      // Pre-fill time from the date if we want
+      setDestinationTime({ hours: d.getHours(), minutes: d.getMinutes() });
+    } else {
+      setDestinationDate(null);
+      setDestinationTime(null);
+    }
     setDestinationDialogVisible(true);
   };
 
   const handleSaveDestination = async () => {
+    if (!editingDestinationId) {
+      Alert.alert("Error", "No destination is being edited.");
+      return;
+    }
     if (!destinationName) {
       Alert.alert("Please provide a name for the destination.");
       return;
@@ -205,25 +194,20 @@ const CurrentTripScreen = () => {
       Alert.alert("Please select a date for the destination.");
       return;
     }
-    // Combine destinationDate with destinationTime if provided
+
+    // Combine date/time
     let finalDate = new Date(destinationDate.getTime());
     if (destinationTime) {
       finalDate.setHours(destinationTime.hours, destinationTime.minutes, 0, 0);
     }
-    const newData: Partial<Destination> = {
+
+    const updatedData: Partial<Destination> = {
       description: destinationName,
       address: destinationAddress,
       date: finalDate,
     };
     try {
-      if (editingDestinationId) {
-        // Update existing destination via tripAPI
-        await updateDestination(currentTrip.id!, editingDestinationId, newData);
-      } else {
-        // Create new destination via tripAPI
-        if (!currentTrip.id) throw new Error("currentTrip missing ID");
-        await addDestinationToTrip(currentTrip.id, newData);
-      }
+      await updateDestination(currentTrip.id!, editingDestinationId, updatedData);
       setDestinationDialogVisible(false);
     } catch (error) {
       console.error("Error saving destination:", error);
@@ -253,7 +237,7 @@ const CurrentTripScreen = () => {
     );
   };
 
-  // ========== TIME PICKER ==========
+  // ========== TIME PICKER CALLBACK ==========
   const onConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
     setDestinationTime({ hours, minutes });
     setTimePickerVisible(false);
@@ -339,7 +323,6 @@ const CurrentTripScreen = () => {
           }}
         >
           <Text style={styles.sectionTitle}>Destinations</Text>
-          <Button onPress={openDestinationDialogForNew}>+ Add Destination</Button>
         </View>
 
         {currentTrip.destinations.length === 0 ? (
@@ -385,15 +368,13 @@ const CurrentTripScreen = () => {
         )}
       </ScrollView>
 
-      {/* ---- ADD/EDIT DESTINATION DIALOG ---- */}
+      {/* ---- EDIT DESTINATION DIALOG ---- */}
       <Portal>
         <Dialog
           visible={destinationDialogVisible}
           onDismiss={() => setDestinationDialogVisible(false)}
         >
-          <Dialog.Title>
-            {editingDestinationId ? "Edit Destination" : "Add Destination"}
-          </Dialog.Title>
+          <Dialog.Title>Edit Destination</Dialog.Title>
           <Dialog.Content>
             <TextInput
               label="Event / Destination Name"
@@ -429,6 +410,8 @@ const CurrentTripScreen = () => {
                   endDate: endDate || undefined,
               }}
             />
+
+            {/* The time button shows the chosen time if available */}
             <Button onPress={() => setTimePickerVisible(true)} style={{ marginTop: 8 }}>
               {destinationTime
                 ? `Time: ${destinationTime.hours}:${String(destinationTime.minutes).padStart(2, "0")}`
@@ -438,8 +421,9 @@ const CurrentTripScreen = () => {
               visible={timePickerVisible}
               onDismiss={() => setTimePickerVisible(false)}
               onConfirm={onConfirmTime}
-              hours={destinationTime?.hours || 12}
-              minutes={destinationTime?.minutes || 0}
+              // Provide an initial hours/minutes from state (or a default)
+              hours={destinationTime?.hours ?? 12}
+              minutes={destinationTime?.minutes ?? 0}
             />
           </Dialog.Content>
           <Dialog.Actions>
