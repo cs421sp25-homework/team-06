@@ -1,15 +1,22 @@
-import React, {useEffect, useState} from "react";
-import {FlatList, StyleSheet, View} from "react-native";
-import {Button, Card, Dialog, Paragraph, Portal, Text, TextInput} from "react-native-paper";
-import {useUser} from "../context/UserContext";
-import {addCollaboratorByEmail, setCurrentTripId} from "../utils/userAPI";
-import {TripStatus} from "../types/Trip";
-import {doc, collection, onSnapshot} from "@react-native-firebase/firestore";
-import {firestore} from "../utils/firebase";
+import React, { useEffect, useState } from "react";
+import { FlatList, StyleSheet, View } from "react-native";
+import {
+  Button,
+  Card,
+  Dialog,
+  Paragraph,
+  Portal,
+  Text,
+  TextInput
+} from "react-native-paper";
+import { useUser } from "../context/UserContext";
+import { addCollaboratorByEmail, setCurrentTripId } from "../utils/userAPI";
+import { TripStatus } from "../types/Trip";
+import { doc, onSnapshot } from "@react-native-firebase/firestore";
+import { firestore } from "../utils/firebase";
 
 const DashboardScreen = () => {
-  const {currentUser, getCurrentUserId} = useUser();
-  // const { setCurrentTrip } = useTrip();
+  const { currentUser, getCurrentUserId } = useUser();
   const [trips, setTrips] = useState<any[]>([]);
   const [inviteDialogVisible, setInviteDialogVisible] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -20,8 +27,7 @@ const DashboardScreen = () => {
 
     // Array to hold unsubscribe functions
     const unsubscribeFuncs: Array<() => void> = [];
-
-    // Object to accumulate trips data
+    // Object to accumulate trips data by trip ID
     const tripsMap: { [key: string]: any } = {};
 
     // Listener for each trip
@@ -30,10 +36,12 @@ const DashboardScreen = () => {
       const unsubscribe = onSnapshot(tripRef, (docSnap) => {
         if (!docSnap || !docSnap.exists) {
           console.warn(`Trip document with ID ${tripId} does not exist.`);
+          // Remove trip from the map if it was deleted
+          delete tripsMap[tripId];
+          setTrips(Object.values(tripsMap));
           return;
         }
-        tripsMap[tripId] = {id: tripId, ...docSnap.data()};
-        // Update trips state whenever any trip updates
+        tripsMap[tripId] = { id: tripId, ...docSnap.data() };
         setTrips(Object.values(tripsMap));
       });
       unsubscribeFuncs.push(unsubscribe);
@@ -43,8 +51,7 @@ const DashboardScreen = () => {
     return () => {
       unsubscribeFuncs.forEach((unsubscribe) => unsubscribe());
     };
-  }, [currentUser]);  // Updates automatically when current user changes (like currentUserId changes or tripsIdList changes)
-
+  }, [currentUser]);
 
   const categorizedTrips = {
     planning: trips.filter((trip) => trip.status === TripStatus.PLANNING),
@@ -86,15 +93,12 @@ const DashboardScreen = () => {
   };
 
   // Render each trip as a Card.
-  const renderItem = ({item}: { item: any }) => {
+  const renderItem = ({ item }: { item: any }) => {
     const isCurrentTrip = item.id === currentUser?.currentTripId;
     return (
       <Card style={styles.card} elevation={3}>
-        <Card.Title title={item.title}/>
+        <Card.Title title={item.title} />
         <Card.Content>
-          {/*<Paragraph>{`Start: ${new Date(item.startDate).toLocaleDateString()}`}</Paragraph>*/}
-          {/*<Paragraph>{`End: ${new Date(item.endDate).toLocaleDateString()}`}</Paragraph>*/}
-          {/*<Paragraph>{`Destinations: ${item.destinations?.length || 0}`}</Paragraph>*/}
           <Paragraph>{`members: ${item.collaborators?.length + 1 || 1}`}</Paragraph>
         </Card.Content>
         <Card.Actions style={styles.cardActions}>
@@ -156,12 +160,11 @@ const DashboardScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: 10, backgroundColor: "#f5f5f5"},
-  card: {marginBottom: 10},
-  cardActions: {justifyContent: "flex-end"},
-  emptyText: {textAlign: "center", marginTop: 20},
-  sectionTitle: {fontSize: 18, fontWeight: "bold", marginVertical: 10},
+  container: { flex: 1, padding: 10, backgroundColor: "#f5f5f5" },
+  card: { marginBottom: 10 },
+  cardActions: { justifyContent: "flex-end" },
+  emptyText: { textAlign: "center", marginTop: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 10 },
 });
-
 
 export default DashboardScreen;

@@ -130,3 +130,8 @@ export const convertTimestampToDate = (ts: any): Date => {
     // Otherwise, assume it has seconds and nanoseconds properties.
     return new Date(ts.seconds * 1000);
 };
+
+export const deleteTrip = async (tripId: string): Promise<void> => {
+  const tripRef = doc(firestore, "trips", tripId);
+  await deleteDoc(tripRef);
+};

@@ -45,16 +45,17 @@
 * **Goal:** Enable real-time itinerary editing and collaboration features. Introduce luggage management, calendar syncing, and notification systems for improved trip coordination.
 
 * **Must-Have Features:**  
-  * N/A
-  
-* **Nice-to-Have Features:**
   - [ ] “As a group member, I want to see and post notices on a sharing board, so that all participants can be notified with important information.”
   - [ ] “As a trip participant, I want to receive notifications when itineraries get updated so that I can participate in collaboration on time and stay informed about changes.”
-  - [ ] “As a trip participant, I want to receive a daily notification with the weather forecast and itinerary summary so that I can prepare accordingly for the day’s activities.”
   - [ ] “As a user, I want to sync my itinerary with other calendar apps, so that I can receive reminders for my scheduled activities.”
   - [ ] “As a user, I want to keep a log of my trip history and archive or delete my previous trip plans, so that I can keep an organized dashboard.”
-  - [ ] “As a user, I want to access detailed information for each destination (e.g., key attractions, local tips) so that I can make informed travel decisions without the need for user reviews.”
+  - [ ] "As a user, I want to search and mark key locations (restaurants, attractions, hotels, gas stations) on a map so that I can plan my travel route. "
+  
+* **Nice-to-Have Features:**
+  
   - [ ] “As a group member, I want visual indicators (color or user avatars) to identify who picked the location, ensuring transparent collaboration.”
+  - [ ] “As a trip participant, I want to receive a daily notification with the weather forecast and itinerary summary so that I can prepare accordingly for the day’s activities.”  
+  - [ ] “As a user, I want to access detailed information for each destination (e.g., key attractions, local tips) so that I can make informed travel decisions without the need for user reviews.”
 
 ---
 
@@ -65,13 +66,14 @@
 * **Goal:** Implement shared expense tracking and bill-splitting functionality. Integrate weather forecasting and finalize additional refinements to enhance user experience.
 
 * **Must-Have Features:**
-  - N/A
-
-* **Nice-to-Have Features:**
+  
   - [ ] “As a user, I want to create a shared expense and split it among involved members so that each person’s share is clearly tracked.”
   - [ ] “As a user, I want to see how much each activity in our trip costs and the total cost of the trip so that I can manage my budget effectively and track expenses more efficiently.”
   - [ ] “As a user, I want to know how much the group spends and to whom I should send money in the end, so that I can easily pay the correct amount.”
-  - [ ] “As a trip participant, I want to receive notifications when a shared expense is updated so that I can track my financial contributions and reimbursements accurately.”
   - [ ] “As a user, I want to see my previous trip planning and the corresponding bills so I can review my previous plans.”
-  - [ ] “As a group member, I want real-time interaction with Google Maps for route planning and updates so that I can adjust my travel route based on traffic conditions and unexpected changes.”
   - [ ] “As a user, I want to archive my past itineraries so that I can review them later without cluttering my active trips list.”
+
+* **Nice-to-Have Features:**
+
+  - [ ] “As a group member, I want real-time interaction with Google Maps for route planning and updates so that I can adjust my travel route based on traffic conditions and unexpected changes.”
+  - [ ] “As a trip participant, I want to receive notifications when a shared expense is updated so that I can track my financial contributions and reimbursements accurately.”
