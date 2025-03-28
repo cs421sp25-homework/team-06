@@ -54,16 +54,19 @@ const MapScreen = () => {
   }, []);
 
   useEffect(() => {
+    // If user is on the 'Map' tab but no current trip is found, show a dialog
     if (!currentTrip && tabIndex === 3) {
       setDialogVisible(true);
     }
   }, [currentTrip, tabIndex]);
 
+  // Navigate user to the 'New Trip' tab if they have no current trip
   const redirectToNewTrip = () => {
     setTabIndex(2);
     setDialogVisible(false);
   };
 
+  // Called when user long-presses on the map to add a new marker
   const handleMapLongPress = async (event: LongPressEvent) => {
     if (!currentTrip) {
       Alert.alert(
@@ -77,25 +80,10 @@ const MapScreen = () => {
       return;
     }
 
-    // TODO: make the location information auto filled by Google Map.
     const { latitude, longitude } = event.nativeEvent.coordinate;
     let address = 'Unknown location';
 
-    /*
-    try {
-      const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
-      console.log("[ReverseGeocode] Result:", reverseGeocode);
-      if (reverseGeocode.length > 0) {
-        //address = `${reverseGeocode[0].name || ''}, ${reverseGeocode[0].street || ''}, ${reverseGeocode[0].city || ''}`;
-        address = reverseGeocode[0].formattedAddress || "Unknown Location";
-        console.log("[ReverseGeocode] Parsed address:", address);
-      }
-    } catch (error) {
-      console.log("[ReverseGeocode] Error getting address:", error);
-    }
-    */
-    //using google map API for detailed information
-
+    // (Optional) Reverse geocode with expo-location or Google
     try {
       const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`;
       const geocodeResponse = await fetch(geocodeUrl);
@@ -109,14 +97,11 @@ const MapScreen = () => {
         const placeId = geocodeData.results[0].place_id;
         console.log("[Geocode] Obtained Place ID:", placeId);
 
-        const fields = "id,displayName,formattedAddress"//,formatted_phone_number,opening_hours,website,rating,photos";
+        const fields = "id,displayName,formattedAddress";
         const placesUrl = `https://places.googleapis.com/v1/places/${placeId}?fields=${fields}&key=${GOOGLE_API_KEY}`;
-        //console.log("[Places] Request URL:", placesUrl);
 
         const placesResponse = await fetch(placesUrl, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          headers: { 'Content-Type': 'application/json' }
         });
         const placesData = await placesResponse.json();
         console.log("[Places] Response Data:", placesData);
@@ -126,21 +111,30 @@ const MapScreen = () => {
         console.log("[Places] Parsed Place Name:", placeName);
         console.log("[Places] Parsed Place Address:", address);
       } else {
-        console.log("Geocoding API unable to return");
+        console.log("Geocoding API unable to return a valid address.");
       }
     } catch (error) {
-      console.log("[Error] Fetching geocode or place details failed:", error);
+      console.log("[Error] Fetching geocode/place details failed:", error);
     }
-    
-    setCurrMarker({ latitude, longitude, address, description: '', createdByUid: getCurrentUserId() });
+
+    // Prepare a marker object
+    setCurrMarker({
+      latitude,
+      longitude,
+      address,
+      description: '',
+      createdByUid: getCurrentUserId()
+    });
     setModalVisible(true);
   };
 
+  // Called when user taps an existing marker
   const handleMarkerPress = (marker: Destination) => {
     setCurrMarker(marker);
     setInfoModalVisible(true);
   };
 
+  // Save a new marker (destination) to the trip
   const saveNewMarker = async () => {
     if (!currMarker || !description) {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
@@ -157,17 +151,24 @@ const MapScreen = () => {
     try {
       await addDestinationToTrip(newDestination);
       setModalVisible(false);
+      setDescription('');
     } catch (error) {
       console.error("Error adding destination:", error);
       Alert.alert("Error", "Failed to add destination. Please try again.");
     }
   };
 
+  // Switch from info modal to edit modal
   const showEditUI = () => {
     setEditModalVisible(true);
     setInfoModalVisible(false);
+    // Optionally set the 'description' state to the existing marker's description
+    if (currMarker?.description) {
+      setDescription(currMarker.description);
+    }
   };
 
+  // Update an existing marker
   const updateMarker = async () => {
     if (!currentTrip) {
       Alert.alert("Error", "Current trip not found");
@@ -178,6 +179,7 @@ const MapScreen = () => {
       return;
     }
 
+    // Find the marker index by comparing IDs or coords
     const markerIndex = currentTrip.destinations.findIndex((marker) => {
       if ((marker as any).id && (currMarker as any).id) {
         return (marker as any).id === (currMarker as any).id;
@@ -190,6 +192,7 @@ const MapScreen = () => {
       return;
     }
 
+    // If marker has an ID, call the update function
     if ((currMarker as any).id) {
       try {
         await updateDestinationInTrip((currMarker as any).id, { description });
@@ -203,10 +206,12 @@ const MapScreen = () => {
       return;
     }
     setEditModalVisible(false);
+    setDescription('');
   };
 
-  // Search functionality using Google Places Autocomplete API
+  // --- Google Places Search (Autocomplete) ---
   const handleSearch = async (query: string) => {
+    setSearchQuery(query);
     if (query.trim() === '') {
       setSearchResults([]);
       return;
@@ -225,7 +230,6 @@ const MapScreen = () => {
     }
   };
 
-  // Get detailed place information including extra fields (name, phone, website, rating, etc.)
   const handleSelectPlace = async (placeId: string) => {
     try {
       const fields = "name,formatted_address,geometry,international_phone_number,website,rating,opening_hours";
@@ -235,14 +239,12 @@ const MapScreen = () => {
       if (data.status === 'OK') {
         const details = data.result;
         const { lat, lng } = details.geometry.location;
-        // Update the map region to the place location
         setMapRegion({
           latitude: lat,
           longitude: lng,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         });
-        // Set the detailed place info for display
         setSelectedPlaceDetails({
           name: details.name,
           address: details.formatted_address,
@@ -253,9 +255,7 @@ const MapScreen = () => {
           latitude: lat,
           longitude: lng,
         });
-        // Open modal to display place details
         setPlaceDetailsModalVisible(true);
-        // Clear search results and query
         setSearchResults([]);
         setSearchQuery('');
       } else {
@@ -273,10 +273,7 @@ const MapScreen = () => {
         <TextInput
           label="Search Places"
           value={searchQuery}
-          onChangeText={(text) => {
-            setSearchQuery(text);
-            handleSearch(text);
-          }}
+          onChangeText={handleSearch}
           mode="outlined"
           style={styles.searchInput}
         />
@@ -285,7 +282,10 @@ const MapScreen = () => {
             data={searchResults}
             keyExtractor={(item) => item.place_id}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => handleSelectPlace(item.place_id)} style={styles.searchResultItem}>
+              <TouchableOpacity
+                onPress={() => handleSelectPlace(item.place_id)}
+                style={styles.searchResultItem}
+              >
                 <Text>{item.description}</Text>
               </TouchableOpacity>
             )}
@@ -300,15 +300,28 @@ const MapScreen = () => {
         showsUserLocation
         showsMyLocationButton
         onLongPress={handleMapLongPress}
-        region={mapRegion}>
-        {(currentTrip?.destinations || []).map((marker, index) => (
-          <Marker
-            key={index}
-            coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-            description={`${marker.description}\nDate: ${marker.date}`}
-            onPress={() => handleMarkerPress(marker)}
-          />
-        ))}
+        region={mapRegion}
+      >
+        {(currentTrip?.destinations || []).map((marker, index) => {
+          // Convert lat/lng to numbers
+          const lat = Number(marker.latitude);
+          const lng = Number(marker.longitude);
+
+          // Skip if lat/lng are invalid
+          if (isNaN(lat) || isNaN(lng)) {
+            console.warn(`Skipping marker at index ${index} - invalid coords:`, marker);
+            return null;
+          }
+
+          return (
+            <Marker
+              key={index}
+              coordinate={{ latitude: lat, longitude: lng }}
+              description={`${marker.description}\nDate: ${marker.date}`}
+              onPress={() => handleMarkerPress(marker)}
+            />
+          );
+        })}
       </MapView>
 
       {loading && (
@@ -322,7 +335,8 @@ const MapScreen = () => {
         <Modal
           visible={modalVisible}
           onDismiss={() => setModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}>
+          contentContainerStyle={styles.modalContainer}
+        >
           <Card style={styles.card}>
             <Card.Title title="Add a New Marker" />
             <Card.Content>
@@ -350,7 +364,8 @@ const MapScreen = () => {
         <Modal
           visible={editModalVisible}
           onDismiss={() => setEditModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}>
+          contentContainerStyle={styles.modalContainer}
+        >
           <Card style={styles.card}>
             <Card.Title title="Edit Destination" />
             <Card.Content>
@@ -378,7 +393,8 @@ const MapScreen = () => {
         <Modal
           visible={infoModalVisible}
           onDismiss={() => setInfoModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}>
+          contentContainerStyle={styles.modalContainer}
+        >
           <Card style={styles.card}>
             <Card.Title title="Marker Details" />
             <Card.Content>
@@ -400,18 +416,28 @@ const MapScreen = () => {
         <Modal
           visible={placeDetailsModalVisible}
           onDismiss={() => setPlaceDetailsModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}>
+          contentContainerStyle={styles.modalContainer}
+        >
           <Card style={styles.card}>
             <Card.Title title={selectedPlaceDetails?.name || "Place Details"} />
             <Card.Content>
               <Text style={styles.addressText}>{selectedPlaceDetails?.address}</Text>
-              {selectedPlaceDetails?.phone && <Text>Phone: {selectedPlaceDetails.phone}</Text>}
-              {selectedPlaceDetails?.website && <Text>Website: {selectedPlaceDetails.website}</Text>}
-              {selectedPlaceDetails?.rating && <Text>Rating: {selectedPlaceDetails.rating}</Text>}
+              {selectedPlaceDetails?.phone && (
+                <Text>Phone: {selectedPlaceDetails.phone}</Text>
+              )}
+              {selectedPlaceDetails?.website && (
+                <Text>Website: {selectedPlaceDetails.website}</Text>
+              )}
+              {selectedPlaceDetails?.rating && (
+                <Text>Rating: {selectedPlaceDetails.rating}</Text>
+              )}
               {/* Optionally display opening hours or other details */}
             </Card.Content>
             <Card.Actions>
-              <Button mode="contained" onPress={() => setPlaceDetailsModalVisible(false)}>
+              <Button
+                mode="contained"
+                onPress={() => setPlaceDetailsModalVisible(false)}
+              >
                 Close
               </Button>
             </Card.Actions>
