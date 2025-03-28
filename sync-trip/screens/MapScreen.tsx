@@ -4,35 +4,73 @@ import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { LongPressEvent, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { ActivityIndicator, Button, Card, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { Destination } from "../types/Destination";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { useUser } from "../context/UserContext";
+import {
+  convertTimestampToDate
+} from '../utils/tripAPI'; // or wherever your timestamp => Date converter is
 
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
   const { getCurrentUserId } = useUser();
-
-  const [location, setLocation] = useState<any>(null);
-  const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
-  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [infoModalVisible, setInfoModalVisible] = useState(false);
-  const [dialogVisible, setDialogVisible] = useState(true);
-  const [currMarker, setCurrMarker] = useState<Destination | null>(null);
-  const [description, setDescription] = useState('');
-  const [time, setTime] = useState('');
-  const [loading, setLoading] = useState(true);
   const { tabIndex, setTabIndex } = useTabs();
 
-  // New states for search and detailed place information
+  // User location & map region
+  const [location, setLocation] = useState<any>(null);
+  const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  // States for adding/editing markers
+  const [modalVisible, setModalVisible] = useState(false);       // For adding a new marker
+  const [editModalVisible, setEditModalVisible] = useState(false); // For editing an existing marker
+  const [infoModalVisible, setInfoModalVisible] = useState(false); // Viewing marker details
+  const [currMarker, setCurrMarker] = useState<Destination | null>(null);
+
+  // State for (re)setting marker details
+  const [description, setDescription] = useState('');
+  // We'll store date/time in these states for a marker
+  const [markerDate, setMarkerDate] = useState<Date | null>(null);
+  const [markerTime, setMarkerTime] = useState<{ hours: number; minutes: number } | null>(null);
+  const [markerDatePickerVisible, setMarkerDatePickerVisible] = useState(false);
+  const [markerTimePickerVisible, setMarkerTimePickerVisible] = useState(false);
+
+  // If user has no current trip
+  const [dialogVisible, setDialogVisible] = useState(true);
+
+  // For places search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<any>(null);
   const [placeDetailsModalVisible, setPlaceDetailsModalVisible] = useState(false);
 
+  // We'll store the trip's start/end date in local states
+  const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
+  const [tripEndDate, setTripEndDate] = useState<Date | null>(null);
+
+  // Convert trip's start/end to Date objects
+  useEffect(() => {
+    if (currentTrip) {
+      // parse start/end as Dates
+      const startDateObj = currentTrip.startDate instanceof Date
+        ? currentTrip.startDate
+        : convertTimestampToDate(currentTrip.startDate);
+
+      const endDateObj = currentTrip.endDate instanceof Date
+        ? currentTrip.endDate
+        : convertTimestampToDate(currentTrip.endDate);
+
+      setTripStartDate(startDateObj);
+      setTripEndDate(endDateObj);
+    }
+  }, [currentTrip]);
+
+  // =======================
+  // Request location permission and set initial region
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -91,27 +129,7 @@ const MapScreen = () => {
       console.log("[Geocode] Response Data:", geocodeData);
 
       if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
-        const formattedAddress = geocodeData.results[0].formatted_address;
-        console.log("[Geocode] Formatted Address:", formattedAddress);
-
-        const placeId = geocodeData.results[0].place_id;
-        console.log("[Geocode] Obtained Place ID:", placeId);
-
-        const fields = "id,displayName,formattedAddress";
-        const placesUrl = `https://places.googleapis.com/v1/places/${placeId}?fields=${fields}&key=${GOOGLE_API_KEY}`;
-
-        const placesResponse = await fetch(placesUrl, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const placesData = await placesResponse.json();
-        console.log("[Places] Response Data:", placesData);
-
-        const placeName = placesData.displayName?.text || "Unknown Place";
-        address = placesData.formattedAddress || "Unknown Place";
-        console.log("[Places] Parsed Place Name:", placeName);
-        console.log("[Places] Parsed Place Address:", address);
-      } else {
-        console.log("Geocoding API unable to return a valid address.");
+        address = geocodeData.results[0].formatted_address || "Unknown Place";
       }
     } catch (error) {
       console.log("[Error] Fetching geocode/place details failed:", error);
@@ -125,27 +143,37 @@ const MapScreen = () => {
       description: '',
       createdByUid: getCurrentUserId()
     });
+
+    setDescription('');
+    setMarkerDate(null);
+    setMarkerTime(null);
+
     setModalVisible(true);
   };
 
-  // Called when user taps an existing marker
-  const handleMarkerPress = (marker: Destination) => {
-    setCurrMarker(marker);
-    setInfoModalVisible(true);
-  };
-
-  // Save a new marker (destination) to the trip
+  // Save a NEW marker (destination) to the trip
   const saveNewMarker = async () => {
     if (!currMarker || !description) {
-      Alert.alert('Incomplete', 'Please fill in all fields before saving.');
+      Alert.alert('Incomplete', 'Please provide a description before saving.');
       return;
     }
+    // If we want date/time for new markers as well:
+    let finalDate: Date | null = null;
+    if (markerDate) {
+      finalDate = new Date(markerDate.getTime());
+      if (markerTime) {
+        finalDate.setHours(markerTime.hours, markerTime.minutes, 0, 0);
+      }
+    }
+
+    // Attach tripId
     if (currentTrip) {
       currMarker.tripId = currentTrip.id;
     }
     const newDestination: Destination = {
       ...currMarker,
-      description: description
+      description,
+      date: finalDate || null, // store the combined date/time
     };
 
     try {
@@ -158,17 +186,34 @@ const MapScreen = () => {
     }
   };
 
+  // Called when user taps an existing marker
+  const handleMarkerPress = (marker: Destination) => {
+    setCurrMarker(marker);
+    setInfoModalVisible(true);
+  };
+
   // Switch from info modal to edit modal
   const showEditUI = () => {
+    if (!currMarker) return;
     setEditModalVisible(true);
     setInfoModalVisible(false);
-    // Optionally set the 'description' state to the existing marker's description
-    if (currMarker?.description) {
-      setDescription(currMarker.description);
+
+    // Pre-fill description
+    setDescription(currMarker.description || '');
+
+    // Pre-fill date/time if it exists
+    if (currMarker.date) {
+      const d = new Date(currMarker.date);
+      setMarkerDate(d);
+      setMarkerTime({ hours: d.getHours(), minutes: d.getMinutes() });
+    } else {
+      setMarkerDate(null);
+      setMarkerTime(null);
     }
   };
 
-  // Update an existing marker
+  // =======================
+  // Update an existing marker (destination)
   const updateMarker = async () => {
     if (!currentTrip) {
       Alert.alert("Error", "Current trip not found");
@@ -179,32 +224,33 @@ const MapScreen = () => {
       return;
     }
 
-    // Find the marker index by comparing IDs or coords
-    const markerIndex = currentTrip.destinations.findIndex((marker) => {
-      if ((marker as any).id && (currMarker as any).id) {
-        return (marker as any).id === (currMarker as any).id;
+    // Combine date/time
+    let finalDate: Date | null = null;
+    if (markerDate) {
+      finalDate = new Date(markerDate.getTime());
+      if (markerTime) {
+        finalDate.setHours(markerTime.hours, markerTime.minutes, 0, 0);
       }
-      return marker.latitude === currMarker.latitude && marker.longitude === currMarker.longitude;
-    });
-
-    if (markerIndex === -1) {
-      Alert.alert("Error", "Marker not found in the current trip.");
-      return;
     }
 
-    // If marker has an ID, call the update function
-    if ((currMarker as any).id) {
-      try {
-        await updateDestinationInTrip((currMarker as any).id, { description });
-      } catch (error) {
-        console.error("Error updating destination:", error);
-        Alert.alert("Error", "Failed to update destination.");
-        return;
-      }
-    } else {
+    // If marker has an ID, we can call updateDestinationInTrip
+    const markerId = (currMarker as any).id;
+    if (!markerId) {
       Alert.alert("Error", "Destination ID not found.");
       return;
     }
+
+    try {
+      await updateDestinationInTrip(markerId, {
+        description,
+        date: finalDate || null,
+      });
+    } catch (error) {
+      console.error("Error updating destination:", error);
+      Alert.alert("Error", "Failed to update destination.");
+      return;
+    }
+
     setEditModalVisible(false);
     setDescription('');
   };
@@ -264,6 +310,12 @@ const MapScreen = () => {
     } catch (error) {
       console.error("Error fetching place details:", error);
     }
+  };
+
+  // Time & Date pickers for markers
+  const onConfirmMarkerTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
+    setMarkerTime({ hours, minutes });
+    setMarkerTimePickerVisible(false);
   };
 
   return (
@@ -343,10 +395,48 @@ const MapScreen = () => {
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
                 label="Description"
-                defaultValue={description}
+                value={description}
                 mode="outlined"
                 onChangeText={setDescription}
                 style={styles.input}
+              />
+
+              {/* Optionally pick date/time for a new marker */}
+              <Button onPress={() => setMarkerDatePickerVisible(true)}>
+                {markerDate
+                  ? `Date: ${markerDate.toDateString()}`
+                  : "Select Date"
+                }
+              </Button>
+              <DatePickerModal
+                locale="en"
+                mode="single"
+                visible={markerDatePickerVisible}
+                onDismiss={() => setMarkerDatePickerVisible(false)}
+                date={markerDate || undefined}
+                onConfirm={({ date }) => {
+                  setMarkerDate(date);
+                  setMarkerDatePickerVisible(false);
+                }}
+                // restrict selection to trip range if you want:
+                validRange={{
+                  startDate: tripStartDate || undefined,
+                  endDate: tripEndDate || undefined,
+                }}
+              />
+
+              <Button onPress={() => setMarkerTimePickerVisible(true)}>
+                {markerTime
+                  ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
+                  : "Select Time"
+                }
+              </Button>
+              <TimePickerModal
+                visible={markerTimePickerVisible}
+                onDismiss={() => setMarkerTimePickerVisible(false)}
+                onConfirm={onConfirmMarkerTime}
+                hours={markerTime?.hours || 12}
+                minutes={markerTime?.minutes || 0}
               />
             </Card.Content>
             <Card.Actions>
@@ -372,10 +462,47 @@ const MapScreen = () => {
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
                 label="Description"
-                defaultValue={description}
+                value={description}
                 mode="outlined"
                 onChangeText={setDescription}
                 style={styles.input}
+              />
+
+              {/* Date/time pickers for editing */}
+              <Button onPress={() => setMarkerDatePickerVisible(true)}>
+                {markerDate
+                  ? `Date: ${markerDate.toDateString()}`
+                  : "Select Date"
+                }
+              </Button>
+              <DatePickerModal
+                locale="en"
+                mode="single"
+                visible={markerDatePickerVisible}
+                onDismiss={() => setMarkerDatePickerVisible(false)}
+                date={markerDate || undefined}
+                onConfirm={({ date }) => {
+                  setMarkerDate(date);
+                  setMarkerDatePickerVisible(false);
+                }}
+                validRange={{
+                  startDate: tripStartDate || undefined,
+                  endDate: tripEndDate || undefined,
+                }}
+              />
+
+              <Button onPress={() => setMarkerTimePickerVisible(true)}>
+                {markerTime
+                  ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
+                  : "Select Time"
+                }
+              </Button>
+              <TimePickerModal
+                visible={markerTimePickerVisible}
+                onDismiss={() => setMarkerTimePickerVisible(false)}
+                onConfirm={onConfirmMarkerTime}
+                hours={markerTime?.hours || 12}
+                minutes={markerTime?.minutes || 0}
               />
             </Card.Content>
             <Card.Actions>
@@ -400,6 +527,10 @@ const MapScreen = () => {
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <Text>Description: {currMarker?.description}</Text>
+              {/* If marker has a date, show it */}
+              {currMarker?.date && (
+                <Text>Date: {new Date(currMarker.date).toLocaleString()}</Text>
+              )}
             </Card.Content>
             <Card.Actions>
               <Button mode="contained" onPress={() => setInfoModalVisible(false)}>
@@ -431,7 +562,6 @@ const MapScreen = () => {
               {selectedPlaceDetails?.rating && (
                 <Text>Rating: {selectedPlaceDetails.rating}</Text>
               )}
-              {/* Optionally display opening hours or other details */}
             </Card.Content>
             <Card.Actions>
               <Button
