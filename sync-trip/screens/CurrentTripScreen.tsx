@@ -128,7 +128,7 @@ const CurrentTripScreen = () => {
     }
     const status = tripStatus as TripStatus;
     try {
-      await updateTrip(currentTrip.id!, { title, startDate, endDate, status });
+      await updateTrip({ title, startDate, endDate, status });
       setEditMode(false);
     } catch (error) {
       console.error("Error updating trip:", error);

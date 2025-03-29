@@ -96,13 +96,33 @@ appId: "com.s370101387.synctrip"
 - tapOn: { id: "editTrip" }
 - tapOn: { id: "changeDates" }
 - tapOn: "1"
-- tapOn: "5"
+- tapOn: "6"
 - tapOn: "Save"
-- tapOn: "complete"
+- tapOn: "ongoing"
 - tapOn: "Save Changes"
 - tapOn: {id: "pencil" }
 - tapOn: "Cancel"
 - tapOn: {id: "trash" }
 - tapOn: "DELETE"
+#
+# Test For Dashboard Screen
+- tapOn: { id: "tab-dashboard" }
+- assertVisible:
+    below: "Ongoing"
+    containsDescendants:
+      - "Test Trip"
+- tapOn:
+    below: "Ongoing"
+    containsDescendants:
+      - "Invite"
+- doubleTapOn: {id: "inviteEmailInput"}
+- inputText: "vivanoon6666@gmail.com"
+- tapOn: { id: "confirmInvitation" }
+- tapOn: "OK"
+- tapOn: {id: "tab-trip"}
+- tapOn: "Delete Trip"
+- tapOn: "DELETE"
 # logout
 - tapOn: { id: "tab-profile" }
+- tapOn: "Log Out"
+- assertVisible: {id: "logInBackground"}
