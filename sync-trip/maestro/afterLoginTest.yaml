@@ -68,7 +68,7 @@ appId: "com.s370101387.synctrip"
 - assertVisible: "Johns Hopkins University"
 - tapOn: { id: "closeInfoModal" }
 - longPressOn: { id: "map", point: "50%,50%" }
-- doubleTapOn: { id: "description" }
+- doubleTapOn: "Description"
 - inputText: "JHU"
 - tapOn: { id: "selectDate" }
 - tapOn: "3"
