@@ -323,6 +323,7 @@ const MapScreen = () => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
+          testID="searchPlaces"
           label="Search Places"
           value={searchQuery}
           onChangeText={handleSearch}
@@ -347,6 +348,7 @@ const MapScreen = () => {
       </View>
 
       <MapView
+        testID="map"
         style={styles.map}
         provider={PROVIDER_GOOGLE}
         showsUserLocation
@@ -394,6 +396,7 @@ const MapScreen = () => {
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
+                testID="description"
                 label="Description"
                 value={description}
                 mode="outlined"
@@ -402,7 +405,7 @@ const MapScreen = () => {
               />
 
               {/* Optionally pick date/time for a new marker */}
-              <Button onPress={() => setMarkerDatePickerVisible(true)}>
+              <Button testID="selectDate" onPress={() => setMarkerDatePickerVisible(true)}>
                 {markerDate
                   ? `Date: ${markerDate.toDateString()}`
                   : "Select Date"
@@ -425,13 +428,14 @@ const MapScreen = () => {
                 }}
               />
 
-              <Button onPress={() => setMarkerTimePickerVisible(true)}>
+              <Button testID="selectTime" onPress={() => setMarkerTimePickerVisible(true)}>
                 {markerTime
                   ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
                   : "Select Time"
                 }
               </Button>
               <TimePickerModal
+                testID="timePicker1"
                 visible={markerTimePickerVisible}
                 onDismiss={() => setMarkerTimePickerVisible(false)}
                 onConfirm={onConfirmMarkerTime}
@@ -469,7 +473,7 @@ const MapScreen = () => {
               />
 
               {/* Date/time pickers for editing */}
-              <Button onPress={() => setMarkerDatePickerVisible(true)}>
+              <Button testID="editDate" onPress={() => setMarkerDatePickerVisible(true)}>
                 {markerDate
                   ? `Date: ${markerDate.toDateString()}`
                   : "Select Date"
@@ -491,13 +495,14 @@ const MapScreen = () => {
                 }}
               />
 
-              <Button onPress={() => setMarkerTimePickerVisible(true)}>
+              <Button testID="editTime" onPress={() => setMarkerTimePickerVisible(true)}>
                 {markerTime
                   ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
                   : "Select Time"
                 }
               </Button>
               <TimePickerModal
+                testID="timePicker2"
                 visible={markerTimePickerVisible}
                 onDismiss={() => setMarkerTimePickerVisible(false)}
                 onConfirm={onConfirmMarkerTime}
@@ -506,7 +511,7 @@ const MapScreen = () => {
               />
             </Card.Content>
             <Card.Actions>
-              <Button mode="contained" onPress={updateMarker}>
+              <Button testID="saveChanges" mode="contained" onPress={updateMarker}>
                 Save Changes
               </Button>
               <Button mode="outlined" onPress={() => setEditModalVisible(false)}>
@@ -536,7 +541,7 @@ const MapScreen = () => {
               <Button mode="contained" onPress={() => setInfoModalVisible(false)}>
                 Close
               </Button>
-              <Button mode="outlined" onPress={showEditUI}>
+              <Button testID="editMarker" mode="outlined" onPress={showEditUI}>
                 Edit
               </Button>
             </Card.Actions>
@@ -565,6 +570,7 @@ const MapScreen = () => {
             </Card.Content>
             <Card.Actions>
               <Button
+                testID="closeInfoModal"
                 mode="contained"
                 onPress={() => setPlaceDetailsModalVisible(false)}
               >
