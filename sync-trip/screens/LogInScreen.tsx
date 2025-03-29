@@ -103,6 +103,7 @@ const LogInScreen = () => {
     <KeyboardAvoidingView style={loginStyles.container}>
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         <Image
+          testID="logInBackground"
           source={require('../assets/logInBackground.jpg')}
           style={loginStyles.backgroundImage as ImageStyle}
         />

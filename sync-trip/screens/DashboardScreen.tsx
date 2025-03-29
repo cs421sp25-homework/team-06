@@ -143,6 +143,7 @@ const DashboardScreen = () => {
           <Dialog.Title>Invite Collaborator</Dialog.Title>
           <Dialog.Content>
             <TextInput
+              testID="inviteEmailInput"
               label="Email"
               mode="outlined"
               defaultValue={inviteEmail}
@@ -151,7 +152,7 @@ const DashboardScreen = () => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={hideInviteDialog}>Cancel</Button>
-            <Button onPress={handleInviteCollaborator}>Invite</Button>
+            <Button testID="confirmInvitation" onPress={handleInviteCollaborator}>Invite</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

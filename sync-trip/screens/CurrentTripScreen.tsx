@@ -128,7 +128,7 @@ const CurrentTripScreen = () => {
     }
     const status = tripStatus as TripStatus;
     try {
-      await updateTrip(currentTrip.id!, { title, startDate, endDate, status });
+      await updateTrip({ title, startDate, endDate, status });
       setEditMode(false);
     } catch (error) {
       console.error("Error updating trip:", error);
@@ -255,7 +255,7 @@ const CurrentTripScreen = () => {
               mode="outlined"
               style={{ marginBottom: 10 }}
             />
-            <Button mode="outlined" onPress={() => setPickerVisible(true)}>
+            <Button testID="changeDates" mode="outlined" onPress={() => setPickerVisible(true)}>
               {startDate && endDate
                 ? `${startDate.toDateString()} - ${endDate.toDateString()}`
                 : "Select Dates"}
@@ -307,7 +307,7 @@ const CurrentTripScreen = () => {
             Save Changes
           </Button>
         ) : (
-          <Button mode="contained" onPress={handleBeginEditCurrentTrip} style={{ margin: 15 }}>
+          <Button testID="editTrip" mode="contained" onPress={handleBeginEditCurrentTrip} style={{ margin: 15 }}>
             Edit Trip
           </Button>
         )}
@@ -343,10 +343,12 @@ const CurrentTripScreen = () => {
               />
               <View style={styles.buttonContainer}>
                 <IconButton
+                  testID="pencil"
                   icon="pencil"
                   onPress={() => openDestinationDialogForEdit(destination)}
                 />
                 <IconButton
+                  testID="trash"
                   icon="trash-can"
                   onPress={() => handleDeleteDestination(destination)}
                 />
