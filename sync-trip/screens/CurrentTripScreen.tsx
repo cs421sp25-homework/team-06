@@ -20,7 +20,6 @@ import {
   convertTimestampToDate,
   deleteDestinationInTrip,
   deleteTrip,
-  // addDestinationToTrip,  <-- removed if we don't want add logic
   updateDestination
 } from "../utils/tripAPI";
 import { TripStatus } from "../types/Trip";
@@ -49,6 +48,13 @@ const CurrentTripScreen = () => {
   const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
 
   useEffect(() => {
+    // If the trip is archived, clear it and navigate away
+    if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
+      setCurrentTrip(null);
+      setTabIndex(0);
+      return;
+    }
+
     if (currentTrip) {
       let needUpdate = false;
       // Convert start and end dates
@@ -158,6 +164,39 @@ const CurrentTripScreen = () => {
             } catch (err) {
               console.error("Error deleting trip:", err);
               Alert.alert("Error", "Failed to delete trip.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ========== ARCHIVE CURRENT TRIP ==========
+  const handleArchiveTrip = async () => {
+    if (!currentTrip.id) {
+      Alert.alert("Error", "Trip is missing an ID.");
+      return;
+    }
+    Alert.alert(
+      "Archive Trip",
+      "Are you sure you want to archive this trip?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Archive",
+          onPress: async () => {
+            try {
+              await updateTrip({
+                title: currentTrip.title,
+                startDate: currentTrip.startDate,
+                endDate: currentTrip.endDate,
+                status: TripStatus.ARCHIVED,
+              });
+              setCurrentTrip(null);
+              setTabIndex(0);
+            } catch (err) {
+              console.error("Error archiving trip:", err);
+              Alert.alert("Error", "Failed to archive trip.");
             }
           },
         },
@@ -357,16 +396,25 @@ const CurrentTripScreen = () => {
           ))
         )}
 
-        {/* --- DELETE TRIP BUTTON --- */}
+        {/* --- ARCHIVE & DELETE TRIP BUTTONS --- */}
         {!editMode && (
-          <Button
-            mode="contained"
-            onPress={handleDeleteTrip}
-            buttonColor="#e53935"
-            style={{ margin: 15 }}
-          >
-            Delete Trip
-          </Button>
+          <>
+            <Button
+              mode="contained"
+              onPress={handleArchiveTrip}
+              style={{ margin: 15 }}
+            >
+              Archive Trip
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleDeleteTrip}
+              buttonColor="#e53935"
+              style={{ margin: 15 }}
+            >
+              Delete Trip
+            </Button>
+          </>
         )}
       </ScrollView>
 
