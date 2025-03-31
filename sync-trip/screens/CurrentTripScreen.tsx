@@ -346,9 +346,31 @@ const CurrentTripScreen = () => {
             Save Changes
           </Button>
         ) : (
-          <Button testID="editTrip" mode="contained" onPress={handleBeginEditCurrentTrip} style={{ margin: 15 }}>
-            Edit Trip
-          </Button>
+          <View style={styles.buttonRow}>
+            <Button
+              testID="editTrip"
+              mode="contained"
+              onPress={handleBeginEditCurrentTrip}
+              style={styles.smallButton}
+            >
+              Edit Trip
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleArchiveTrip}
+              style={styles.smallButton}
+            >
+              Archive Trip
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleDeleteTrip}
+              buttonColor="#e53935"
+              style={styles.smallButton}
+            >
+              Delete Trip
+            </Button>
+          </View>
         )}
 
         {/* --- Destinations Section --- */}
@@ -396,26 +418,6 @@ const CurrentTripScreen = () => {
           ))
         )}
 
-        {/* --- ARCHIVE & DELETE TRIP BUTTONS --- */}
-        {!editMode && (
-          <>
-            <Button
-              mode="contained"
-              onPress={handleArchiveTrip}
-              style={{ margin: 15 }}
-            >
-              Archive Trip
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleDeleteTrip}
-              buttonColor="#e53935"
-              style={{ margin: 15 }}
-            >
-              Delete Trip
-            </Button>
-          </>
-        )}
       </ScrollView>
 
       {/* ---- EDIT DESTINATION DIALOG ---- */}
@@ -527,6 +529,17 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     marginTop: 16
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    margin: 10,
+  },
+  smallButton: {
+    marginHorizontal: 1,
+    paddingHorizontal: 2,
+    width: 130
   }
 });
 
