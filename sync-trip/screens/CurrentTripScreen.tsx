@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
 import {
   Button,
   Card,
@@ -10,7 +10,8 @@ import {
   Text,
   Title,
   TextInput,
-  SegmentedButtons
+  SegmentedButtons,
+  Checkbox
 } from "react-native-paper";
 import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
 import { useTrip } from "../context/TripContext";
@@ -25,7 +26,15 @@ import {
 import { TripStatus } from "../types/Trip";
 
 const CurrentTripScreen = () => {
-  const { currentTrip, setCurrentTrip, updateTrip } = useTrip();
+  const {
+    currentTrip,
+    setCurrentTrip,
+    updateTrip,
+    checklists,
+    addChecklistItem,
+    updateChecklistItem,
+    deleteChecklistItem
+  } = useTrip();
   const { setTabIndex } = useTabs();
 
   const [editMode, setEditMode] = useState(false);
@@ -34,7 +43,7 @@ const CurrentTripScreen = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [tripStatus, setTripStatus] = useState(currentTrip?.status || "");
-  const [pickerVisible, setPickerVisible] = useState(false); // For trip date range
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   const [destinationDialogVisible, setDestinationDialogVisible] = useState(false);
   const [editingDestinationId, setEditingDestinationId] = useState<string | null>(null);
@@ -46,6 +55,10 @@ const CurrentTripScreen = () => {
 
   // Store hours/minutes. If the user hasn't picked a time yet, it remains null
   const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
+
+  // For editing checklist items
+  const [editingChecklistItemId, setEditingChecklistItemId] = useState<string | null>(null);
+  const [editingChecklistText, setEditingChecklistText] = useState<string>("");
 
   useEffect(() => {
     // If the trip is archived, clear it and navigate away
@@ -355,11 +368,7 @@ const CurrentTripScreen = () => {
             >
               Edit Trip
             </Button>
-            <Button
-              mode="contained"
-              onPress={handleArchiveTrip}
-              style={styles.smallButton}
-            >
+            <Button mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
               Archive Trip
             </Button>
             <Button
@@ -374,15 +383,7 @@ const CurrentTripScreen = () => {
         )}
 
         {/* --- Destinations Section --- */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginHorizontal: 15,
-            marginVertical: 16
-          }}
-        >
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Destinations</Text>
         </View>
 
@@ -413,6 +414,87 @@ const CurrentTripScreen = () => {
                   icon="trash-can"
                   onPress={() => handleDeleteDestination(destination)}
                 />
+              </View>
+              {/* --- Checklist Section for this Destination --- */}
+              <View style={styles.checklistContainer}>
+                {checklists[destination.id] &&
+                  checklists[destination.id].map((item) => (
+                    <View key={item.id} style={styles.checklistItemRow}>
+                      <Checkbox
+                        status={item.completed ? "checked" : "unchecked"}
+                        onPress={() =>
+                          updateChecklistItem(destination.id, item.id, { completed: !item.completed })
+                        }
+                      />
+                      {editingChecklistItemId === item.id ? (
+                        <>
+                          <TextInput
+                            style={styles.checklistInput}
+                            value={editingChecklistText}
+                            onChangeText={setEditingChecklistText}
+                          />
+                          <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => {
+                              // Confirm editing changes
+                              updateChecklistItem(destination.id, item.id, { text: editingChecklistText });
+                              setEditingChecklistItemId(null);
+                            }}
+                          >
+                            <Text style={styles.editButtonText}>Confirm</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => {
+                              // Cancel editing: reset text and exit edit mode
+                              setEditingChecklistItemId(null);
+                              setEditingChecklistText("");
+                            }}
+                          >
+                            <Text style={styles.deleteButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          <Text
+                            style={[styles.checklistText, item.completed && styles.completedText]}
+                            onLongPress={() => {
+                              setEditingChecklistItemId(item.id);
+                              setEditingChecklistText(item.text);
+                            }}
+                          >
+                            {item.text}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => {
+                              setEditingChecklistItemId(item.id);
+                              setEditingChecklistText(item.text);
+                            }}
+                          >
+                            <Text style={styles.editButtonText}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => deleteChecklistItem(destination.id, item.id)}
+                          >
+                            <Text style={styles.deleteButtonText}>Delete</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  ))}
+                <Button
+                  mode="outlined"
+                  onPress={() => {
+                    console.log("Add Checklist Item pressed for destination", destination.id);
+                    // Open a dialog or directly add a new checklist item placeholder.
+                    addChecklistItem(destination.id, "New Item", false);
+                  }}
+                  style={styles.addChecklistButton}
+                >
+                  Add Checklist Item
+                </Button>
               </View>
             </View>
           ))
@@ -509,6 +591,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold"
   },
+  sectionHeader: {
+    marginHorizontal: 15,
+    marginVertical: 16
+  },
   destinationCard: {
     backgroundColor: "white",
     padding: 15,
@@ -540,6 +626,48 @@ const styles = StyleSheet.create({
     marginHorizontal: 1,
     paddingHorizontal: 2,
     width: 130
+  },
+  checklistContainer: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#ccc",
+    paddingTop: 10
+  },
+  checklistItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 5
+  },
+  checklistText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  checklistInput: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    padding: 4,
+    borderRadius: 4
+  },
+  completedText: {
+    textDecorationLine: "line-through",
+    color: "#999"
+  },
+  editButton: {
+    marginLeft: 5,
+    padding: 4
+  },
+  editButtonText: {
+    color: "#6200ee"
+  },
+  deleteButton: {
+    marginLeft: 5,
+    padding: 4
+  },
+  deleteButtonText: {
+    color: "red"
+  },
+  addChecklistButton: {
+    marginTop: 10
   }
 });
 
