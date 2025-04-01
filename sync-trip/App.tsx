@@ -7,6 +7,7 @@ import AppNavigator from './navigation/AppNavigator';
 import {en, registerTranslation} from 'react-native-paper-dates';
 import 'expo-dev-client';
 import './utils/firebase';
+import 'react-native-get-random-values';
 
 registerTranslation('en', en);
 
