@@ -1,112 +1,135 @@
-import React, {createContext, ReactNode, useContext, useEffect, useState} from "react";
-import {Trip} from "../types/Trip";
-import {Destination} from "../types/Destination";
+import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { Trip } from "../types/Trip";
+import { Destination } from "../types/Destination";
+import { ChecklistItem } from "../types/Checklist";
 import {
-    addDestinationToTrip as apiAddDestinationToTrip,
-    createTrip as apiCreateTrip,
-    updateDestination as apiUpdateDestination,
-    updateTrip as apiUpdateTrip,
+  addDestinationToTrip as apiAddDestinationToTrip,
+  createTrip as apiCreateTrip,
+  updateDestination as apiUpdateDestination,
+  updateTrip as apiUpdateTrip,
+  addChecklistItem as apiAddChecklistItem,
+  updateChecklistItem as apiUpdateChecklistItem,
+  deleteChecklistItem as apiDeleteChecklistItem,
 } from "../utils/tripAPI";
-
-import {useUser} from "./UserContext"
-
-import {addTripToUser as apiAddTripToUser, setCurrentTripId as apiSetCurrentTripId,} from "../utils/userAPI";
-import {firestore} from "../utils/firebase";
-import {collection, doc, getDocs, onSnapshot} from "@react-native-firebase/firestore";
+import { useUser } from "./UserContext";
+import { addTripToUser as apiAddTripToUser, setCurrentTripId as apiSetCurrentTripId } from "../utils/userAPI";
+import { firestore } from "../utils/firebase";
+import { collection, doc, getDocs, onSnapshot } from "@react-native-firebase/firestore";
 
 interface TripContextType {
-    currentTrip: Trip | null;
-    setCurrentTrip: (trip: Trip | null) => void;
-    createTrip: (tripData: Trip) => Promise<void>;
-    updateTrip: (updatedData: Partial<Trip>) => Promise<void>;
-    addDestinationToTrip: (destination: Destination) => Promise<void>;
-    updateDestinationInTrip: (destinationId: string, updatedData: Partial<Destination>) => Promise<void>;
-    logout: () => void;
+  currentTrip: Trip | null;
+  setCurrentTrip: (trip: Trip | null) => void;
+  createTrip: (tripData: Trip) => Promise<void>;
+  updateTrip: (updatedData: Partial<Trip>) => Promise<void>;
+  addDestinationToTrip: (destination: Destination) => Promise<void>;
+  updateDestinationInTrip: (destinationId: string, updatedData: Partial<Destination>) => Promise<void>;
+  // Checklist functions
+  checklists: Record<string, ChecklistItem[]>;
+  addChecklistItem: (destId: string, text: string) => Promise<void>;
+  updateChecklistItem: (destId: string, itemId: string, updates: Partial<ChecklistItem>) => Promise<void>;
+  deleteChecklistItem: (destId: string, itemId: string) => Promise<void>;
+  logout: () => void;
+  destinations: Destination[];
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
 
-export const TripProvider = ({children}: { children: ReactNode }) => {
-    const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
+export const TripProvider = ({ children }: { children: ReactNode }) => {
+  const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [checklists, setChecklists] = useState<Record<string, ChecklistItem[]>>({});
 
-    const {currentUser, setCurrentUser, getCurrentUserId} = useUser();
+  const { currentUser, setCurrentUser, getCurrentUserId } = useUser();
+  const currentTripId = currentUser?.currentTripId;
 
-    const currentTripId = currentUser?.currentTripId;
+  // Listen to trip document and its destinations
+  useEffect(() => {
+    if (!currentTripId) return;
 
+    const tripRef = doc(firestore, "trips", currentTripId);
+    const destinationsRef = collection(firestore, "trips", currentTripId, "destinations");
 
-    useEffect(() => {
-        if (!currentTripId) return;
+    console.log("Listening for Firestore changes on trip:", currentTripId);
 
-        const tripRef = doc(firestore, "trips", currentTripId);
-        const destinationsRef = collection(firestore, "trips", currentTripId, "destinations");
+    const unsubscribeTrip = onSnapshot(tripRef, async (docSnap) => {
+      if (docSnap.exists) {
+        console.log("Trip updated from Firestore:", docSnap.data());
+        const updatedTrip = { id: currentTripId, ...docSnap.data() } as Trip;
+        const destinationsSnapshot = await getDocs(destinationsRef);
+        const updatedDestinations = destinationsSnapshot
+          ? destinationsSnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as Destination[]
+          : [];
+        setCurrentTrip({ ...updatedTrip, destinations: updatedDestinations });
+        setDestinations(updatedDestinations);
+      } else {
+        console.warn("Trip document deleted.");
+        setCurrentTrip(null);
+      }
+    });
 
-        console.log("Listening for Firestore changes on trip:", currentTripId);
+    const unsubscribeDestinations = onSnapshot(destinationsRef, (snapshot) => {
+      if (snapshot) {
+        const updatedDestinations = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Destination[];
+        setDestinations(updatedDestinations);
+        setCurrentTrip((prevTrip) =>
+          prevTrip ? { ...prevTrip, destinations: updatedDestinations } : prevTrip
+        );
+      } else {
+        setDestinations([]);
+      }
+    });
 
-        const unsubscribeTrip = onSnapshot(tripRef, async (docSnap) => {
-            if (docSnap.exists) {
-                console.log("Trip updated from Firestore:", docSnap.data());
-
-                const updatedTrip = {id: currentTripId, ...docSnap.data()} as Trip;
-
-                // Fetch the destinations after updating the trip
-                const destinationsSnapshot = await getDocs(destinationsRef);
-                const updatedDestinations = destinationsSnapshot.docs.map((doc) => ({
-                    id: doc.id,  // Firestore document ID
-                    ...doc.data(), // Actual document data
-                })) as Destination[];
-
-                // Update currentTrip with both trip data and destinations
-                setCurrentTrip({...updatedTrip, destinations: updatedDestinations});
-
-                console.log("Destinations updated from Firestore:", updatedDestinations);
-            } else {
-                console.warn("Trip document deleted.");
-                setCurrentTrip(null);
-            }
-        });
-
-        // Subscribe to the destinations sub-collection
-        const unsubscribeDestinations = onSnapshot(destinationsRef, (snapshot) => {
-            const updatedDestinations = snapshot.docs.map((doc) => ({
-                id: doc.id,  // Firestore document ID
-                ...doc.data(), // Actual document data
-            })) as Destination[];
-
-            setCurrentTrip((prevTrip) =>
-                prevTrip ? {...prevTrip, destinations: updatedDestinations} : prevTrip
-            );
-
-            console.log("Destinations updated from Firestore:", updatedDestinations);
-        });
-
-        // Cleanup the listeners when the component is unmounted or currentTripId changes
-        return () => {
-            console.log("Unsubscribing from trip and destinations listeners.");
-            unsubscribeTrip();
-            unsubscribeDestinations();
-        };
-    }, [currentTripId]); // Runs whenever currentTripId changes
-
-
-    // Create a new trip document in Firestore and update local state.
-    const createTrip = async (tripData: Trip) => {
-        try {
-            const tripId = await apiCreateTrip(tripData);
-            console.log("Trip created with ID:", tripId);
-            // Set the currentTrip with the new id.
-            // const newTrip : Trip = { ...tripData, id: tripId };
-            // setCurrentTrip(newTrip);
-
-            //update firestore, and User Context will update by "snapshot" listener.
-            await apiAddTripToUser(getCurrentUserId(), tripId);
-            await apiSetCurrentTripId(getCurrentUserId(), tripId);
-
-            console.log("trip created on firestore:", tripData);
-        } catch (error) {
-            console.error("Error creating trip:", error);
-            throw error;
-        }
+    return () => {
+      console.log("Unsubscribing from trip and destinations listeners.");
+      unsubscribeTrip();
+      unsubscribeDestinations();
     };
+  }, [currentTripId]);
+
+  // Listen for checklist changes for each destination
+  useEffect(() => {
+    if (!currentTripId) return;
+    const unsubscribeMap: Record<string, () => void> = {};
+
+    destinations.forEach((dest) => {
+      const checklistRef = collection(firestore, "trips", currentTripId, "destinations", dest.id, "checklists");
+      const unsubscribe = onSnapshot(checklistRef, (snapshot) => {
+        if (snapshot) {
+          const items: ChecklistItem[] = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as ChecklistItem[];
+          setChecklists((prev) => ({ ...prev, [dest.id]: items }));
+        } else {
+          setChecklists((prev) => ({ ...prev, [dest.id]: [] }));
+        }
+      });
+      unsubscribeMap[dest.id] = unsubscribe;
+    });
+
+    return () => {
+      Object.values(unsubscribeMap).forEach((unsubscribe) => unsubscribe());
+    };
+  }, [currentTripId, destinations]);
+
+  const createTrip = async (tripData: Trip) => {
+    try {
+      const tripId = await apiCreateTrip(tripData);
+      console.log("Trip created with ID:", tripId);
+      await apiAddTripToUser(getCurrentUserId(), tripId);
+      await apiSetCurrentTripId(getCurrentUserId(), tripId);
+      console.log("Trip created on Firestore:", tripData);
+    } catch (error) {
+      console.error("Error creating trip:", error);
+      throw error;
+    }
+  };
 
     // Update the current trip both in Firestore and local state.
     const updateTrip = async (updatedData: Partial<Trip>) => {
@@ -151,27 +174,62 @@ export const TripProvider = ({children}: { children: ReactNode }) => {
         }
     };
 
+  // Checklist functions
+  const addChecklistItem = async (destId: string, text: string) => {
+    if (!currentTrip || !currentTrip.id) return;
+    try {
+      await apiAddChecklistItem(currentTrip.id, destId, text);
+    } catch (error) {
+      console.error("Error adding checklist item:", error);
+      throw error;
+    }
+  };
 
-    const logout = () => {
-        setCurrentTrip(null); // Clear the current trip
-        console.log('Trip context cleared');
-    };
+  const updateChecklistItem = async (destId: string, itemId: string, updates: Partial<ChecklistItem>) => {
+    if (!currentTrip || !currentTrip.id) return;
+    try {
+      await apiUpdateChecklistItem(currentTrip.id, destId, itemId, updates);
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+      throw error;
+    }
+  };
 
-    return (
-        <TripContext.Provider
-            value={{
-                currentTrip,
-                setCurrentTrip,
-                createTrip,
-                updateTrip,
-                addDestinationToTrip,
-                updateDestinationInTrip,
-                logout
-            }}
-        >
-            {children}
-        </TripContext.Provider>
-    );
+  const deleteChecklistItem = async (destId: string, itemId: string) => {
+    if (!currentTrip || !currentTrip.id) return;
+    try {
+      await apiDeleteChecklistItem(currentTrip.id, destId, itemId);
+    } catch (error) {
+      console.error("Error deleting checklist item:", error);
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    setCurrentTrip(null);
+    console.log("Trip context cleared");
+  };
+
+  return (
+    <TripContext.Provider
+      value={{
+        currentTrip,
+        setCurrentTrip,
+        createTrip,
+        updateTrip,
+        addDestinationToTrip,
+        updateDestinationInTrip,
+        checklists,
+        addChecklistItem,
+        updateChecklistItem,
+        deleteChecklistItem,
+        logout,
+        destinations,
+      }}
+    >
+      {children}
+    </TripContext.Provider>
+  );
 };
 
 export const useTrip = () => {
