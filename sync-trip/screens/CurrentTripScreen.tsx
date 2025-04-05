@@ -1,6 +1,5 @@
-// file: screens/CurrentTripScreen.tsx
-import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import {
   Button,
   Card,
@@ -11,79 +10,81 @@ import {
   Text,
   Title,
   TextInput,
-  SegmentedButtons,
-  Checkbox
+  SegmentedButtons
 } from "react-native-paper";
-import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
-import * as Clipboard from "expo-clipboard";
+import { DatePickerModal } from "react-native-paper-dates";
+import PushNotification from "react-native-push-notification";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
-import {
-  convertTimestampToDate,
-  deleteDestinationInTrip,
-  deleteTrip,
-  updateDestination
-} from "../utils/tripAPI";
+import { convertTimestampToDate, deleteDestinationInTrip } from "../utils/tripAPI";
 import { TripStatus } from "../types/Trip";
-import { generateICS } from "../utils/icsGenerator";
+
+// Configure local notifications
+PushNotification.configure({
+  onNotification: function(notification) {
+    console.log("Notification received:", notification);
+  },
+  popInitialNotification: true,
+  requestPermissions: true,
+});
+
+// Helper to generate an array of dates from start to end (inclusive)
+const getDatesInRange = (start: Date, end: Date) => {
+  const date = new Date(start);
+  const dates = [];
+  while (date <= end) {
+    dates.push(new Date(date));
+    date.setDate(date.getDate() + 1);
+  }
+  return dates;
+};
 
 const CurrentTripScreen = () => {
-  const {
-    currentTrip,
-    setCurrentTrip,
-    updateTrip,
-    checklists,
-    addChecklistItem,
-    updateChecklistItem,
-    deleteChecklistItem
-  } = useTrip();
+  const { currentTrip, setCurrentTrip, updateDestinationInTrip, updateTrip } = useTrip();
   const { setTabIndex } = useTabs();
 
-  // Trip and destination states
+  // Local notification: track previous trip state to detect changes
+  const prevTripRef = useRef(currentTrip);
+  useEffect(() => {
+    if (prevTripRef.current && currentTrip) {
+      // Compare a property that indicates a change in the itinerary.
+      // Here we assume there's a 'lastUpdated' property.
+      if (prevTripRef.current.lastUpdated !== currentTrip.lastUpdated) {
+        PushNotification.localNotification({
+          title: "Itinerary Updated",
+          message: "The trip itinerary has been updated. Check out the latest changes!",
+        });
+      }
+    }
+    prevTripRef.current = currentTrip;
+  }, [currentTrip]);
+
+  // State for showing the assign date dialog
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [destinationToAssign, setDestinationToAssign] = useState<Destination | null>(null);
+
+  // Edit trip mode parameters
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState(currentTrip?.title);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState(currentTrip?.startDate);
+  const [endDate, setEndDate] = useState(currentTrip?.endDate);
   const [tripStatus, setTripStatus] = useState(currentTrip?.status || "");
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  const [destinationDialogVisible, setDestinationDialogVisible] = useState(false);
-  const [editingDestinationId, setEditingDestinationId] = useState<string | null>(null);
-  const [destinationName, setDestinationName] = useState("");
-  const [destinationAddress, setDestinationAddress] = useState("");
-  const [destinationDate, setDestinationDate] = useState<Date | null>(null);
-  const [destPickerVisible, setDestPickerVisible] = useState(false);
-  const [timePickerVisible, setTimePickerVisible] = useState(false);
-  const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
-
-  // Checklist editing states
-  const [editingChecklistItemId, setEditingChecklistItemId] = useState<string | null>(null);
-  const [editingChecklistText, setEditingChecklistText] = useState<string>("");
-
-  // Help modal state for ICS instructions
-  const [helpModalVisible, setHelpModalVisible] = useState(false);
-
+  // Convert timestamps to Date objects if necessary
   useEffect(() => {
-    if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
-      setCurrentTrip(null);
-      setTabIndex(0);
-      return;
-    }
     if (currentTrip) {
       let needUpdate = false;
       const startDateConverted =
         currentTrip.startDate instanceof Date
           ? currentTrip.startDate
-          : convertTimestampToDate(currentTrip.startDate);
+          : (needUpdate = true, convertTimestampToDate(currentTrip.startDate));
       const endDateConverted =
         currentTrip.endDate instanceof Date
           ? currentTrip.endDate
-          : convertTimestampToDate(currentTrip.endDate);
-      if (!(currentTrip.startDate instanceof Date)) needUpdate = true;
-      if (!(currentTrip.endDate instanceof Date)) needUpdate = true;
+          : (needUpdate = true, convertTimestampToDate(currentTrip.endDate));
+
       const destinationsConverted = currentTrip.destinations.map((dest: any) => {
         if (dest.date && !(dest.date instanceof Date)) {
           needUpdate = true;
@@ -91,6 +92,7 @@ const CurrentTripScreen = () => {
         }
         return dest;
       });
+
       if (needUpdate) {
         setCurrentTrip({
           ...currentTrip,
@@ -99,8 +101,6 @@ const CurrentTripScreen = () => {
           destinations: destinationsConverted,
         });
       }
-      setStartDate(startDateConverted);
-      setEndDate(endDateConverted);
     }
   }, [currentTrip]);
 
@@ -108,7 +108,7 @@ const CurrentTripScreen = () => {
     return (
       <View style={styles.emptyContainer}>
         <Title>No Current Trip</Title>
-        <Text>You haven't planned a trip yet.</Text>
+        <Text>You haven't planned for a trip yet.</Text>
         <Text>Start planning now by:</Text>
         <Text>1. Creating a new plan</Text>
         <Text>2. Subscribing to an existing plan!</Text>
@@ -119,19 +119,64 @@ const CurrentTripScreen = () => {
     );
   }
 
+  // Open assign dialog for a destination without a date
+  const handleOpenAssignModal = (destination: Destination) => {
+    setDestinationToAssign(destination);
+    setAssignModalVisible(true);
+  };
+
+  // When a user selects a date in the dialog, update the destination
+  const handleAssignDate = async (date: Date) => {
+    if (!destinationToAssign || !destinationToAssign.id) {
+      Alert.alert("Error", "Destination not found or missing ID.");
+      return;
+    }
+    try {
+      await updateDestinationInTrip(destinationToAssign.id, { date });
+      setAssignModalVisible(false);
+      setDestinationToAssign(null);
+    } catch (error) {
+      console.error("Error assigning date:", error);
+      Alert.alert("Error", "Failed to assign date.");
+    }
+  };
+
+  // Remove an assigned date by setting it to null
+  const handleRemoveDestinationDate = async (destination: Destination) => {
+    if (!destination.id) {
+      Alert.alert("Error", "Destination missing ID.");
+      return;
+    }
+    try {
+      await updateDestinationInTrip(destination.id, { date: null });
+    } catch (error) {
+      console.error("Error removing destination date:", error);
+      Alert.alert("Error", "Failed to remove destination date.");
+    }
+  };
+
+  const handleDeleteDestination = async (destination: Destination) => {
+    Alert.alert(
+      "Delete Destination",
+      "Are you sure you want to delete this destination?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete", style: "destructive", onPress: async () => {
+            if (!currentTrip.id || !destination.id)
+              throw new Error("currentTrip missing ID, or destination missing id.");
+            await deleteDestinationInTrip(currentTrip.id, destination.id);
+            console.log("Delete destination:", destination.id);
+          }
+        }
+      ]
+    );
+  };
+
   const handleBeginEditCurrentTrip = () => {
     setTitle(currentTrip.title);
-    setStartDate(
-      currentTrip.startDate instanceof Date
-        ? currentTrip.startDate
-        : convertTimestampToDate(currentTrip.startDate)
-    );
-    setEndDate(
-      currentTrip.endDate instanceof Date
-        ? currentTrip.endDate
-        : convertTimestampToDate(currentTrip.endDate)
-    );
-    setTripStatus(currentTrip.status);
+    setStartDate(currentTrip.startDate);
+    setEndDate(currentTrip.endDate);
     setEditMode(true);
   };
 
@@ -150,164 +195,9 @@ const CurrentTripScreen = () => {
     }
   };
 
-  const handleDeleteTrip = async () => {
-    if (!currentTrip.id) {
-      Alert.alert("Error", "Trip is missing an ID.");
-      return;
-    }
-    Alert.alert(
-      "Delete Trip",
-      "Are you sure you want to delete this entire trip?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteTrip(currentTrip.id);
-              setCurrentTrip(null);
-              setTabIndex(0);
-            } catch (err) {
-              console.error("Error deleting trip:", err);
-              Alert.alert("Error", "Failed to delete trip.");
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleArchiveTrip = async () => {
-    if (!currentTrip.id) {
-      Alert.alert("Error", "Trip is missing an ID.");
-      return;
-    }
-    Alert.alert(
-      "Archive Trip",
-      "Are you sure you want to archive this trip?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Archive",
-          onPress: async () => {
-            try {
-              await updateTrip({
-                title: currentTrip.title,
-                startDate: currentTrip.startDate,
-                endDate: currentTrip.endDate,
-                status: TripStatus.ARCHIVED,
-              });
-              setCurrentTrip(null);
-              setTabIndex(0);
-            } catch (err) {
-              console.error("Error archiving trip:", err);
-              Alert.alert("Error", "Failed to archive trip.");
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const openDestinationDialogForEdit = (destination: Destination) => {
-    setEditingDestinationId(destination.id || null);
-    setDestinationName(destination.description || "");
-    setDestinationAddress(destination.address || "");
-    if (destination.date) {
-      const d = new Date(destination.date);
-      setDestinationDate(d);
-      setDestinationTime({ hours: d.getHours(), minutes: d.getMinutes() });
-    } else {
-      setDestinationDate(null);
-      setDestinationTime(null);
-    }
-    setDestinationDialogVisible(true);
-  };
-
-  const handleSaveDestination = async () => {
-    if (!editingDestinationId) {
-      Alert.alert("Error", "No destination is being edited.");
-      return;
-    }
-    if (!destinationName) {
-      Alert.alert("Please provide a name for the destination.");
-      return;
-    }
-    if (!destinationDate) {
-      Alert.alert("Please select a date for the destination.");
-      return;
-    }
-    let finalDate = new Date(destinationDate.getTime());
-    if (destinationTime) {
-      finalDate.setHours(destinationTime.hours, destinationTime.minutes, 0, 0);
-    }
-    const updatedData: Partial<Destination> = {
-      description: destinationName,
-      address: destinationAddress,
-      date: finalDate,
-    };
-    try {
-      await updateDestination(currentTrip.id!, editingDestinationId, updatedData);
-      setDestinationDialogVisible(false);
-    } catch (error) {
-      console.error("Error saving destination:", error);
-      Alert.alert("Error", "Failed to save destination.");
-    }
-  };
-
-  const handleDeleteDestination = async (destination: Destination) => {
-    if (!destination.id) {
-      Alert.alert("Error", "Destination missing ID.");
-      return;
-    }
-    Alert.alert(
-      "Delete Destination",
-      "Are you sure you want to delete this destination?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            if (!currentTrip.id) throw new Error("currentTrip missing ID");
-            await deleteDestinationInTrip(currentTrip.id, destination.id);
-          },
-        },
-      ]
-    );
-  };
-
-  const onConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
-    setDestinationTime({ hours, minutes });
-    setTimePickerVisible(false);
-  };
-
-  // ICS Export: Generate ICS file locally and share it.
-  const handleExportICS = async () => {
-    if (!currentTrip || !currentTrip.id) {
-      Alert.alert("No current trip found.");
-      return;
-    }
-    try {
-      const icsContent = await generateICS(currentTrip);
-      const fileUri = FileSystem.documentDirectory + `trip_${currentTrip.id}.ics`;
-      await FileSystem.writeAsStringAsync(fileUri, icsContent, { encoding: FileSystem.EncodingType.UTF8 });
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(fileUri);
-      } else {
-        Alert.alert("Sharing not available", "This device does not support sharing files.");
-      }
-    } catch (err) {
-      console.error("Error generating ICS file:", err);
-      Alert.alert("Error", "Failed to generate ICS file.");
-    }
-  };
-
   return (
     <>
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView style={styles.container}>
         {editMode ? (
           <View style={styles.form}>
             <TextInput
@@ -317,7 +207,7 @@ const CurrentTripScreen = () => {
               mode="outlined"
               style={{ marginBottom: 10 }}
             />
-            <Button testID="changeDates" mode="outlined" onPress={() => setPickerVisible(true)}>
+            <Button mode="outlined" onPress={() => setPickerVisible(true)}>
               {startDate && endDate
                 ? `${startDate.toDateString()} - ${endDate.toDateString()}`
                 : "Select Dates"}
@@ -337,8 +227,8 @@ const CurrentTripScreen = () => {
               mode="range"
               visible={pickerVisible}
               onDismiss={() => setPickerVisible(false)}
-              startDate={startDate || undefined}
-              endDate={endDate || undefined}
+              startDate={startDate}
+              endDate={endDate}
               onConfirm={({ startDate: newStartDate, endDate: newEndDate }) => {
                 setStartDate(newStartDate);
                 setEndDate(newEndDate);
@@ -361,248 +251,77 @@ const CurrentTripScreen = () => {
             </Card.Content>
           </Card>
         )}
+
         {editMode ? (
-          <Button mode="contained" onPress={handleSaveTrip} style={{ margin: 15 }}>
+          <Button mode="contained" onPress={handleSaveTrip}>
             Save Changes
           </Button>
         ) : (
-          <View style={styles.buttonRow}>
-            <Button
-              testID="editTrip"
-              mode="contained"
-              onPress={handleBeginEditCurrentTrip}
-              style={styles.smallButton}
-            >
-              Edit Trip
-            </Button>
-            <Button mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
-              Archive Trip
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleDeleteTrip}
-              buttonColor="#e53935"
-              style={styles.smallButton}
-            >
-              Delete Trip
-            </Button>
-          </View>
+          <Button mode="contained" onPress={handleBeginEditCurrentTrip}>
+            Edit Trip
+          </Button>
         )}
 
-        {/* --- Destinations Section --- */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Destinations</Text>
-        </View>
+        <Text style={styles.sectionTitle}>Destinations</Text>
         {currentTrip.destinations.length === 0 ? (
-          <Text style={{ marginHorizontal: 15 }}>No destinations added yet.</Text>
+          <Text>No destinations added yet.</Text>
         ) : (
           currentTrip.destinations.map((destination) => (
-            <View key={destination.id} style={styles.destinationCard}>
+            <View key={destination.id} style={styles.container}>
               <List.Item
+                key={destination.id}
                 title={destination.description}
-                description={() => (
-                  <Text>
-                    {destination.address ? destination.address + "\n" : ""}
-                    {destination.date
-                      ? new Date(destination.date).toLocaleString()
-                      : "No date/time"}
-                  </Text>
-                )}
+                description={destination.address}
               />
               <View style={styles.buttonContainer}>
+                {destination.date ? (
+                  <View style={styles.dateWrapper}>
+                    <Text style={styles.dateText}>
+                      {new Date(destination.date).toLocaleDateString()}
+                    </Text>
+                    <IconButton
+                      icon="calendar-remove"
+                      onPress={() => handleRemoveDestinationDate(destination)}
+                    />
+                  </View>
+                ) : (
+                  <Button mode="outlined" onPress={() => handleOpenAssignModal(destination)}>
+                    Assign Date
+                  </Button>
+                )}
                 <IconButton
-                  testID="pencil"
-                  icon="pencil"
-                  onPress={() => openDestinationDialogForEdit(destination)}
-                />
-                <IconButton
-                  testID="trash"
                   icon="trash-can"
                   onPress={() => handleDeleteDestination(destination)}
                 />
               </View>
-              {/* --- Checklist Section for this Destination --- */}
-              <View style={styles.checklistContainer}>
-                {checklists[destination.id] &&
-                  checklists[destination.id].map((item) => (
-                    <View key={item.id} style={styles.checklistItemRow}>
-                      <Checkbox
-                        status={item.completed ? "checked" : "unchecked"}
-                        onPress={() =>
-                          updateChecklistItem(destination.id, item.id, { completed: !item.completed })
-                        }
-                      />
-                      {editingChecklistItemId === item.id ? (
-                        <>
-                          <TextInput
-                            style={styles.checklistInput}
-                            value={editingChecklistText}
-                            onChangeText={setEditingChecklistText}
-                          />
-                          <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => {
-                              updateChecklistItem(destination.id, item.id, { text: editingChecklistText });
-                              setEditingChecklistItemId(null);
-                            }}
-                          >
-                            <Text style={styles.editButtonText}>Confirm</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => {
-                              setEditingChecklistItemId(null);
-                              setEditingChecklistText("");
-                            }}
-                          >
-                            <Text style={styles.deleteButtonText}>Cancel</Text>
-                          </TouchableOpacity>
-                        </>
-                      ) : (
-                        <>
-                          <Text
-                            style={[styles.checklistText, item.completed && styles.completedText]}
-                            onLongPress={() => {
-                              setEditingChecklistItemId(item.id);
-                              setEditingChecklistText(item.text);
-                            }}
-                          >
-                            {item.text}
-                          </Text>
-                          <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => {
-                              setEditingChecklistItemId(item.id);
-                              setEditingChecklistText(item.text);
-                            }}
-                          >
-                            <Text style={styles.editButtonText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => deleteChecklistItem(destination.id, item.id)}
-                          >
-                            <Text style={styles.deleteButtonText}>Delete</Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-                    </View>
-                  ))}
-                <Button
-                  mode="outlined"
-                  onPress={() => {
-                    console.log("Add Checklist Item pressed for destination", destination.id);
-                    addChecklistItem(destination.id, "New Item", false);
-                  }}
-                  style={styles.addChecklistButton}
-                >
-                  Add Checklist Item
-                </Button>
-              </View>
             </View>
           ))
         )}
-
-        {/* ICS Export Row */}
-        {currentTrip.destinations.length > 0 && (
-            <View style={styles.exportRow}>
-              <Button
-                mode="contained"
-                onPress={handleExportICS}
-                style={styles.exportButton}
-              >
-                Export to Calendar
-              </Button>
-              <Button
-                mode="contained"
-                onPress={() => setHelpModalVisible(true)}
-                style={styles.helpButton}
-              >
-                ?
-              </Button>
-        </View>
-        )}
       </ScrollView>
 
-      {/* Help Modal for ICS instructions */}
-      <Portal>
-        <Dialog visible={helpModalVisible} onDismiss={() => setHelpModalVisible(false)}>
-          <Dialog.Title>How to Use the ICS File</Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ marginBottom: 8 }}>
-              After exporting, you can share the ICS file with your calendar application.
-            </Text>
-            <Text style={{ marginBottom: 8 }}>
-              For Google Calendar on desktop: Open Google Calendar, click the gear icon, select "Settings" → "Import & export", and then import the downloaded ICS file.
-            </Text>
-            <Text style={{ marginBottom: 8 }}>
-              For Apple Calendar: Open Calendar, choose "File" → "New Calendar Subscription", and paste the link or import the file.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setHelpModalVisible(false)}>OK</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-      {/* Edit Destination Dialog */}
       <Portal>
         <Dialog
-          visible={destinationDialogVisible}
-          onDismiss={() => setDestinationDialogVisible(false)}
+          visible={assignModalVisible}
+          onDismiss={() => {
+            setAssignModalVisible(false);
+            setDestinationToAssign(null);
+          }}
         >
-          <Dialog.Title>Edit Destination</Dialog.Title>
+          <Dialog.Title>Select a Date to Assign</Dialog.Title>
           <Dialog.Content>
-            <TextInput
-              label="Event / Destination Name"
-              value={destinationName}
-              onChangeText={setDestinationName}
-              mode="outlined"
-              style={{ marginBottom: 8 }}
-            />
-            <TextInput
-              label="Address (optional)"
-              value={destinationAddress}
-              onChangeText={setDestinationAddress}
-              mode="outlined"
-              style={{ marginBottom: 8 }}
-            />
-            <Button onPress={() => setDestPickerVisible(true)}>
-              {destinationDate
-                ? `Date: ${destinationDate.toDateString()}`
-                : "Select Date"}
-            </Button>
-            <DatePickerModal
-              locale="en"
-              mode="single"
-              visible={destPickerVisible}
-              onDismiss={() => setDestPickerVisible(false)}
-              date={destinationDate || undefined}
-              onConfirm={({ date }) => {
-                setDestinationDate(date);
-                setDestPickerVisible(false);
-              }}
-              validRange={{
-                startDate: startDate || undefined,
-                endDate: endDate || undefined,
-              }}
-            />
-            <Button onPress={() => setTimePickerVisible(true)} style={{ marginTop: 8 }}>
-              {destinationTime
-                ? `Time: ${destinationTime.hours}:${String(destinationTime.minutes).padStart(2, "0")}`
-                : "Select Time"}
-            </Button>
-            <TimePickerModal
-              visible={timePickerVisible}
-              onDismiss={() => setTimePickerVisible(false)}
-              onConfirm={onConfirmTime}
-              hours={destinationTime?.hours ?? 12}
-              minutes={destinationTime?.minutes ?? 0}
-            />
+            {getDatesInRange(new Date(currentTrip.startDate), new Date(currentTrip.endDate)).map((date, idx) => (
+              <List.Item key={idx} title={date.toLocaleDateString()} onPress={() => handleAssignDate(date)} />
+            ))}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDestinationDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleSaveDestination}>Save</Button>
+            <Button
+              onPress={() => {
+                setAssignModalVisible(false);
+                setDestinationToAssign(null);
+              }}
+            >
+              Cancel
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -611,123 +330,58 @@ const CurrentTripScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: "#fff"
-  },
   card: {
-    margin: 15
+    margin: 15,
   },
-  form: {
-    backgroundColor: "white",
-    padding: 9,
-    borderRadius: 10,
-    elevation: 3
-  },
-  bold: {
-    fontWeight: "bold"
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold"
-  },
-  sectionHeader: {
-    marginHorizontal: 15,
-    marginVertical: 16
-  },
-  destinationCard: {
+  container: {
     backgroundColor: "white",
     padding: 15,
     marginVertical: 5,
-    marginHorizontal: 15,
     borderRadius: 8,
-    elevation: 3
+    elevation: 3,
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "flex-end"
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 0,
+  },
+  dateWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f4f4f4",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  dateText: {
+    marginRight: 5,
+    fontSize: 14,
+    color: "#333",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 16,
+  },
+  bold: {
+    fontWeight: "bold",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16
+    padding: 16,
   },
   emptyButton: {
-    marginTop: 16
+    marginTop: 16,
   },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    margin: 10,
+  form: {
+    backgroundColor: "white",
+    padding: 9,
+    borderRadius: 10,
+    elevation: 3,
   },
-  smallButton: {
-    marginHorizontal: 1,
-    paddingHorizontal: 2,
-    width: 130
-  },
-  checklistContainer: {
-    marginTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-    paddingTop: 10
-  },
-  checklistItemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 5
-  },
-  checklistText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  checklistInput: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 4,
-    borderRadius: 4
-  },
-  completedText: {
-    textDecorationLine: "line-through",
-    color: "#999"
-  },
-  editButton: {
-    marginLeft: 5,
-    padding: 4
-  },
-  editButtonText: {
-    color: "#6200ee"
-  },
-  deleteButton: {
-    marginLeft: 5,
-    padding: 4
-  },
-  deleteButtonText: {
-    color: "red"
-  },
-  addChecklistButton: {
-    marginTop: 10
-  },
-  exportRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    margin: 15
-  },
-  exportButton: {
-    flex: 1,
-    marginRight: 10,
-    paddingVertical: 6
-  },
-  helpButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 20,
-    backgroundColor: "#BEBEBE"
-  }
 });
 
 export default CurrentTripScreen;
