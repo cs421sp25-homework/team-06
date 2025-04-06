@@ -15,6 +15,7 @@ import { addCollaboratorByEmail, setCurrentTripId } from "../utils/userAPI";
 import { TripStatus } from "../types/Trip";
 import { doc, onSnapshot, updateDoc } from "@react-native-firebase/firestore";
 import { firestore } from "../utils/firebase";
+import { useTabs } from "../navigation/useAppNavigation";
 
 const DashboardScreen = () => {
   const { currentUser, getCurrentUserId } = useUser();
@@ -23,6 +24,7 @@ const DashboardScreen = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [tripIdForInvite, setTripIdForInvite] = useState<string | null>(null);
   const [selectedSegment, setSelectedSegment] = useState("Active");
+  const { setTabIndex } = useTabs();
 
   useEffect(() => {
     if (!currentUser || !currentUser.tripsIdList) return;
@@ -64,6 +66,11 @@ const DashboardScreen = () => {
     planning: activeTrips.filter((trip) => trip.status === TripStatus.PLANNING),
     ongoing: activeTrips.filter((trip) => trip.status === TripStatus.ONGOING),
     completed: activeTrips.filter((trip) => trip.status === TripStatus.COMPLETED),
+  };
+
+  const handleJumpToTrip = (trip: any) => {
+    setCurrentTripId(getCurrentUserId(), trip.id);
+    setTabIndex(1);
   };
 
   // Function to handle setting a trip as the current trip
@@ -125,6 +132,9 @@ const DashboardScreen = () => {
               Set as Current
             </Button>
           )}
+          <Button mode="contained" onPress={() => handleJumpToTrip(item)}>
+            Go to Trip
+          </Button>
           {selectedSegment === "Archived" ? (
             <Button mode="outlined" onPress={() => handleRestoreTrip(item)}>
               Restore
