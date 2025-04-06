@@ -40,10 +40,10 @@ const CurrentTripScreen = () => {
     addChecklistItem,
     updateChecklistItem,
     deleteChecklistItem,
-    attentions,
-    createAttention,
-    updateAttention,
-    deleteAttention,
+    announcements,
+    createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
   } = useTrip();
   const { setTabIndex } = useTabs();
 
@@ -71,11 +71,11 @@ const CurrentTripScreen = () => {
   // Help modal state for ICS instructions
   const [helpModalVisible, setHelpModalVisible] = useState(false);
 
-  // Attention Dialog states
-  const [isAddAttentionVisible, setAddAttentionVisible] = useState(false);
-  const [isEditAttentionVisible, setEditAttentionVisible] = useState(false);
-  const [attentionText, setAttentionText] = useState("");
-  const [editingAttentionId, setEditingAttentionId] = useState<string | null>(null);
+  // Announcement Dialog states
+  const [isAddAnnouncementVisible, setAddAnnouncementVisible] = useState(false);
+  const [isEditAnnouncementVisible, setEditAnnouncementVisible] = useState(false);
+  const [announcementText, setAnnouncementText] = useState("");
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
@@ -316,47 +316,47 @@ const CurrentTripScreen = () => {
     }
   };
 
-  // Attention Section
-  const groupedAttentions = attentions.reduce((groups, attention) => {
-    const dateStr = attention.updatedAt.toLocaleDateString();
+  // Announcement Section
+  const groupedAnnouncements = announcements.reduce((groups, announcement) => {
+    const dateStr = announcement.updatedAt.toLocaleDateString();
     if (!groups[dateStr]) {
       groups[dateStr] = [];
     }
-    groups[dateStr].push(attention);
+    groups[dateStr].push(announcement);
     return groups;
-  }, {} as { [date: string]: typeof attentions });
+  }, {} as { [date: string]: typeof announcements });
 
-  const sortedAttentionDates = Object.keys(groupedAttentions).sort(
+  const sortedAnnouncementDates = Object.keys(groupedAnnouncements).sort(
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
   );
 
-  const handleAddAttention = async () => {
+  const handleAddAnnouncement = async () => {
     try {
-      await createAttention(attentionText);
-      setAddAttentionVisible(false);
-      setAttentionText("");
+      await createAnnouncement(announcementText);
+      setAddAnnouncementVisible(false);
+      setAnnouncementText("");
     } catch (err: any) {
-      console.error("Error adding attention:", err);
+      console.error("Error adding announcement:", err);
     }
   };
 
-  const handleEditAttention = async () => {
-    if (!editingAttentionId) return;
+  const handleEditAnnouncement = async () => {
+    if (!editingAnnouncementId) return;
     try {
-      await updateAttention(editingAttentionId, attentionText);
-      setEditAttentionVisible(false);
-      setAttentionText("");
-      setEditingAttentionId(null);
+      await updateAnnouncement(editingAnnouncementId, announcementText);
+      setEditAnnouncementVisible(false);
+      setAnnouncementText("");
+      setEditingAnnouncementId(null);
     } catch (err: any) {
-      console.error("Error updating attention:", err);
+      console.error("Error updating announcement:", err);
     }
   };
 
-  const handleDeleteAttention = async (attentionId: string) => {
+  const handleDeleteAnnouncement = async (announcementId: string) => {
     try {
-      await deleteAttention(attentionId);
+      await deleteAnnouncement(announcementId);
     } catch (err: any) {
-      console.error("Error deleting attention:", err);
+      console.error("Error deleting announcement:", err);
     }
   };
 
@@ -558,44 +558,47 @@ const CurrentTripScreen = () => {
           ))
         )}
 
-        {/* Attentions Section */}
-        <View style={styles.attentionSection}>
-          <Title>Attentions</Title>
+        {/* Announcements Section */}
+        <View style={styles.announcementSection}>
+          <Title>Announcements</Title>
           <Button
             mode="contained"
-            onPress={() => setAddAttentionVisible(true)}
+            onPress={() => {
+              setAnnouncementText("");
+              setAddAnnouncementVisible(true);
+            }}
             style={styles.addButton}
           >
-            Add Attention
+            Add Announcement
           </Button>
-          {sortedAttentionDates.map((dateStr) => (
+          {sortedAnnouncementDates.map((dateStr) => (
             <View key={dateStr}>
               <Text style={styles.dateHeader}>{dateStr}</Text>
-              {groupedAttentions[dateStr].map((attention, index) => (
-                <View key={attention.id}>
-                  <Card style={styles.attentionCard}>
+              {groupedAnnouncements[dateStr].map((announcement, index) => (
+                <View key={announcement.id}>
+                  <Card style={styles.announcementCard}>
                     <Card.Title
-                      title={`Created: ${attention.createdAt.toLocaleDateString()} | Updated: ${attention.updatedAt.toLocaleDateString()}`}
+                      title={`Created: ${announcement.createdAt.toLocaleDateString()} | Updated: ${announcement.updatedAt.toLocaleDateString()}`}
                     />
                     <Card.Content>
-                      <Markdown>{attention.message}</Markdown>
+                      <Markdown>{announcement.message}</Markdown>
                     </Card.Content>
                     <Card.Actions>
                       <Button
                         onPress={() => {
-                          setEditingAttentionId(attention.id);
-                          setAttentionText(attention.message);
-                          setEditAttentionVisible(true);
+                          setEditingAnnouncementId(announcement.id);
+                          setAnnouncementText(announcement.message);
+                          setEditAnnouncementVisible(true);
                         }}
                       >
                         Edit
                       </Button>
-                      <Button onPress={() => handleDeleteAttention(attention.id)}>
+                      <Button onPress={() => handleDeleteAnnouncement(announcement.id)}>
                         Delete
                       </Button>
                     </Card.Actions>
                   </Card>
-                  {index < groupedAttentions[dateStr].length - 1 && (
+                  {index < groupedAnnouncements[dateStr].length - 1 && (
                     <View style={styles.separator} />
                   )}
                 </View>
@@ -625,45 +628,45 @@ const CurrentTripScreen = () => {
         )}
       </ScrollView>
       
-      {/* Attention Dialog */}
+      {/* Announcement Dialog */}
       <Portal>
         <Dialog
-          visible={isAddAttentionVisible}
-          onDismiss={() => setAddAttentionVisible(false)}
+          visible={isAddAnnouncementVisible}
+          onDismiss={() => setAddAnnouncementVisible(false)}
         >
-          <Dialog.Title>Add Attention</Dialog.Title>
+          <Dialog.Title>Add Announcement</Dialog.Title>
           <Dialog.Content>
             <TextInput
-              label="Attention Message"
-              value={attentionText}
-              onChangeText={setAttentionText}
+              label="Announcement Message"
+              value={announcementText}
+              onChangeText={setAnnouncementText}
               multiline
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setAddAttentionVisible(false)}>Cancel</Button>
-            <Button onPress={handleAddAttention}>Add</Button>
+            <Button onPress={() => setAddAnnouncementVisible(false)}>Cancel</Button>
+            <Button onPress={handleAddAnnouncement}>Add</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
     <Portal>
       <Dialog
-        visible={isEditAttentionVisible}
-        onDismiss={() => setEditAttentionVisible(false)}
+        visible={isEditAnnouncementVisible}
+        onDismiss={() => setEditAnnouncementVisible(false)}
       >
-        <Dialog.Title>Edit Attention</Dialog.Title>
+        <Dialog.Title>Edit Announcement</Dialog.Title>
         <Dialog.Content>
           <TextInput
-            label="Attention Message"
-            value={attentionText}
-            onChangeText={setAttentionText}
+            label="Announcement Message"
+            value={announcementText}
+            onChangeText={setAnnouncementText}
             multiline
           />
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={() => setEditAttentionVisible(false)}>Cancel</Button>
-          <Button onPress={handleEditAttention}>Save</Button>
+          <Button onPress={() => setEditAnnouncementVisible(false)}>Cancel</Button>
+          <Button onPress={handleEditAnnouncement}>Save</Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>
@@ -872,7 +875,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#BEBEBE"
   },
-  attentionSection: {
+  announcementSection: {
     marginTop: 20,
     padding: 10,
     backgroundColor: "#fff",
@@ -886,7 +889,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     color: "#555",
   },
-  attentionCard: {
+  announcementCard: {
     marginVertical: 8,
   },
   separator: {

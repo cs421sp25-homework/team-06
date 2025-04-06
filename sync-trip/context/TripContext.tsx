@@ -2,7 +2,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useState } from
 import { Trip } from "../types/Trip";
 import { Destination } from "../types/Destination";
 import { ChecklistItem } from "../types/Checklist";
-import { Attention } from "../types/Attention";
+import { Announcement } from "../types/Announcement";
 import {
   addDestinationToTrip as apiAddDestinationToTrip,
   createTrip as apiCreateTrip,
@@ -11,9 +11,9 @@ import {
   addChecklistItem as apiAddChecklistItem,
   updateChecklistItem as apiUpdateChecklistItem,
   deleteChecklistItem as apiDeleteChecklistItem,
-  createAttention as apiCreateAttention,
-  updateAttention as apiUpdateAttention,
-  deleteAttention as apiDeleteAttention,
+  createAnnouncement as apiCreateAnnouncement,
+  updateAnnouncement as apiUpdateAnnouncement,
+  deleteAnnouncement as apiDeleteAnnouncement,
 } from "../utils/tripAPI";
 import { useUser } from "./UserContext";
 import { addTripToUser as apiAddTripToUser, setCurrentTripId as apiSetCurrentTripId } from "../utils/userAPI";
@@ -32,11 +32,11 @@ interface TripContextType {
   addChecklistItem: (destId: string, text: string) => Promise<void>;
   updateChecklistItem: (destId: string, itemId: string, updates: Partial<ChecklistItem>) => Promise<void>;
   deleteChecklistItem: (destId: string, itemId: string) => Promise<void>;
-  // Attention functions
-  attentions: Attention[];
-  createAttention: (text: string) => Promise<void>;
-  updateAttention: (attentionId: string, newText: string) => Promise<void>;
-  deleteAttention: (attentionId: string) => Promise<void>;
+  // Announcement functions
+  announcements: Announcement[];
+  createAnnouncement: (text: string) => Promise<void>;
+  updateAnnouncement: (announcementId: string, newText: string) => Promise<void>;
+  deleteAnnouncement: (announcementId: string) => Promise<void>;
   logout: () => void;
   destinations: Destination[];
 }
@@ -48,7 +48,7 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [checklists, setChecklists] = useState<Record<string, ChecklistItem[]>>({});
 
-  const [attentions, setAttentions] = useState<Attention[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   const { currentUser, setCurrentUser, getCurrentUserId } = useUser();
   const currentTripId = currentUser?.currentTripId;
@@ -129,13 +129,13 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [currentTripId, destinations]);
 
-  // Listen for Attention changes
+  // Listen for Announcement changes
   useEffect(() => {
     if (!currentTripId) return;
-    const attentionRef = collection(firestore, "trips", currentTripId, "notices");
-    const unsubscribeAttention = onSnapshot(attentionRef, (snapshot) => {
+    const announcementRef = collection(firestore, "trips", currentTripId, "notices");
+    const unsubscribeAnnouncement = onSnapshot(announcementRef, (snapshot) => {
       if (snapshot) {
-        const attentionsData: Attention[] = snapshot.docs.map((doc) => {
+        const announcementsData: Announcement[] = snapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -144,15 +144,15 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
             lastUpdatedBy: data.lastUpdatedBy,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
             updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
-          } as Attention;
+          } as Announcement;
         });
-        console.log("Attentions loaded:", attentionsData); // 可用于调试
-        setAttentions(attentionsData);
+        console.log("Announcements loaded:", announcementsData); // 可用于调试
+        setAnnouncements(announcementsData);
       } else {
-        setAttentions([]);
+        setAnnouncements([]);
       }
     });
-    return () => unsubscribeAttention();
+    return () => unsubscribeAnnouncement();
   }, [currentTripId]);
 
   const createTrip = async (tripData: Trip) => {
@@ -242,33 +242,33 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  // Attention functions
-  const createAttention = async (text: string) => {
+  // Announcement functions
+  const createAnnouncement = async (text: string) => {
     if (!currentTrip || !currentTrip.id) return;
     try {
-      await apiCreateAttention(currentTrip.id, text, currentUser.uid);
+      await apiCreateAnnouncement(currentTrip.id, text, currentUser.uid);
     } catch (error) {
-      console.error("Error creating attention:", error);
+      console.error("Error creating announcement:", error);
       throw error;
     }
   };
 
-  const updateAttention = async (attentionId: string, newText: string) => {
+  const updateAnnouncement = async (announcementId: string, newText: string) => {
     if (!currentTrip || !currentTrip.id) return;
     try {
-      await apiUpdateAttention(currentTrip.id, attentionId, newText, currentUser.uid);
+      await apiUpdateAnnouncement(currentTrip.id, announcementId, newText, currentUser.uid);
     } catch (error) {
-      console.error("Error updating attention:", error);
+      console.error("Error updating announcement:", error);
       throw error;
     }
   };
 
-  const deleteAttention = async (attentionId: string) => {
+  const deleteAnnouncement = async (announcementId: string) => {
     if (!currentTrip || !currentTrip.id) return;
     try {
-      await apiDeleteAttention(currentTrip.id, attentionId);
+      await apiDeleteAnnouncement(currentTrip.id, announcementId);
     } catch (error) {
-      console.error("Error deleting attention:", error);
+      console.error("Error deleting announcement:", error);
       throw error;
     }
   };
@@ -291,10 +291,10 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         addChecklistItem,
         updateChecklistItem,
         deleteChecklistItem,
-        attentions,
-        createAttention,
-        updateAttention,
-        deleteAttention,
+        announcements,
+        createAnnouncement,
+        updateAnnouncement,
+        deleteAnnouncement,
         logout,
         destinations,
       }}
