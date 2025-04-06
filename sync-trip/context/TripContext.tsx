@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useState } from
 import { Trip } from "../types/Trip";
 import { Destination } from "../types/Destination";
 import { ChecklistItem } from "../types/Checklist";
+import { Attention } from "../types/Attention";
 import {
   addDestinationToTrip as apiAddDestinationToTrip,
   createTrip as apiCreateTrip,
@@ -10,6 +11,9 @@ import {
   addChecklistItem as apiAddChecklistItem,
   updateChecklistItem as apiUpdateChecklistItem,
   deleteChecklistItem as apiDeleteChecklistItem,
+  createAttention as apiCreateAttention,
+  updateAttention as apiUpdateAttention,
+  deleteAttention as apiDeleteAttention,
 } from "../utils/tripAPI";
 import { useUser } from "./UserContext";
 import { addTripToUser as apiAddTripToUser, setCurrentTripId as apiSetCurrentTripId } from "../utils/userAPI";
@@ -28,6 +32,11 @@ interface TripContextType {
   addChecklistItem: (destId: string, text: string) => Promise<void>;
   updateChecklistItem: (destId: string, itemId: string, updates: Partial<ChecklistItem>) => Promise<void>;
   deleteChecklistItem: (destId: string, itemId: string) => Promise<void>;
+  // Attention functions
+  attentions: Attention[];
+  createAttention: (text: string) => Promise<void>;
+  updateAttention: (attentionId: string, newText: string) => Promise<void>;
+  deleteAttention: (attentionId: string) => Promise<void>;
   logout: () => void;
   destinations: Destination[];
 }
@@ -38,6 +47,8 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
   const [currentTrip, setCurrentTrip] = useState<Trip | null>(null);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [checklists, setChecklists] = useState<Record<string, ChecklistItem[]>>({});
+
+  const [attentions, setAttentions] = useState<Attention[]>([]);
 
   const { currentUser, setCurrentUser, getCurrentUserId } = useUser();
   const currentTripId = currentUser?.currentTripId;
@@ -117,6 +128,32 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
       Object.values(unsubscribeMap).forEach((unsubscribe) => unsubscribe());
     };
   }, [currentTripId, destinations]);
+
+  // Listen for Attention changes
+  useEffect(() => {
+    if (!currentTripId) return;
+    const attentionRef = collection(firestore, "trips", currentTripId, "notices");
+    const unsubscribeAttention = onSnapshot(attentionRef, (snapshot) => {
+      if (snapshot) {
+        const attentionsData: Attention[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            message: data.message,
+            authorID: data.authorID,
+            lastUpdatedBy: data.lastUpdatedBy,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+          } as Attention;
+        });
+        console.log("Attentions loaded:", attentionsData); // 可用于调试
+        setAttentions(attentionsData);
+      } else {
+        setAttentions([]);
+      }
+    });
+    return () => unsubscribeAttention();
+  }, [currentTripId]);
 
   const createTrip = async (tripData: Trip) => {
     try {
@@ -204,6 +241,37 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
   };
+  
+  // Attention functions
+  const createAttention = async (text: string) => {
+    if (!currentTrip || !currentTrip.id) return;
+    try {
+      await apiCreateAttention(currentTrip.id, text, currentUser.uid);
+    } catch (error) {
+      console.error("Error creating attention:", error);
+      throw error;
+    }
+  };
+
+  const updateAttention = async (attentionId: string, newText: string) => {
+    if (!currentTrip || !currentTrip.id) return;
+    try {
+      await apiUpdateAttention(currentTrip.id, attentionId, newText, currentUser.uid);
+    } catch (error) {
+      console.error("Error updating attention:", error);
+      throw error;
+    }
+  };
+
+  const deleteAttention = async (attentionId: string) => {
+    if (!currentTrip || !currentTrip.id) return;
+    try {
+      await apiDeleteAttention(currentTrip.id, attentionId);
+    } catch (error) {
+      console.error("Error deleting attention:", error);
+      throw error;
+    }
+  };
 
   const logout = () => {
     setCurrentTrip(null);
@@ -223,6 +291,10 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         addChecklistItem,
         updateChecklistItem,
         deleteChecklistItem,
+        attentions,
+        createAttention,
+        updateAttention,
+        deleteAttention,
         logout,
         destinations,
       }}

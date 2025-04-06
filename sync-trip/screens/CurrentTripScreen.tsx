@@ -38,7 +38,11 @@ const CurrentTripScreen = () => {
     checklists,
     addChecklistItem,
     updateChecklistItem,
-    deleteChecklistItem
+    deleteChecklistItem,
+    attentions,
+    createAttention,
+    updateAttention,
+    deleteAttention,
   } = useTrip();
   const { setTabIndex } = useTabs();
 
@@ -65,6 +69,12 @@ const CurrentTripScreen = () => {
 
   // Help modal state for ICS instructions
   const [helpModalVisible, setHelpModalVisible] = useState(false);
+
+  // Attention Dialog states
+  const [isAddAttentionVisible, setAddAttentionVisible] = useState(false);
+  const [isEditAttentionVisible, setEditAttentionVisible] = useState(false);
+  const [attentionText, setAttentionText] = useState("");
+  const [editingAttentionId, setEditingAttentionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
@@ -305,6 +315,50 @@ const CurrentTripScreen = () => {
     }
   };
 
+  // Attention Section
+  const groupedAttentions = attentions.reduce((groups, attention) => {
+    const dateStr = attention.updatedAt.toLocaleDateString();
+    if (!groups[dateStr]) {
+      groups[dateStr] = [];
+    }
+    groups[dateStr].push(attention);
+    return groups;
+  }, {} as { [date: string]: typeof attentions });
+
+  const sortedAttentionDates = Object.keys(groupedAttentions).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
+
+  const handleAddAttention = async () => {
+    try {
+      await createAttention(attentionText);
+      setAddAttentionVisible(false);
+      setAttentionText("");
+    } catch (err: any) {
+      console.error("Error adding attention:", err);
+    }
+  };
+
+  const handleEditAttention = async () => {
+    if (!editingAttentionId) return;
+    try {
+      await updateAttention(editingAttentionId, attentionText);
+      setEditAttentionVisible(false);
+      setAttentionText("");
+      setEditingAttentionId(null);
+    } catch (err: any) {
+      console.error("Error updating attention:", err);
+    }
+  };
+
+  const handleDeleteAttention = async (attentionId: string) => {
+    try {
+      await deleteAttention(attentionId);
+    } catch (err: any) {
+      console.error("Error deleting attention:", err);
+    }
+  };
+
   return (
     <>
       <ScrollView style={styles.scrollContainer}>
@@ -503,6 +557,52 @@ const CurrentTripScreen = () => {
           ))
         )}
 
+        {/* Attentions Section */}
+        <View style={styles.attentionSection}>
+          <Title>Attentions</Title>
+          <Button
+            mode="contained"
+            onPress={() => setAddAttentionVisible(true)}
+            style={styles.addButton}
+          >
+            Add Attention
+          </Button>
+          {sortedAttentionDates.map((dateStr) => (
+            <View key={dateStr}>
+              <Text style={styles.dateHeader}>{dateStr}</Text>
+              {groupedAttentions[dateStr].map((attention, index) => (
+                <View key={attention.id}>
+                  <Card style={styles.attentionCard}>
+                    <Card.Title
+                      title={`Created: ${attention.createdAt.toLocaleDateString()} | Updated: ${attention.updatedAt.toLocaleDateString()}`}
+                    />
+                    <Card.Content>
+                      <Text>{attention.message}</Text>
+                    </Card.Content>
+                    <Card.Actions>
+                      <Button
+                        onPress={() => {
+                          setEditingAttentionId(attention.id);
+                          setAttentionText(attention.message);
+                          setEditAttentionVisible(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button onPress={() => handleDeleteAttention(attention.id)}>
+                        Delete
+                      </Button>
+                    </Card.Actions>
+                  </Card>
+                  {index < groupedAttentions[dateStr].length - 1 && (
+                    <View style={styles.separator} />
+                  )}
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+
         {/* ICS Export Row */}
         {currentTrip.destinations.length > 0 && (
             <View style={styles.exportRow}>
@@ -523,6 +623,49 @@ const CurrentTripScreen = () => {
         </View>
         )}
       </ScrollView>
+      
+      {/* Attention Dialog */}
+      <Portal>
+        <Dialog
+          visible={isAddAttentionVisible}
+          onDismiss={() => setAddAttentionVisible(false)}
+        >
+          <Dialog.Title>Add Attention</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Attention Message"
+              value={attentionText}
+              onChangeText={setAttentionText}
+              multiline
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setAddAttentionVisible(false)}>Cancel</Button>
+            <Button onPress={handleAddAttention}>Add</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+    <Portal>
+      <Dialog
+        visible={isEditAttentionVisible}
+        onDismiss={() => setEditAttentionVisible(false)}
+      >
+        <Dialog.Title>Edit Attention</Dialog.Title>
+        <Dialog.Content>
+          <TextInput
+            label="Attention Message"
+            value={attentionText}
+            onChangeText={setAttentionText}
+            multiline
+          />
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setEditAttentionVisible(false)}>Cancel</Button>
+          <Button onPress={handleEditAttention}>Save</Button>
+        </Dialog.Actions>
+      </Dialog>
+    </Portal>
 
       {/* Help Modal for ICS instructions */}
       <Portal>
@@ -727,7 +870,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 20,
     backgroundColor: "#BEBEBE"
-  }
+  },
+  attentionSection: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    elevation: 2,
+    marginHorizontal: 15,
+  },
+  dateHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginVertical: 8,
+    color: "#555",
+  },
+  attentionCard: {
+    marginVertical: 8,
+  },
+  separator: {
+    borderBottomColor: "gray",
+    borderBottomWidth: 1,
+    borderStyle: "dashed",
+    marginVertical: 8,
+  },
 });
 
 export default CurrentTripScreen;
