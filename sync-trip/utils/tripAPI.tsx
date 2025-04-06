@@ -14,6 +14,7 @@ import {
 import { Trip } from "../types/Trip";
 import { Destination } from "../types/Destination";
 import { ChecklistItem } from "../types/Checklist";
+import { Attention } from "../types/Attention";
 
 export const getATripById = async (tripId: string): Promise<Trip> => {
   const tripRef = doc(firestore, "trips", tripId);
@@ -179,4 +180,48 @@ export const deleteChecklistItem = async (
   );
   await deleteDoc(itemRef);
   console.log(`Checklist item deleted with ID ${itemRef.id}`);
+};
+
+
+// create Attention
+export const createAttention = async (
+  tripId: string, 
+  message: string,
+  authorID: string 
+): Promise<void> => { 
+  if (!message) throw new Error("Attention text is missing");
+  const attentionRef = collection(firestore, "trips", tripId, "notices");
+  const docRef = await addDoc(attentionRef, {
+    message: message,
+    authorID: authorID,
+    lastUpdatedBy: authorID,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  console.log("Attention added with ID:", docRef.id);
+};
+
+export const updateAttention = async (
+  tripId: string,
+  attentionId: string,
+  newMessage: string,
+  lastUpdatedBy: string
+): Promise<void> => {
+  if (!attentionId) throw new Error("Attention ID is missing");
+  const attentionDocRef = doc(firestore, "trips", tripId, "notices", attentionId);
+  await updateDoc(attentionDocRef, {
+    message: newMessage,
+    lastUpdatedBy: lastUpdatedBy,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const deleteAttention = async (
+  tripId: string,
+  attentionId: string
+): Promise<void> => {
+  if (!attentionId) throw new Error("Attention ID is missing");
+  const attentionDocRef = doc(firestore, "trips", tripId, "notices", attentionId);
+  await deleteDoc(attentionDocRef);
+  console.log(`Attention deleted with ID ${attentionDocRef.id}`);
 };
