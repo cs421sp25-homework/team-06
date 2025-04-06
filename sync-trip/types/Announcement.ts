@@ -1,4 +1,4 @@
-export interface Attention {
+export interface Announcement {
     id: string;
     message: string;
     authorID: string;
