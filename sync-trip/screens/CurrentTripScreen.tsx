@@ -563,7 +563,10 @@ const CurrentTripScreen = () => {
           <Title>Attentions</Title>
           <Button
             mode="contained"
-            onPress={() => setAddAttentionVisible(true)}
+            onPress={() => {
+              setAttentionText("");
+              setAddAttentionVisible(true);
+            }}
             style={styles.addButton}
           >
             Add Attention
