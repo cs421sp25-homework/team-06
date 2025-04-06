@@ -27,7 +27,7 @@ jobs:
       # Install all dependencies (from package.json in sync-trip)
       - name: Install Dependencies
         working-directory: ./sync-trip
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Authenticate with Expo
         working-directory: ./sync-trip
