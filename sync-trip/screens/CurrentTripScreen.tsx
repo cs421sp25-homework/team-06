@@ -14,6 +14,7 @@ import {
   SegmentedButtons,
   Checkbox
 } from "react-native-paper";
+import Markdown from 'react-native-markdown-display';
 import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -577,7 +578,7 @@ const CurrentTripScreen = () => {
                       title={`Created: ${attention.createdAt.toLocaleDateString()} | Updated: ${attention.updatedAt.toLocaleDateString()}`}
                     />
                     <Card.Content>
-                      <Text>{attention.message}</Text>
+                      <Markdown>{attention.message}</Markdown>
                     </Card.Content>
                     <Card.Actions>
                       <Button
