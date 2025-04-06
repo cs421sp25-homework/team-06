@@ -33,6 +33,7 @@ const MapScreen = () => {
 
   // State for (re)setting marker details
   const [description, setDescription] = useState('');
+  const [markerName, setMarkerName] = useState('');
   // We'll store date/time in these states for a marker
   const [markerDate, setMarkerDate] = useState<Date | null>(null);
   const [markerTime, setMarkerTime] = useState<{ hours: number; minutes: number } | null>(null);
@@ -172,7 +173,8 @@ const MapScreen = () => {
     }
     const newDestination: Destination = {
       ...currMarker,
-      description,
+      name: markerName,
+      description: description,
       date: finalDate || null, // store the combined date/time
     };
 
@@ -199,6 +201,7 @@ const MapScreen = () => {
     setInfoModalVisible(false);
 
     // Pre-fill description
+    setMarkerName(currMarker.name || '');
     setDescription(currMarker.description || '');
 
     // Pre-fill date/time if it exists
@@ -219,7 +222,7 @@ const MapScreen = () => {
       Alert.alert("Error", "Current trip not found");
       return;
     }
-    if (!currMarker || !description.trim()) {
+    if (!currMarker || !description.trim() || !markerName.trim()) {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
     }
@@ -242,7 +245,8 @@ const MapScreen = () => {
 
     try {
       await updateDestinationInTrip(markerId, {
-        description,
+        name: markerName,
+        description: description,
         date: finalDate || null,
       });
     } catch (error) {
@@ -396,6 +400,14 @@ const MapScreen = () => {
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
+                testID="markerName"
+                label="Name"
+                value={markerName}
+                mode="outlined"
+                onChangeText={setMarkerName}
+                style={styles.input}
+              />
+              <TextInput
                 testID="description"
                 label="Description"
                 value={description}
@@ -464,6 +476,14 @@ const MapScreen = () => {
             <Card.Title title="Edit Destination" />
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
+              <TextInput
+                testID="editMarkerName"
+                label="Name"
+                value={markerName}
+                mode="outlined"
+                onChangeText={setMarkerName}
+                style={styles.input}
+              />
               <TextInput
                 label="Description"
                 value={description}

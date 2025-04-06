@@ -58,6 +58,7 @@ const CurrentTripScreen = () => {
   const [destinationDialogVisible, setDestinationDialogVisible] = useState(false);
   const [editingDestinationId, setEditingDestinationId] = useState<string | null>(null);
   const [destinationName, setDestinationName] = useState("");
+  const [destinationDescription, setDestinationDescription] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
   const [destinationDate, setDestinationDate] = useState<Date | null>(null);
   const [destPickerVisible, setDestPickerVisible] = useState(false);
@@ -223,7 +224,8 @@ const CurrentTripScreen = () => {
 
   const openDestinationDialogForEdit = (destination: Destination) => {
     setEditingDestinationId(destination.id || null);
-    setDestinationName(destination.description || "");
+    setDestinationName(destination.name || ""); // Use 'name' for the event title
+    setDestinationDescription(destination.description || "");
     setDestinationAddress(destination.address || "");
     if (destination.date) {
       const d = new Date(destination.date);
@@ -254,7 +256,8 @@ const CurrentTripScreen = () => {
       finalDate.setHours(destinationTime.hours, destinationTime.minutes, 0, 0);
     }
     const updatedData: Partial<Destination> = {
-      description: destinationName,
+      name: destinationName, // New event title field
+      description: destinationDescription,
       address: destinationAddress,
       date: finalDate,
     };
@@ -454,9 +457,10 @@ const CurrentTripScreen = () => {
           currentTrip.destinations.map((destination) => (
             <View key={destination.id} style={styles.destinationCard}>
               <List.Item
-                title={destination.description}
+                title={destination.name}
                 description={() => (
                   <Text>
+                    {destination.description ? destination.description + "\n" : ""}
                     {destination.address ? destination.address + "\n" : ""}
                     {destination.date
                       ? new Date(destination.date).toLocaleString()
@@ -704,6 +708,13 @@ const CurrentTripScreen = () => {
               label="Event / Destination Name"
               value={destinationName}
               onChangeText={setDestinationName}
+              mode="outlined"
+              style={{ marginBottom: 8 }}
+            />
+            <TextInput
+              label="Event / Destination Description"
+              value={destinationDescription}
+              onChangeText={setDestinationDescription}
               mode="outlined"
               style={{ marginBottom: 8 }}
             />
