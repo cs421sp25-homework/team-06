@@ -3,15 +3,15 @@ import Constants from 'expo-constants';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { LongPressEvent, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { ActivityIndicator, Button, Card, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, Card, Modal, Portal, Text, TextInput, IconButton } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
-import { Destination } from "../types/Destination";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Destination, DestinationInfo } from "../types/Destination";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { useUser } from "../context/UserContext";
-import {
-  convertTimestampToDate
-} from '../utils/tripAPI'; // or wherever your timestamp => Date converter is
+import { convertTimestampToDate, deleteDestinationInTrip } from '../utils/tripAPI'; // or wherever your timestamp => Date converter is
+import { getInfoFromPlaceId, getAddressFromCoordinates, getCoordinatesFromAddress, getPlaceFromCoordinates } from '../utils/map';
 
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
 
@@ -28,11 +28,14 @@ const MapScreen = () => {
   // States for adding/editing markers
   const [modalVisible, setModalVisible] = useState(false);       // For adding a new marker
   const [editModalVisible, setEditModalVisible] = useState(false); // For editing an existing marker
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [fetchedPlaceDetails, setFetchedPlaceDetails] = useState<DestinationInfo | null>(null);
   const [infoModalVisible, setInfoModalVisible] = useState(false); // Viewing marker details
   const [currMarker, setCurrMarker] = useState<Destination | null>(null);
 
   // State for (re)setting marker details
   const [description, setDescription] = useState('');
+  const [markerName, setMarkerName] = useState('');
   // We'll store date/time in these states for a marker
   const [markerDate, setMarkerDate] = useState<Date | null>(null);
   const [markerTime, setMarkerTime] = useState<{ hours: number; minutes: number } | null>(null);
@@ -45,7 +48,7 @@ const MapScreen = () => {
   // For places search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<any>(null);
+  const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<DestinationInfo | null>(null);
   const [placeDetailsModalVisible, setPlaceDetailsModalVisible] = useState(false);
 
   // We'll store the trip's start/end date in local states
@@ -119,35 +122,26 @@ const MapScreen = () => {
     }
 
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    let address = 'Unknown location';
+    const response = await getPlaceFromCoordinates(latitude, longitude);
+    if (response != null) {
+      // Instead of directly opening the add marker modal, store the fetched details
+      setFetchedPlaceDetails(response);
 
-    // (Optional) Reverse geocode with expo-location or Google
-    try {
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`;
-      const geocodeResponse = await fetch(geocodeUrl);
-      const geocodeData = await geocodeResponse.json();
-      console.log("[Geocode] Response Data:", geocodeData);
-
-      if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
-        address = geocodeData.results[0].formatted_address || "Unknown Place";
-      }
-    } catch (error) {
-      console.log("[Error] Fetching geocode/place details failed:", error);
+      // Prepare a marker object
+      setCurrMarker({
+        latitude: response.latitude,
+        longitude: response.longitude,
+        place_id: response.place_id,
+        address: response.address,
+        name: '',
+        description: '',
+        createdByUid: getCurrentUserId()
+      });
     }
-
-    // Prepare a marker object
-    setCurrMarker({
-      latitude,
-      longitude,
-      address,
-      description: '',
-      createdByUid: getCurrentUserId()
-    });
-
     setDescription('');
+    setMarkerName('');
     setMarkerDate(null);
     setMarkerTime(null);
-
     setModalVisible(true);
   };
 
@@ -172,7 +166,8 @@ const MapScreen = () => {
     }
     const newDestination: Destination = {
       ...currMarker,
-      description,
+      name: markerName,
+      description: description,
       date: finalDate || null, // store the combined date/time
     };
 
@@ -180,10 +175,87 @@ const MapScreen = () => {
       await addDestinationToTrip(newDestination);
       setModalVisible(false);
       setDescription('');
+      setMarkerName('');
     } catch (error) {
       console.error("Error adding destination:", error);
       Alert.alert("Error", "Failed to add destination. Please try again.");
     }
+  };
+
+  const handleMarkDestination = () => {
+    // Reset any marker-related inputs
+    setMarkerName('');
+    setDescription('');
+    setMarkerDate(null);
+    setMarkerTime(null);
+    let marker = null;
+    if (fetchedPlaceDetails) {
+      marker = {
+        latitude: fetchedPlaceDetails.latitude,
+        longitude: fetchedPlaceDetails.longitude,
+        place_id: fetchedPlaceDetails.place_id,
+        address: fetchedPlaceDetails.address,
+        description: '',
+        createdByUid: getCurrentUserId()
+      }
+      setFetchedPlaceDetails(null);
+    }
+    if (selectedPlaceDetails) {
+      marker = {
+        latitude: selectedPlaceDetails.latitude,
+        longitude: selectedPlaceDetails.longitude,
+        place_id: selectedPlaceDetails.place_id,
+        address: selectedPlaceDetails.address,
+        description: '',
+        createdByUid: getCurrentUserId()
+      }
+      setSelectedPlaceDetails(null);
+    }
+    setCurrMarker(marker);
+
+    // Close the bottom sheet and open the marker creation modal
+    setPlaceDetailsModalVisible(false);
+    setBottomSheetVisible(false);
+    setModalVisible(true);
+  };
+
+  const showDetailedInfo = async () => {
+    if (currMarker != null) {
+      const details = await getInfoFromPlaceId(currMarker.place_id);
+      console.log("Place details:", details);
+      setFetchedPlaceDetails(details)
+      setModalVisible(false);
+      setBottomSheetVisible(true);
+    }
+  };
+
+  // Helper to get today's (or next day’s) opening hours text
+  const getOpeningHoursForToday = (weekdayText: string[], open_now: boolean) => {
+    // JavaScript getDay() returns 0 for Sunday, 1 for Monday, … 6 for Saturday.
+    // Assuming weekdayText[0] corresponds to Monday, convert:
+    const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+    // If the place is open now, show today's hours; otherwise, show the next day's hours.
+    const indexToShow = open_now ? todayIndex : (todayIndex + 1) % 7;
+    return weekdayText[indexToShow] || "No hours available";
+  };
+
+  // Helper to render rating as stars (full, half, and empty)
+  const renderStars = (rating: number | undefined) => {
+    if (!rating) return null;
+    const fullStars = Math.floor(rating);
+    const halfStar = rating - fullStars >= 0.5;
+    const stars = [];
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<MaterialCommunityIcons key={`full-${i}`} name="star" size={20} color="#4CAF50" />);
+    }
+    if (halfStar) {
+      stars.push(<MaterialCommunityIcons key="half" name="star-half" size={20} color="#4CAF50" />);
+    }
+    const emptyStars = 5 - stars.length;
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(<MaterialCommunityIcons key={`empty-${i}`} name="star-outline" size={20} color="#4CAF50" />);
+    }
+    return <View style={{ flexDirection: 'row' }}>{stars}</View>;
   };
 
   // Called when user taps an existing marker
@@ -199,6 +271,7 @@ const MapScreen = () => {
     setInfoModalVisible(false);
 
     // Pre-fill description
+    setMarkerName(currMarker.name || '');
     setDescription(currMarker.description || '');
 
     // Pre-fill date/time if it exists
@@ -219,7 +292,7 @@ const MapScreen = () => {
       Alert.alert("Error", "Current trip not found");
       return;
     }
-    if (!currMarker || !description.trim()) {
+    if (!currMarker || !description.trim() || !markerName.trim()) {
       Alert.alert('Incomplete', 'Please fill in all fields before saving.');
       return;
     }
@@ -242,7 +315,8 @@ const MapScreen = () => {
 
     try {
       await updateDestinationInTrip(markerId, {
-        description,
+        name: markerName,
+        description: description,
         date: finalDate || null,
       });
     } catch (error) {
@@ -254,6 +328,30 @@ const MapScreen = () => {
     setEditModalVisible(false);
     setDescription('');
   };
+
+    const handleDeleteDestination = async () => {
+      const markerId = (currMarker as any).id;
+      if (!markerId) {
+        Alert.alert("Error", "Destination missing ID.");
+        return;
+      }
+      Alert.alert(
+        "Delete Destination",
+        "Are you sure you want to delete this destination?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              if (!currentTrip.id) throw new Error("currentTrip missing ID");
+              await deleteDestinationInTrip(currentTrip.id, markerId);
+              setInfoModalVisible(false)
+            },
+          },
+        ]
+      );
+    };
 
   // --- Google Places Search (Autocomplete) ---
   const handleSearch = async (query: string) => {
@@ -278,36 +376,20 @@ const MapScreen = () => {
 
   const handleSelectPlace = async (placeId: string) => {
     try {
-      const fields = "name,formatted_address,geometry,international_phone_number,website,rating,opening_hours";
-      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_API_KEY}`;
-      const response = await fetch(detailsUrl);
-      const data = await response.json();
-      if (data.status === 'OK') {
-        const details = data.result;
-        const { lat, lng } = details.geometry.location;
-        setMapRegion({
-          latitude: lat,
-          longitude: lng,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        });
-        setSelectedPlaceDetails({
-          name: details.name,
-          address: details.formatted_address,
-          phone: details.international_phone_number,
-          website: details.website,
-          rating: details.rating,
-          openingHours: details.opening_hours,
-          latitude: lat,
-          longitude: lng,
-        });
-        setPlaceDetailsModalVisible(true);
-        setSearchResults([]);
-        setSearchQuery('');
-      } else {
-        console.error("Place details error:", data.status);
-      }
-    } catch (error) {
+      const response = await getInfoFromPlaceId(placeId);
+      if (response != null) { }
+      setMapRegion({
+        latitude: response.latitude,
+        longitude: response.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      });
+      setSelectedPlaceDetails(response);
+      setPlaceDetailsModalVisible(true);
+      setSearchResults([]);
+      setSearchQuery('');
+    }
+    catch (error) {
       console.error("Error fetching place details:", error);
     }
   };
@@ -396,6 +478,14 @@ const MapScreen = () => {
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
               <TextInput
+                testID="markerName"
+                label="Name"
+                value={markerName}
+                mode="outlined"
+                onChangeText={setMarkerName}
+                style={styles.input}
+              />
+              <TextInput
                 testID="description"
                 label="Description"
                 value={description}
@@ -445,7 +535,10 @@ const MapScreen = () => {
             </Card.Content>
             <Card.Actions>
               <Button mode="contained" onPress={saveNewMarker}>
-                Add
+                Save
+              </Button>
+              <Button mode="outlined" onPress={showDetailedInfo}>
+                Info
               </Button>
               <Button mode="outlined" onPress={() => setModalVisible(false)}>
                 Cancel
@@ -464,6 +557,14 @@ const MapScreen = () => {
             <Card.Title title="Edit Destination" />
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
+              <TextInput
+                testID="editMarkerName"
+                label="Name"
+                value={markerName}
+                mode="outlined"
+                onChangeText={setMarkerName}
+                style={styles.input}
+              />
               <TextInput
                 label="Description"
                 value={description}
@@ -512,7 +613,7 @@ const MapScreen = () => {
             </Card.Content>
             <Card.Actions>
               <Button testID="saveChanges" mode="contained" onPress={updateMarker}>
-                Save Changes
+                Save
               </Button>
               <Button mode="outlined" onPress={() => setEditModalVisible(false)}>
                 Cancel
@@ -531,6 +632,7 @@ const MapScreen = () => {
             <Card.Title title="Marker Details" />
             <Card.Content>
               <Text style={styles.addressText}>{currMarker?.address}</Text>
+              <Text>Name: {currMarker?.name}</Text>
               <Text>Description: {currMarker?.description}</Text>
               {/* If marker has a date, show it */}
               {currMarker?.date && (
@@ -544,6 +646,14 @@ const MapScreen = () => {
               <Button testID="editMarker" mode="outlined" onPress={showEditUI}>
                 Edit
               </Button>
+              <Button testID="showInfo" mode="outlined" onPress={showDetailedInfo}>
+                Info
+              </Button>
+              <IconButton
+                testID="trash"
+                icon="trash-can"
+                onPress={() => handleDeleteDestination()}
+              />
             </Card.Actions>
           </Card>
         </Modal>
@@ -552,7 +662,7 @@ const MapScreen = () => {
         <Modal
           visible={placeDetailsModalVisible}
           onDismiss={() => setPlaceDetailsModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}
+          contentContainerStyle={[styles.modalContainer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}
         >
           <Card style={styles.card}>
             <Card.Title title={selectedPlaceDetails?.name || "Place Details"} />
@@ -565,16 +675,71 @@ const MapScreen = () => {
                 <Text>Website: {selectedPlaceDetails.website}</Text>
               )}
               {selectedPlaceDetails?.rating && (
-                <Text>Rating: {selectedPlaceDetails.rating}</Text>
+                <View style={styles.ratingContainer}>
+                  {renderStars(selectedPlaceDetails.rating)}
+                  <Text style={styles.ratingText}>{selectedPlaceDetails.rating.toFixed(1)}</Text>
+                </View>
+              )}
+              {selectedPlaceDetails?.openingHours && (
+                <View style={styles.openingHoursContainer}>
+                  <Text style={{
+                    color: selectedPlaceDetails.openingHours.open_now ? 'green' : 'red',
+                    fontWeight: 'bold'
+                  }}>
+                    {selectedPlaceDetails.openingHours.open_now ? 'Open Now' : 'Closed'}
+                  </Text>
+                  <Text style={styles.weekdayText}>
+                    {getTodayOpeningHours(selectedPlaceDetails.openingHours.weekday_text)}
+                  </Text>
+                </View>
               )}
             </Card.Content>
             <Card.Actions>
-              <Button
-                testID="closeInfoModal"
-                mode="contained"
-                onPress={() => setPlaceDetailsModalVisible(false)}
-              >
+              <Button mode="contained" onPress={() => setPlaceDetailsModalVisible(false)}>
                 Close
+              </Button>
+              <Button mode="outlined" onPress={handleMarkDestination}>
+                Mark This Place
+              </Button>
+            </Card.Actions>
+          </Card>
+        </Modal>
+        <Modal
+          visible={bottomSheetVisible}
+          onDismiss={() => setBottomSheetVisible(false)}
+          contentContainerStyle={[styles.modalContainer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}
+        >
+          <Card style={styles.card}>
+            <Card.Title title={fetchedPlaceDetails?.name || "Place Details"} />
+            <Card.Content>
+              <Text style={styles.addressText}>{fetchedPlaceDetails?.address}</Text>
+              <Text style={styles.infoText}>Phone: {fetchedPlaceDetails?.phone || "N/A"}</Text>
+              <Text style={styles.infoText}>Website: {fetchedPlaceDetails?.website || "N/A"}</Text>
+              {fetchedPlaceDetails?.openingHours && (
+                <View style={styles.openingHoursContainer}>
+                  {fetchedPlaceDetails.openingHours.open_now ? (
+                    <Text style={[styles.openStatus, { color: 'green' }]}>Open Now</Text>
+                  ) : (
+                    <Text style={[styles.openStatus, { color: 'red' }]}>Closed Now</Text>
+                  )}
+                  <Text style={styles.infoText}>
+                    {getOpeningHoursForToday(fetchedPlaceDetails.openingHours.weekday_text, fetchedPlaceDetails.openingHours.open_now)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.ratingContainer}>
+                {renderStars(fetchedPlaceDetails?.rating)}
+                <Text style={styles.ratingText}>
+                  {fetchedPlaceDetails?.rating ? fetchedPlaceDetails.rating.toFixed(1) : "No Rating"}
+                </Text>
+              </View>
+            </Card.Content>
+            <Card.Actions>
+              <Button mode="contained" onPress={handleMarkDestination}>
+                Mark This Place
+              </Button>
+              <Button mode="outlined" onPress={() => setBottomSheetVisible(false)}>
+                Cancel
               </Button>
             </Card.Actions>
           </Card>
@@ -602,6 +767,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
     color: 'gray',
+  },
+  infoText: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  openingHoursContainer: {
+    marginVertical: 5,
+  },
+  openStatus: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  ratingText: {
+    marginLeft: 5,
+    fontSize: 14,
   },
   input: {
     marginBottom: 10,
