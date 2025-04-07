@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import {Alert, Platform} from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowAlert: false,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -66,6 +66,10 @@ const NotificationHandler = () => {
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notification Received:', notification);
       // Optionally, update state or trigger UI changes
+      Alert.alert(
+        notification.request.content.title || 'Notification',
+        notification.request.content.body || ''
+      );
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {

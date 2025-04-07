@@ -21,7 +21,7 @@ import { firestore } from "../utils/firebase";
 import { collection, doc, getDocs, onSnapshot } from "@react-native-firebase/firestore";
 
 import {useNotification} from "./NotificationContext";
-import {sendPushNotification} from "../utils/NotificationService";
+import {sendPushNotification, sendTripUpdateNotification} from "../utils/NotificationService";
 // import * as Notifications from 'expo-notifications';
 
 interface TripContextType {
@@ -84,8 +84,10 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
         //     trigger: null, // triggers immediately
         //   });
         // }
-
-        await sendPushNotification(expoPushToken, "title", "message");
+        if (!currentTrip) {
+          throw new Error("updating the trip when no current Trip");
+        }
+        await sendTripUpdateNotification(currentTrip, "Trip Updated", "your Trip has been updated");
 
 
         const updatedTrip = { id: currentTripId, ...docSnap.data() } as Trip;
