@@ -22,7 +22,6 @@
       ]
     ],
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -38,14 +37,11 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCSDzZzv6ML01c-nMlVaFc4wiBXwe8ERuI"
         }
-      },
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
       },
       "package": "com.s370101387.synctrip"
     },

@@ -7,4 +7,4 @@ build:
           flow_path: |
             maestro/loginScreen_test.yaml
             maestro/signUpScreen_test.yaml
-            maestro/dashboardScreen_test.yaml
+            maestro/afterLoginTest.yaml

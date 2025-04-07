@@ -40,6 +40,18 @@ export const getUserByEmail = async (email: string) => {
     return {uid: userDoc.id, ...userDoc.data()}; // Return the user's data
 };
 
+export const getUserById = async (uid: string) => {
+    const userRef = doc(firestore, "users", uid);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists) {
+        Alert.alert("User with this ID not found");
+        throw new Error("User with this ID not found");
+    }
+
+    return { uid: userDoc.id, ...userDoc.data() } as User;
+};
+
 export const addCollaboratorByEmail = async (tripId: string, email: string): Promise<void> => {
     const tripRef = doc(firestore, "trips", tripId);
     const userData = await getUserByEmail(email);
