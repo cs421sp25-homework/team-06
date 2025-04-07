@@ -1,4 +1,4 @@
-import {auth} from "../utils/firebase";
+// import {auth} from "../utils/firebase";
 // @ts-ignore
 import {GoogleAuthProvider} from '@react-native-firebase/auth';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
@@ -10,6 +10,10 @@ import {useMessageDialog} from '../components/MessageDialog';
 import {useAppNavigation} from '../navigation/useAppNavigation';
 import loginStyles from '../styles/loginStyples';
 
+import {auth, getUserDocRef} from "../utils/firebase";
+import { useNotification } from '../context/NotificationContext';
+import {serverTimestamp, setDoc} from "@react-native-firebase/firestore";
+
 const LogInScreen = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -18,6 +22,8 @@ const LogInScreen = () => {
   const [password, setPassword] = useState('');
   const navigation = useAppNavigation();
   const {showMessage} = useMessageDialog();
+
+  const { expoPushToken } = useNotification(); // Get the expo push token from context
 
   const handleLogIn = async () => {
     setLoading(true);
@@ -32,6 +38,15 @@ const LogInScreen = () => {
         setSnackbarVisible(true);
         navigation.navigate('Login');
       } else {
+        // Update user document with email and expoPushToken
+        const userDocRef = getUserDocRef();
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email,
+          expoPushToken: expoPushToken,
+          updatedAt: serverTimestamp()
+        }, {merge: true});
+
         setMessage('Login successful!');
         setSnackbarVisible(true);
         navigation.navigate('App'); // to dashboard
@@ -70,7 +85,17 @@ const LogInScreen = () => {
 
       const googleCredential = GoogleAuthProvider.credential(idToken);
       console.log('Authenticating with Firebase...');
-      await auth.signInWithCredential(googleCredential);
+      const userCredential = await auth.signInWithCredential(googleCredential);
+      const user = userCredential.user;
+
+      // Update user document with email and expoPushToken
+      const userDocRef = getUserDocRef();
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        expoPushToken: expoPushToken,
+        updatedAt: serverTimestamp()
+      }, {merge: true});
 
       console.log('Google Sign-In Successful!');
       setMessage('Google Sign-In Successful!');

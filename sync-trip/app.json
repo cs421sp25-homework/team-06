@@ -37,6 +37,7 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCSDzZzv6ML01c-nMlVaFc4wiBXwe8ERuI"
