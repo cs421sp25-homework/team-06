@@ -10,7 +10,8 @@ import { Destination, DestinationInfo } from "../types/Destination";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { useUser } from "../context/UserContext";
-import { convertTimestampToDate, deleteDestinationInTrip } from '../utils/tripAPI'; // or wherever your timestamp => Date converter is
+import { deleteDestinationInTrip } from '../utils/tripAPI'; // or wherever your timestamp => Date converter is
+import { convertTimestampToDate } from '../utils/dateUtils';
 import { getInfoFromPlaceId, getAddressFromCoordinates, getCoordinatesFromAddress, getPlaceFromCoordinates } from '../utils/map';
 
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
@@ -449,11 +450,15 @@ const MapScreen = () => {
             return null;
           }
 
+          const isCreatedByCurrentUser = marker.createdByUid === getCurrentUserId();
+          const pinColor = isCreatedByCurrentUser ? 'red' : 'green';
+
           return (
             <Marker
               key={index}
               coordinate={{ latitude: lat, longitude: lng }}
               description={`${marker.description}\nDate: ${marker.date}`}
+              pinColor={pinColor}
               onPress={() => handleMarkerPress(marker)}
             />
           );
