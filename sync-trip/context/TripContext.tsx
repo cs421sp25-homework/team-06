@@ -20,6 +20,10 @@ import { addTripToUser as apiAddTripToUser, setCurrentTripId as apiSetCurrentTri
 import { firestore } from "../utils/firebase";
 import { collection, doc, getDocs, onSnapshot } from "@react-native-firebase/firestore";
 
+import {useNotification} from "./NotificationContext";
+import {sendPushNotification} from "../utils/NotificationService";
+// import * as Notifications from 'expo-notifications';
+
 interface TripContextType {
   currentTrip: Trip | null;
   setCurrentTrip: (trip: Trip | null) => void;
@@ -52,6 +56,7 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
 
   const { currentUser, setCurrentUser, getCurrentUserId } = useUser();
   const currentTripId = currentUser?.currentTripId;
+  const { expoPushToken } = useNotification()
 
   // Listen to trip document and its destinations
   useEffect(() => {
@@ -60,11 +65,29 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
     const tripRef = doc(firestore, "trips", currentTripId);
     const destinationsRef = collection(firestore, "trips", currentTripId, "destinations");
 
+    // let isInitialLoad = true;
+
     console.log("Listening for Firestore changes on trip:", currentTripId);
 
     const unsubscribeTrip = onSnapshot(tripRef, async (docSnap) => {
       if (docSnap.exists) {
         console.log("Trip updated from Firestore:", docSnap.data());
+
+        // Trigger notification only for subsequent updates
+        // if (!isInitialLoad) {
+        //   await Notifications.scheduleNotificationAsync({
+        //     content: {
+        //       title: "Trip Update",
+        //       body: "Your trip details have been updated.",
+        //       data: { tripId: currentTripId },
+        //     },
+        //     trigger: null, // triggers immediately
+        //   });
+        // }
+
+        await sendPushNotification(expoPushToken, "title", "message");
+
+
         const updatedTrip = { id: currentTripId, ...docSnap.data() } as Trip;
         const destinationsSnapshot = await getDocs(destinationsRef);
         const updatedDestinations = destinationsSnapshot

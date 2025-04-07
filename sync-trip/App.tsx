@@ -9,7 +9,9 @@ import 'expo-dev-client';
 import './utils/firebase';
 import 'react-native-get-random-values';
 
-import NotificationHandler from './components/NotificationHandler';
+import NotificationHandler from './utils/NotificationHandler';
+
+import {NotificationProvider} from './context/NotificationContext';
 
 registerTranslation('en', en);
 
@@ -17,8 +19,10 @@ const App = () => {
   return (
     <PaperProvider>
       <MessageDialogProvider>
-        <NotificationHandler />
-        <AppNavigator/>
+        <NotificationProvider>
+          <NotificationHandler/>
+          <AppNavigator/>
+        </NotificationProvider>
       </MessageDialogProvider>
     </PaperProvider>
   );
