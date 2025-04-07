@@ -11,33 +11,34 @@ export interface NotificationPayload {
 
 
 export async function sendTripUpdateNotification(
-  trip: Trip,
-  messageTitle: string,
-  messageBody: string
+  trip: Trip
 ) {
   const tokens: string[] = [];
 
+  //add owner to the notices
+  const userDoc = await firestore.collection('users').doc(trip.ownerId).get();
+  if (userDoc.exists) {
+    const data = userDoc.data();
+    if (data && data.expoPushToken) {
+      tokens.push(data.expoPushToken);
+    }
+  }
+
   // Loop through collaborator emails
-  for (const collaboratorEmail of trip.collaborators) {
+  for (const collaboratorId of trip.collaborators) {
     try {
       // Query the users collection to find the document with the given email.
-      const querySnapshot = await firestore
-        .collection('users')
-        .where('email', '==', collaboratorEmail)
-        .get();
-
-      if (!querySnapshot.empty) {
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.expoPushToken) {
-            tokens.push(data.expoPushToken);
-          }
-        });
+      const userDoc = await firestore.collection('users').doc(collaboratorId).get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        if (data && data.expoPushToken) {
+          tokens.push(data.expoPushToken);
+        }
       } else {
-        console.warn(`No user found for email: ${collaboratorEmail}`);
+        console.warn(`No user found for uid: ${collaboratorId}`);
       }
     } catch (error) {
-      console.error('Error retrieving user for email:', collaboratorEmail, error);
+      console.error('Error retrieving user for uid:', collaboratorId, error);
     }
   }
 
@@ -45,6 +46,9 @@ export async function sendTripUpdateNotification(
     console.log('No push tokens found for the trip collaborators.');
     return;
   }
+
+  const messageTitle = 'Trip updated';
+  const messageBody = "your '" + trip.title + "' trip has been updated.";
 
   // Build the notification message payload for each token.
   const messages = tokens.map(token => ({
@@ -57,7 +61,6 @@ export async function sendTripUpdateNotification(
 
   // Send notifications to each token via Expo's push endpoint.
   for (const message of messages) {
-
     try {
       const response = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
@@ -72,6 +75,7 @@ export async function sendTripUpdateNotification(
         throw new Error('Failed to send push notification');
       }
       console.log('Push notification sent successfully');
+      console.log(message);
     } catch (error) {
       console.error('Error sending push notification:', error);
       throw error;

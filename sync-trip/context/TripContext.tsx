@@ -65,29 +65,12 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
     const tripRef = doc(firestore, "trips", currentTripId);
     const destinationsRef = collection(firestore, "trips", currentTripId, "destinations");
 
-    // let isInitialLoad = true;
 
     console.log("Listening for Firestore changes on trip:", currentTripId);
 
     const unsubscribeTrip = onSnapshot(tripRef, async (docSnap) => {
       if (docSnap.exists) {
         console.log("Trip updated from Firestore:", docSnap.data());
-
-        // Trigger notification only for subsequent updates
-        // if (!isInitialLoad) {
-        //   await Notifications.scheduleNotificationAsync({
-        //     content: {
-        //       title: "Trip Update",
-        //       body: "Your trip details have been updated.",
-        //       data: { tripId: currentTripId },
-        //     },
-        //     trigger: null, // triggers immediately
-        //   });
-        // }
-        if (!currentTrip) {
-          throw new Error("updating the trip when no current Trip");
-        }
-        await sendTripUpdateNotification(currentTrip, "Trip Updated", "your Trip has been updated");
 
 
         const updatedTrip = { id: currentTripId, ...docSnap.data() } as Trip;
@@ -100,6 +83,10 @@ export const TripProvider = ({ children }: { children: ReactNode }) => {
           : [];
         setCurrentTrip({ ...updatedTrip, destinations: updatedDestinations });
         setDestinations(updatedDestinations);
+        if (updatedTrip) {
+          console.log("trip update notification start sending...");
+          await sendTripUpdateNotification(updatedTrip);
+        }
       } else {
         console.warn("Trip document deleted.");
         setCurrentTrip(null);
