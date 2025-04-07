@@ -11,11 +11,12 @@ import {
   TextInput,
 } from "react-native-paper";
 import { useUser } from "../context/UserContext";
-import { addCollaboratorByEmail, setCurrentTripId } from "../utils/userAPI";
+import { addCollaboratorByEmail, setCurrentTripId, getUserById } from "../utils/userAPI";
 import { TripStatus } from "../types/Trip";
 import { doc, onSnapshot, updateDoc } from "@react-native-firebase/firestore";
 import { firestore } from "../utils/firebase";
 import { useTabs } from "../navigation/useAppNavigation";
+import { convertTimestampToDate } from '../utils/dateUtils';
 
 const DashboardScreen = () => {
   const { currentUser, getCurrentUserId } = useUser();
@@ -117,14 +118,43 @@ const DashboardScreen = () => {
     }
   };
 
+  const CollaboratorsNames = ({ collaboratorIds }: { collaboratorIds: string[] }) => {
+    const [names, setNames] = useState<string[]>([]);
+    useEffect(() => {
+      const fetchNames = async () => {
+        const promises = collaboratorIds.map(async (uid) => {
+          try {
+            const user = await getUserById(uid);
+            return user.name || "Unknown";
+          } catch (error) {
+            return "Unknown";
+          }
+        });
+        const result = await Promise.all(promises);
+        setNames(result);
+      };
+      fetchNames();
+    }, [collaboratorIds]);
+
+    return <Text>{`members: ${names.join(', ')}`}</Text>;
+  };
+
   // Render each trip as a Card.
   const renderItem = ({ item }: { item: any }) => {
     const isCurrentTrip = item.id === currentUser?.currentTripId;
+    const startDate = convertTimestampToDate(item.startDate).toLocaleDateString();
+    const endDate = convertTimestampToDate(item.endDate).toLocaleDateString();
     return (
       <Card style={styles.card} elevation={3}>
         <Card.Title title={item.title} />
         <Card.Content>
-          <Paragraph>{`members: ${item.collaborators?.length + 1 || 1}`}</Paragraph>
+          <Text>{`Start Date: ${startDate}`}</Text>
+          <Text>{`End Date: ${endDate}`}</Text>
+          {isCurrentTrip ? (
+            <CollaboratorsNames collaboratorIds={[item.ownerId, ...(item.collaborators || [])]} />
+          ) : (
+            <Text>{`members: ${item.collaborators?.length + 1 || 1}`}</Text>
+          )}
         </Card.Content>
         <Card.Actions style={styles.cardActions}>
           {!isCurrentTrip && (
@@ -132,9 +162,11 @@ const DashboardScreen = () => {
               Set as Current
             </Button>
           )}
-          <Button mode="contained" onPress={() => handleJumpToTrip(item)}>
-            Go to Trip
-          </Button>
+          {isCurrentTrip && (
+            <Button mode="contained" onPress={() => handleJumpToTrip(item)}>
+              Edit
+            </Button>
+          )}
           {selectedSegment === "Archived" ? (
             <Button mode="outlined" onPress={() => handleRestoreTrip(item)}>
               Restore

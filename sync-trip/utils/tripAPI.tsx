@@ -100,16 +100,6 @@ export const updateDestination = async (
   });
 };
 
-
-export const convertTimestampToDate = (ts: any): Date => {
-    // If ts is an instance of Timestamp, use its toDate() method.
-    if (ts instanceof Timestamp) {
-        return ts.toDate();
-    }
-    // Otherwise, assume it has seconds and nanoseconds properties.
-    return new Date(ts.seconds * 1000);
-};
-
 export const deleteTrip = async (tripId: string): Promise<void> => {
   const tripRef = doc(firestore, "trips", tripId);
   await deleteDoc(tripRef);

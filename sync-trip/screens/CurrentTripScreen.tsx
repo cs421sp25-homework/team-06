@@ -23,11 +23,11 @@ import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
 import {
-  convertTimestampToDate,
   deleteDestinationInTrip,
   deleteTrip,
   updateDestination
 } from "../utils/tripAPI";
+import { convertTimestampToDate } from '../utils/dateUtils';
 import { TripStatus } from "../types/Trip";
 import { generateICS } from "../utils/icsGenerator";
 
