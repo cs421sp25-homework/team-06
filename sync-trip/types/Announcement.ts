@@ -5,4 +5,4 @@ export interface Announcement {
     lastUpdatedBy: string;
     createdAt: Date;
     updatedAt: Date; 
-  }  
+}  
