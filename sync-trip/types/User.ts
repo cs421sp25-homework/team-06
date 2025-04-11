@@ -8,3 +8,5 @@ export interface User {
     profilePicture?: string; //picture link?
     tripsIdList: string[];
 }
+
+export type Collaborator = Pick<User, 'uid' | 'name'>;

@@ -20,13 +20,13 @@ import { Transaction } from "../types/Transaction";
     BILL API FUNCTIONS
    ========================= */
 
-const parseBill = (id: string, data: any): Bill => {
-    if (!data.title || !data.participants) {
-      throw new Error("Invalid bill data: missing required fields");
-    }
-
-    return { id, ...data } as Bill;
+export const parseBill = (id: string, data: any): Bill => {
+  if (!data.title || !data.participants) {
+    throw new Error("Invalid bill data: missing required fields");
+  }
+  return { id, ...data } as Bill;
 };
+
   
 
 export const getBillById = async (tripId: string, billId: string): Promise<Bill> => {
@@ -133,12 +133,34 @@ export const subscribeToTransactions = (
     tripId: string,
     callback: (transactions: Transaction[]) => void
   ) => {
+
+    if (!tripId) {
+      console.error("subscribeToTransactions: tripId is invalid.");
+      callback([]);
+      return () => {};
+    }
+
     const transactionsRef = collection(firestore, "trips", tripId, "transactions");
-    return onSnapshot(transactionsRef, (snapshot) => {
-      const transactionsArray: Transaction[] = [];
-      snapshot.forEach((docSnap) => {
-        transactionsArray.push({ transactionId: docSnap.id, ...docSnap.data() } as Transaction);
-      });
+    return onSnapshot(
+      transactionsRef,
+      (snapshot) => {
+        if (!snapshot) {
+          console.error("subscribeToTransactions: Received null snapshot.");
+          callback([]);
+          return;
+        }
+
+        const transactionsArray: Transaction[] = [];
+        snapshot.forEach((docSnap) => {
+          if (docSnap.exists) {
+            transactionsArray.push({ transactionId: docSnap.id, ...docSnap.data() } as Transaction);
+          }
+        });
       callback(transactionsArray);
-    });
+    },
+    (error) => {
+      console.error("subscribeToTransactions: onSnapshot error:", error);
+      callback([]);
+    }
+  );
 };
