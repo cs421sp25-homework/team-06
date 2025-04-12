@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Modal,
     View,
     Text,
-    TouchableOpacity,
-    TextInput,
     StyleSheet,
-    FlatList,
     Platform,
     ScrollView,
     Alert,
   } from 'react-native';
+import {
+  Button,
+  TextInput,
+  Modal,
+  Portal,
+} from 'react-native-paper';
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
 import { getUserById } from '../utils/userAPI';
@@ -152,7 +154,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     }
     console.log("Computed summary:", summary);
     onSave({
-      id: bill.id,
+      id: bill!.id,
       title,
       participants,
       summary,
@@ -163,19 +165,19 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   if (!bill) return null;
 
   return (
+    <Portal>
     <Modal 
       visible={visible} 
-      animationType="slide" 
-      transparent 
-      onRequestClose={onClose}
+      onDismiss={onClose}
+      contentContainerStyle={styles.overlay}
     >
-      <View style={styles.overlay}>
       <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Bill Details</Text>
 
           {/* Title editor */}
           <Text style={styles.label}>Title:</Text>
           <TextInput
+            mode="outlined"
             style={styles.input}
             value={title}
             onChangeText={setTitle}
@@ -185,24 +187,29 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           <Text style={styles.detail}>Currency: {bill.currency}</Text>
           <Text style={styles.detail}>Participants:</Text>
           <Text style={styles.detail}>
-            {participants.length > 0 ? participants.join(', ') : 'No participants'}
+            {participants.length
+              ? participants
+                  .map(uid => collaborators.find(c => c.uid === uid)?.name ?? uid)
+                  .join(', ')
+              : 'No participants'}
           </Text>
 
 
           {/* Select collaborator from list */}
-          <TouchableOpacity
-            style={styles.participantsButton}
+          <Button
+            mode="contained"
+            style={{ marginVertical: 8 }}
             onPress={() => setShowCollaboratorList(!showCollaboratorList)}
           >
-          <Text style={styles.participantsButtonText}>Add/Remove Participants</Text>
-          </TouchableOpacity>
+          Add/Remove Participants
+          </Button>
           {showCollaboratorList && (
             <View style={{ height: 150, width: '100%' }}>
               <ScrollView keyboardShouldPersistTaps="handled">
                 {collaborators.map((item) => {
                   const selected = participants.includes(item.uid);
                   return (
-                    <TouchableOpacity
+                    <Button
                       key={item.uid}
                       style={[
                         styles.collaboratorItem,
@@ -210,8 +217,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                       ]}
                       onPress={() => handleToggleParticipant(item.uid)}
                     >
-                      <Text>{item.name}</Text>
-                    </TouchableOpacity>
+                      {item.name}
+                    </Button>
                   );
                 })}
               </ScrollView>
@@ -219,30 +226,20 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           )}
 
           <View style={styles.modeContainer}>
-            <TouchableOpacity
-              style={[
-                styles.modeButton,
-                distributionMode === 'even' && styles.modeButtonSelected,
-              ]}
+            <Button
+              mode={distributionMode === 'even' ? 'contained' : 'outlined'}
+              style={styles.modeButton}
               onPress={() => switchMode('even')}
             >
-              <Text style={[
-                styles.modeButtonText,
-                distributionMode === 'even' && { color: '#fff' },
-              ]}>Even Split</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.modeButton,
-                distributionMode === 'custom' && styles.modeButtonSelected,
-              ]}
+              Even Split
+            </Button>
+            <Button
+              mode={distributionMode === 'custom' ? 'contained' : 'outlined'}
               onPress={() => switchMode('custom')}
+              style={styles.modeButton}
             >
-              <Text style={[
-                styles.modeButtonText,
-                distributionMode === 'custom' && { color: '#fff' },
-              ]}>Custom Split</Text>
-            </TouchableOpacity>
+              Custom Split
+            </Button>
           </View>
 
           {distributionMode === 'even' ? (
@@ -299,43 +296,40 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           )}
 
           {/* Pay button */}
-          <TouchableOpacity 
+          <Button 
             style={styles.payButton} 
             onPress={() => console.log('Pay button clicked')}
           >
-            <Text style={styles.payButtonText}>Pay</Text>
-          </TouchableOpacity>
+           Pay
+          </Button>
 
           {/* Save button */}
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save Changes</Text>
-          </TouchableOpacity>
+          <Button style={styles.saveButton} onPress={handleSave}>
+            Save Changes
+          </Button>
 
           {/* Close button */}
-          <TouchableOpacity 
+          <Button 
             style={styles.closeButton} 
             onPress={onClose}
           >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
+            Close
+          </Button>
         </ScrollView>
-      </View>
     </Modal>
+    </Portal>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#fff',   // CHANGED
+    borderRadius: 8,           // CHANGED
+    padding: 20,               // CHANGED
+    width: '90%',              // CHANGED
+    alignSelf: 'center',       // CHANGED
   },
   modalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 20,
-    width: '80%',
     alignItems: 'center',
   },
   title: {
@@ -349,10 +343,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: Platform.OS === 'ios' ? 12 : 8,
     alignSelf: 'stretch',
     marginBottom: 8,
   },
@@ -379,9 +369,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   collaboratorItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    marginVertical: 2,
   },
   customRow: {
     flexDirection: 'row',
@@ -393,11 +381,10 @@ const styles = StyleSheet.create({
     width: '40%',
   },
   customInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 8,
-    width: '55%',
+    alignSelf: 'stretch',
+    flex: 1,
+    marginLeft: 8,
+    marginBottom: 4,
   },
   modeContainer: {
     flexDirection: 'row',
@@ -411,8 +398,10 @@ const styles = StyleSheet.create({
     borderColor: '#007aff',
     borderRadius: 4,
   },
-  modeButtonSelected: {
-    backgroundColor: '#007aff',
+  modeButtonSelected: {},
+  summarySection: {
+    width: '100%',
+    marginTop: 12,
   },
   modeButtonText: {
     fontSize: 14,

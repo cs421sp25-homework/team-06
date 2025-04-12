@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { 
+  View, 
+  FlatList,
+  ScrollView, 
+  StyleSheet 
+} from "react-native";
+import {
+  Button,
+  List,
+  Text,
+} from 'react-native-paper';
 import { useBillTransaction } from "../context/BillAndTransactionContext";
 import { useTrip } from "../context/TripContext";
 import { useUser } from "../context/UserContext";
@@ -7,7 +17,7 @@ import { getUserById } from "../utils/userAPI";
 import { Bill } from "../types/Bill";
 import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
-import { Collaborator } from "../types/user";
+import { Collaborator } from "../types/User";
 
 const BillScreen = () => {
   // Retrieve bills and transactions from the BillTransactionContext
@@ -63,7 +73,7 @@ const BillScreen = () => {
       await createBill(newBill);
       const draftBill = bills.find(b => b.isDraft);
       setSelectedBill(draftBill || null);
-      setModalVisible(true);
+      setBillModalVisible(true);
     } catch (error) {
       console.error("Failed to create new bill:", error);
     }
@@ -99,20 +109,25 @@ const BillScreen = () => {
       <FlatList
         data={bills}
         keyExtractor={(item, index) =>
-            item.id && item.id.trim() !== "" ? item.id : `bill_${index}`
+            item.id && item.id.trim() !== '' ? item.id : `bill_${index}`
         }
         renderItem={({ item }: { item: Bill }) => (
-          <TouchableOpacity onPress={() => handleBillPress(item)}>
-            <View style={styles.billItem}>
-              <Text style={styles.billTitle}>{item.title}</Text>
-            </View>
-          </TouchableOpacity>
+          <List.Item
+            title={item.title}
+            onPress={() => handleBillPress(item)}
+            style={styles.billItem}
+            left={props => <List.Icon {...props} icon="file-document-outline" />}
+          />
         )}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleCreateBill}>
-        <Text style={styles.buttonText}>Create New Bill</Text>
-      </TouchableOpacity>
+      <Button 
+        mode="contained"
+        onPress={handleCreateBill}
+        style={styles.createButton}
+      >
+        Create New Bill
+      </Button>
 
       <BillDetailModal
         visible={billModalVisible}
@@ -136,6 +151,11 @@ const styles = StyleSheet.create({
     billTitle: { fontSize: 16 },
     button: { marginTop: 20, padding: 12, backgroundColor: "#007aff", borderRadius: 5 },
     buttonText: { color: "#fff", textAlign: "center" },
+    createButton: {
+      marginTop: 20,
+      alignSelf: 'center',
+      width: 180,
+    },
 });
   
 export default BillScreen;
