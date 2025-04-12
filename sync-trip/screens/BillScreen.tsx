@@ -52,6 +52,20 @@ const BillScreen = () => {
     fetchCollaborators();
   }, [currentTrip]);
 
+  const balanceForUser = (bill: Bill, uid: string): number => {      // CHANGED
+    if (!bill.summary) return 0;
+    let bal = 0;
+    Object.entries(bill.summary).forEach(([debtorUid, credits]) => {
+      Object.entries(credits as Record<string, number>).forEach(
+        ([creditorUid, amount]) => {
+          if (debtorUid === uid) bal -= amount;
+          if (creditorUid === uid) bal += amount;
+        },
+      );
+    });
+    return bal;
+  };
+
   // Function to handle the creation of a new bill (to be implemented according to business logic)
   const handleCreateBill = async () => {
     if (!currentTrip) return;
@@ -94,6 +108,7 @@ const BillScreen = () => {
         title: updated.title,
         participants: updated.participants,
         summary: updated.summary,
+        currency: updated.currency,
       });
     } catch (error) {
       console.error("Failed to update bill:", error);
@@ -111,14 +126,31 @@ const BillScreen = () => {
         keyExtractor={(item, index) =>
             item.id && item.id.trim() !== '' ? item.id : `bill_${index}`
         }
-        renderItem={({ item }: { item: Bill }) => (
+        renderItem={({ item }) => {
+          const bal = balanceForUser(item, currentUser?.uid ?? '');
+          const bg =
+            bal > 0
+              ? '#e8ffea'
+              : bal < 0
+              ? '#ffecec'
+              : undefined;
+
+          return (
           <List.Item
             title={item.title}
+            description={
+              bal === 0
+                ? undefined
+                : bal > 0
+                ? `You should receive ${bal.toFixed(2)}`
+                : `You owe ${(-bal).toFixed(2)}`
+            }
             onPress={() => handleBillPress(item)}
-            style={styles.billItem}
+            style={[styles.billItem, bg && { backgroundColor: bg }]}
             left={props => <List.Icon {...props} icon="file-document-outline" />}
           />
-        )}
+          );
+        }}
       />
 
       <Button 
@@ -143,19 +175,17 @@ const BillScreen = () => {
 
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16 },
-    header: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
-    summaryContainer: { marginBottom: 16 },
-    summaryText: { fontSize: 16, marginVertical: 4 },
-    billItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: "#ccc" },
-    billTitle: { fontSize: 16 },
-    button: { marginTop: 20, padding: 12, backgroundColor: "#007aff", borderRadius: 5 },
-    buttonText: { color: "#fff", textAlign: "center" },
-    createButton: {
-      marginTop: 20,
-      alignSelf: 'center',
-      width: 180,
-    },
+  container: { flex: 1, padding: 16 },
+  header: { marginBottom: 16 },
+  billItem: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ccc',
+  },
+  createButton: {
+    marginTop: 20,
+    alignSelf: 'center',
+    width: 180,
+  },
 });
   
 export default BillScreen;

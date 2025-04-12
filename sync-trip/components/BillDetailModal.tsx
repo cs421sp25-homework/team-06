@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   Portal,
+  Menu,
 } from 'react-native-paper';
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
@@ -95,6 +96,9 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [evenTotal, setEvenTotal] = useState<string>('');
   const [customAmounts, setCustomAmounts] = useState<{ [uid: string]: string }>({});
   const [showCollaboratorList, setShowCollaboratorList] = useState(false);
+  const [currency, setCurrency] = useState('USD');
+  const [menuVisible, setMenuVisible] = useState(false);
+  const currencyOptions = ['USD', 'EUR', 'GBP', 'CNY', 'JPY'];
 
 
   useEffect(() => {
@@ -103,6 +107,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       setParticipants(bill.participants || []);
       setEvenTotal('');
       setCustomAmounts({});
+      setCurrency(bill.currency || 'USD');
     }
   }, [bill]);
 
@@ -146,18 +151,15 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       Alert.alert('User information loading')
       return;
     }
-    let summary = {};
-    if (distributionMode === 'even') {
-      summary = computeEvenSummary();
-    } else {
-      summary = computeCustomSummary();
-    }
+    const summary =
+      distributionMode === 'even' ? computeEvenSummary() : computeCustomSummary();
     console.log("Computed summary:", summary);
     onSave({
       id: bill!.id,
       title,
       participants,
       summary,
+      currency,
     });
     onClose();
   };
@@ -184,7 +186,33 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           />
 
           {/* Details */}
-          <Text style={styles.detail}>Currency: {bill.currency}</Text>
+          <Text style={styles.detail}>Currency: {currency}</Text>
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setMenuVisible(true)}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                {currency}
+              </Button>
+            }
+          >
+            {currencyOptions.map(code => (
+              <Menu.Item
+                key={code}
+                onPress={() => {
+                  setCurrency(code);
+                  setMenuVisible(false);
+                }}
+                title={code}
+              />
+            ))}
+          </Menu>
+
+
           <Text style={styles.detail}>Participants:</Text>
           <Text style={styles.detail}>
             {participants.length
