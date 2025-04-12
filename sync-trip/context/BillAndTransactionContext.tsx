@@ -14,13 +14,14 @@ import {
   parseBill,
 } from "../utils/billAndTransactionAPI";
 import { useTrip } from "./TripContext"; // Import current trip context to get the currentTripId
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
 // Define the context type for bills and transactions
 interface BillTransactionContextType {
   bills: Bill[];
   transactions: Transaction[];
   // Bill API functions
-  createBill: (bill: Bill) => Promise<void>;
+  createBill: (bill: Bill) => Promise<string>;
   updateBill: (billId: string, updatedBill: Partial<Bill>) => Promise<void>;
   deleteBill: (billId: string) => Promise<void>;
   // Transaction API functions
@@ -40,6 +41,14 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
   const { currentTrip } = useTrip();
   const currentTripId = currentTrip?.id;
 
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!currentTripId) return;
+    loadArchivedIds(currentTripId).then(setArchivedIds);
+  }, [currentTripId]);
+
+  
   // Subscribe to the bills collection changes of the current trip.
   useEffect(() => {
     if (!currentTripId) return;
@@ -53,7 +62,7 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
             docSnap.id,
             docSnap.data(),
         ))) as Bill[];
-      setBills(billsData);
+      setBills(billsData.map(b => ({ ...b, archived: archivedIds.has(b.id) })));
     });
 
     return () => {
@@ -110,6 +119,31 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
     await apiDeleteTransaction(currentTripId, transactionId);
   };
 
+  const storageKey = (tripId: string) => `archivedBills_${tripId}`;
+
+  async function loadArchivedIds(tripId: string): Promise<Set<string>> {
+    const raw = await AsyncStorage.getItem(storageKey(tripId));
+    return new Set(raw ? JSON.parse(raw) : []);
+  }
+  async function saveArchivedIds(tripId: string, ids: Set<string>) {
+    await AsyncStorage.setItem(storageKey(tripId), JSON.stringify([...ids]));
+  }
+
+  const archiveBill = async (billId: string) => {
+    if (!currentTripId) return;
+    const next = new Set(archivedIds).add(billId);
+    setArchivedIds(next);
+    await saveArchivedIds(currentTripId, next);
+  };
+  
+  const restoreBill = async (billId: string) => {
+    if (!currentTripId) return;
+    const next = new Set(archivedIds);
+    next.delete(billId);
+    setArchivedIds(next);
+    await saveArchivedIds(currentTripId, next);
+  };
+
   return (
     <BillTransactionContext.Provider
       value={{
@@ -118,6 +152,8 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
         createBill,
         updateBill,
         deleteBill,
+        archiveBill,
+        restoreBill,
         createTransaction,
         updateTransaction,
         deleteTransaction,

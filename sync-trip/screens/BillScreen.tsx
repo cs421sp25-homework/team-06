@@ -9,6 +9,7 @@ import {
   Button,
   List,
   Text,
+  SegmentedButtons,
 } from 'react-native-paper';
 import { useBillTransaction } from "../context/BillAndTransactionContext";
 import { useTrip } from "../context/TripContext";
@@ -21,7 +22,7 @@ import { Collaborator } from "../types/User";
 
 const BillScreen = () => {
   // Retrieve bills and transactions from the BillTransactionContext
-  const { bills, createBill, updateBill } = useBillTransaction();
+  const { bills, createBill, updateBill, deleteBill, archiveBill, restoreBill } = useBillTransaction();
   // Retrieve the current trip information from the TripContext
   const { currentTrip } = useTrip();
   const { currentUser } = useUser();
@@ -29,6 +30,12 @@ const BillScreen = () => {
   const [billModalVisible, setBillModalVisible] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [collaboratorsFull, setCollaboratorsFull] = useState<Collaborator[]>([]);
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
+
+  const [segment, setSegment] = useState<'active' | 'archived'>('active');
+
+  const activeBills   = bills.filter(b => !archivedIds.has(b.id));
+  const archivedBills = bills.filter(b => archivedIds.has(b.id));
 
   useEffect(() => {
     async function fetchCollaborators() {
@@ -52,6 +59,16 @@ const BillScreen = () => {
     fetchCollaborators();
   }, [currentTrip]);
 
+  const handleArchive = async (id: string) => {
+    setArchivedIds(prev => new Set(prev).add(id));
+    await archiveBill(id);
+    setBillModalVisible(false);
+  };
+  
+  const handleRestore = async (id: string) => {
+    await restoreBill(id);
+  };
+
   const balanceForUser = (bill: Bill, uid: string): number => {      // CHANGED
     if (!bill.summary) return 0;
     let bal = 0;
@@ -69,25 +86,37 @@ const BillScreen = () => {
   // Function to handle the creation of a new bill (to be implemented according to business logic)
   const handleCreateBill = async () => {
     if (!currentTrip) return;
-    const draft = bills.find(b => b.isDraft);
-        if (draft) {
-        setSelectedBill(draft);
-        setBillModalVisible(true);
-        return;
-    }
+    //const draft = bills.find(b => b.isDraft);
+    //    if (draft) {
+    //    setSelectedBill(draft);
+    //    setBillModalVisible(true);
+    //    return;
+    //}
 
     const newBill = {
       title: "New Bill",
       participants: [],
       summary: {},
       currency: "USD",
-      isDraft: true,
+      isDraft: false,
+      archived: false,
     } as Omit<Bill, "id">;
     try {
       await createBill(newBill);
-      const draftBill = bills.find(b => b.isDraft);
-      setSelectedBill(draftBill || null);
+      //const interval = setInterval(() => {
+      //const found = bills.find(b => b.id === newBillId);
+      //if (found) {
+        //setSelectedBill(found);
       setBillModalVisible(true);
+        //clearInterval(interval);
+        //}
+      //}, 100);
+
+      //setTimeout(() => clearInterval(interval), 5000);
+
+      //const draftBill = bills.find(b => b.isDraft);
+      //setSelectedBill(draftBill || null);
+      //setBillModalVisible(true);
     } catch (error) {
       console.error("Failed to create new bill:", error);
     }
@@ -122,7 +151,7 @@ const BillScreen = () => {
       </Text>
 
       <FlatList
-        data={bills}
+        data={segment === 'active' ? activeBills : archivedBills}
         keyExtractor={(item, index) =>
             item.id && item.id.trim() !== '' ? item.id : `bill_${index}`
         }
@@ -161,6 +190,15 @@ const BillScreen = () => {
         Create New Bill
       </Button>
 
+      <SegmentedButtons
+        value={segment}
+        onValueChange={v => setSegment(v as any)}
+        buttons={[
+          { value: 'active',   label: 'Active' },
+          { value: 'archived', label: 'Archived' },
+        ]}
+      />
+
       <BillDetailModal
         visible={billModalVisible}
         bill={selectedBill}
@@ -168,6 +206,11 @@ const BillScreen = () => {
         currentUserUid={currentUser?.uid ?? ''}
         onClose={() => setBillModalVisible(false)}
         onSave={handleBillSave}
+        onArchive={handleArchive}
+        onDelete={async id => {
+          await deleteBill(id);
+          setBillModalVisible(false);
+          }}
       />
     </View>
   );

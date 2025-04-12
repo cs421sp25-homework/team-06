@@ -4,6 +4,7 @@ export interface Bill {
     currency: string;
     summary: Summary;
     isDraft?: boolean;
+    archived?: boolean;
 }
 
 export interface Summary {

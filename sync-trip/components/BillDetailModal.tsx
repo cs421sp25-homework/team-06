@@ -26,6 +26,8 @@ interface BillDetailModalProps {
   currentUserUid: string;
   onClose: () => void;
   onSave: (updated: Partial<Bill>) => void;
+  onArchive: (id: string) => void;
+  onDelete:  (id: string) => void;
 }
 
 const nameCache: Record<string, string> = {};
@@ -89,6 +91,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   currentUserUid,
   onClose,
   onSave,
+  onArchive,
+  onDelete
 }) => {
   const [title, setTitle] = useState<string>('');
   const [participants, setParticipants] = useState<string[]>([]);
@@ -326,7 +330,27 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           {/* Pay button */}
           <Button 
             style={styles.payButton} 
-            onPress={() => console.log('Pay button clicked')}
+            onPress={() => {
+              if (bill) {
+                const updatedSummary = { ...bill.summary };
+                delete updatedSummary[currentUserUid];
+
+                for (const [debtor, debts] of Object.entries(updatedSummary)) {
+                  if (debts[currentUserUid]) {
+                    delete debts[currentUserUid];
+                  }
+                  if (Object.keys(debts).length === 0) {
+                    delete updatedSummary[debtor];
+                  }
+                }
+
+                onSave({
+                  id: bill.id,
+                  summary: updatedSummary,
+                });
+              onArchive(bill.id);
+              }
+            }}
           >
            Pay
           </Button>
@@ -343,6 +367,20 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           >
             Close
           </Button>
+
+          <Button
+            mode="outlined"
+            textColor="red"
+            style={{ marginTop: 12 }}
+            onPress={() =>
+              Alert.alert('Delete Bill','Are you sure?',[
+                { text:'Cancel',style:'cancel' },
+                { text:'Delete',style:'destructive', onPress:()=>bill&&onDelete(bill.id) }
+              ])
+            }
+          >
+            Delete Bill
+          </Button>
         </ScrollView>
     </Modal>
     </Portal>
@@ -351,11 +389,11 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
 const styles = StyleSheet.create({
   overlay: {
-    backgroundColor: '#fff',   // CHANGED
-    borderRadius: 8,           // CHANGED
-    padding: 20,               // CHANGED
-    width: '90%',              // CHANGED
-    alignSelf: 'center',       // CHANGED
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 20,
+    width: '90%',
+    alignSelf: 'center',
   },
   modalContainer: {
     alignItems: 'center',
