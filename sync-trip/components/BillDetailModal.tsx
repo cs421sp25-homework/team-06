@@ -8,23 +8,82 @@ import {
     StyleSheet,
     FlatList,
     Platform,
+    ScrollView,
+    Alert,
   } from 'react-native';
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
 import { getUserById } from '../utils/userAPI';
 
+
 interface BillDetailModalProps {
   visible: boolean;
   bill: Bill | null;
-  collaborators: Collaborator[];  
+  collaborators: Collaborator[];
+  currentUserUid: string;
   onClose: () => void;
   onSave: (updated: Partial<Bill>) => void;
 }
+
+const nameCache: Record<string, string> = {};
+
+const uidToName = async (
+  uid: string,
+  collaborators: Collaborator[]
+): Promise<string> => {
+
+  if (nameCache[uid]) return nameCache[uid];
+
+  const local = collaborators.find(c => c.uid === uid);
+  if (local) {
+    nameCache[uid] = local.name ?? uid;
+    return nameCache[uid];
+  }
+
+  try {
+    const user = await getUserById(uid);
+    nameCache[uid] = (user.name ?? uid);
+    return nameCache[uid];
+  } catch {
+    return uid;
+  }
+};
+interface NameLineProps {
+  debtorUid: string;
+  creditorUid: string;
+  amount: number;
+  collaborators: Collaborator[];
+}
+
+const AsyncNameLine: React.FC<NameLineProps> = ({
+  debtorUid,
+  creditorUid,
+  amount,
+  collaborators,
+}) => {
+  const [debtorName, setDebtorName] = useState(debtorUid);
+  const [creditorName, setCreditorName] = useState(creditorUid);
+
+  useEffect(() => {
+    (async () => {
+      setDebtorName(await uidToName(debtorUid, collaborators));
+      setCreditorName(await uidToName(creditorUid, collaborators));
+    })();
+  }, [debtorUid, creditorUid, collaborators]);
+
+  return (
+    <Text style={styles.detail}>
+      {debtorName} → {creditorName}: {amount.toFixed(2)}
+    </Text>
+  );
+};
+
 
 const BillDetailModal: React.FC<BillDetailModalProps> = ({
   visible,
   bill,
   collaborators,
+  currentUserUid,
   onClose,
   onSave,
 }) => {
@@ -63,16 +122,14 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       return {};
     }
     const share = total / participants.length;
-    // 假设 debtor 为当前 bill 创建者的 uid，此处暂用 bill.id 替代（你可根据实际调整）
-    return { [bill!.id]: participants.reduce((acc, uid) => {
+    return { [currentUserUid]: participants.reduce((acc, uid) => {
       acc[uid] = share;
       return acc;
     }, {} as { [key: string]: number }) };
   };
 
   const computeCustomSummary = (): { [debtor: string]: { [creditor: string]: number } } => {
-    // 假设 debtor 同上
-    return { [bill!.id]: participants.reduce((acc, uid) => {
+    return { [currentUserUid]: participants.reduce((acc, uid) => {
       const amt = parseFloat(customAmounts[uid] || '0');
       if (!isNaN(amt)) {
         acc[uid] = amt;
@@ -83,14 +140,17 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
 
   const handleSave = () => {
-    if (!bill) return;
+    if (!currentUserUid) {
+      Alert.alert('User information loading')
+      return;
+    }
     let summary = {};
     if (distributionMode === 'even') {
       summary = computeEvenSummary();
     } else {
       summary = computeCustomSummary();
     }
-    // 调用 onSave 回调，将更新后的 bill 数据传出，包括标题、参与者、summary
+    console.log("Computed summary:", summary);
     onSave({
       id: bill.id,
       title,
@@ -110,7 +170,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+      <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Bill Details</Text>
 
           {/* Title editor */}
@@ -128,44 +188,37 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             {participants.length > 0 ? participants.join(', ') : 'No participants'}
           </Text>
 
-          <TouchableOpacity
-            style={styles.participantsButton}
-            onPress={() => setShowCollaboratorList(!showCollaboratorList)}
-          >
-            <Text style={styles.participantsButtonText}>Add/Remove Participants</Text>
-          </TouchableOpacity>
 
           {/* Select collaborator from list */}
-          <Text style={styles.detail}>Participants: {participants.map(getUserById).join(', ') || "None"}</Text>
           <TouchableOpacity
             style={styles.participantsButton}
             onPress={() => setShowCollaboratorList(!showCollaboratorList)}
           >
-            <Text style={styles.participantsButtonText}>Add/Remove Participants</Text>
+          <Text style={styles.participantsButtonText}>Add/Remove Participants</Text>
           </TouchableOpacity>
           {showCollaboratorList && (
-            <FlatList
-              data={collaborators}
-              keyExtractor={(item) => item.uid}
-              renderItem={({ item }) => {
-                const selected = participants.includes(item.uid);
-                return (
-                  <TouchableOpacity
-                    style={[
-                      styles.collaboratorItem,
-                      selected && { backgroundColor: '#cceeff' },
-                    ]}
-                    onPress={() => handleToggleParticipant(item.uid)}
-                  >
-                    <Text>{item.name}</Text>
-                  </TouchableOpacity>
-                );
-              }}
-              style={styles.collaboratorList}
-            />
+            <View style={{ height: 150, width: '100%' }}>
+              <ScrollView keyboardShouldPersistTaps="handled">
+                {collaborators.map((item) => {
+                  const selected = participants.includes(item.uid);
+                  return (
+                    <TouchableOpacity
+                      key={item.uid}
+                      style={[
+                        styles.collaboratorItem,
+                        selected && { backgroundColor: '#cceeff' },
+                      ]}
+                      onPress={() => handleToggleParticipant(item.uid)}
+                    >
+                      <Text>{item.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
           )}
 
-<View style={styles.modeContainer}>
+          <View style={styles.modeContainer}>
             <TouchableOpacity
               style={[
                 styles.modeButton,
@@ -208,7 +261,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               <Text style={styles.label}>Enter amount for each participant:</Text>
               {participants.map((uid) => (
                 <View key={uid} style={styles.customRow}>
-                  <Text style={styles.customLabel}>{getNameByUid(uid)}:</Text>
+                  <Text style={styles.customLabel}>{collaborators.find(c => c.uid === uid)?.name || uid}:</Text>
                   <TextInput
                     style={styles.customInput}
                     placeholder="Amount"
@@ -227,9 +280,21 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           {bill.summary && (
             <View style={styles.summarySection}>
               <Text style={styles.summaryTitle}>Summary:</Text>
-              <Text style={styles.detail}>
-                {JSON.stringify(bill.summary, null, 2)}
-              </Text>
+              {Object.entries(bill.summary).map(([debtorUid, credits]) => (
+                <View key={debtorUid} style={{ marginBottom: 4 }}>
+                  {Object.entries(credits as Record<string, number>).map(
+                    ([creditorUid, amount]) => (
+                      <AsyncNameLine
+                      key={debtorUid + creditorUid}
+                      debtorUid={debtorUid}
+                      creditorUid={creditorUid}
+                      amount={amount}
+                      collaborators={collaborators}
+                    />
+                    )
+                  )}
+                </View>
+              ))} 
             </View>
           )}
 
@@ -253,7 +318,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           >
             <Text style={styles.closeButtonText}>Close</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );

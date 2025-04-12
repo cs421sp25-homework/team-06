@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { firestore } from "./firebase";
 import {
   addDoc,

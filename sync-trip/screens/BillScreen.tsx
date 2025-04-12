@@ -83,6 +83,7 @@ const BillScreen = () => {
       await updateBill(updated.id, {
         title: updated.title,
         participants: updated.participants,
+        summary: updated.summary,
       });
     } catch (error) {
       console.error("Failed to update bill:", error);
@@ -117,6 +118,7 @@ const BillScreen = () => {
         visible={billModalVisible}
         bill={selectedBill}
         collaborators={collaboratorsFull}
+        currentUserUid={currentUser?.uid ?? ''}
         onClose={() => setBillModalVisible(false)}
         onSave={handleBillSave}
       />
