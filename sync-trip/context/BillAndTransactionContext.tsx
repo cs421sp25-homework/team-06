@@ -92,7 +92,14 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
   // Update an existing bill using the API helper function
   const updateBill = async (billId: string, updatedBill: Partial<Bill>): Promise<void> => {
     if (!currentTripId) throw new Error("No current trip available.");
-    await apiUpdateBill(currentTripId, billId, updatedBill);
+    const cleanData: any = {};
+      for (const [key, value] of Object.entries(updatedBill)) {
+        if (value !== undefined && key !== 'currency' && key !== 'archived' && key !== 'isDraft') {
+          cleanData[key] = value;
+      }
+    }
+
+    await apiUpdateBill(currentTripId, billId, cleanData);
   };
 
   // Delete a bill using the API helper function
