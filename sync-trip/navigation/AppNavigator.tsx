@@ -7,6 +7,7 @@ import BottomTabsNavigator from './BottomTabsNavigator';
 import {RootStackParamList} from './useAppNavigation';
 import {UserProvider} from "../context/UserContext";
 import {TripProvider} from "../context/TripContext";
+import { BillTransactionProvider } from "../context/BillAndTransactionContext";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -23,7 +24,9 @@ export default function AppNavigator() {
                     component={() => (
                         <UserProvider>
                             <TripProvider>
-                                <BottomTabsNavigator/>
+                                <BillTransactionProvider>
+                                    <BottomTabsNavigator/>
+                                </BillTransactionProvider>
                             </TripProvider>
                         </UserProvider>
                     )}

@@ -9,6 +9,7 @@ import CurrentTripScreen from '../screens/CurrentTripScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import MapScreen from '../screens/MapScreen'; // New screen for map view
 import NewTripScreen from '../screens/NewTripScreen';
+import BillScreen from '../screens/BillScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const BottomTabsContent = () => {
@@ -19,6 +20,7 @@ const BottomTabsContent = () => {
         {key: 'trip', title: 'Trip', icon: 'clipboard-list'},
         {key: 'plus', title: 'New Trip', icon: 'plus'},
         {key: 'map', title: 'Map', icon: 'map-marker'},
+        { key: 'bill', title: 'Bills', icon: 'receipt' },
         {key: 'profile', title: 'Profile', icon: 'account'},
     ];
 
@@ -26,6 +28,7 @@ const BottomTabsContent = () => {
         dashboard: DashboardScreen,
         trip: CurrentTripScreen,
         map: MapScreen,
+        bill: BillScreen,
         profile: ProfileScreen,
         plus: NewTripScreen,
     });
