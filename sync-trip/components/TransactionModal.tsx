@@ -36,7 +36,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const [description, setDescription] = useState('');
 
   const handleSubmit = () => {
-    if (!selectedCollaborator || !currency || !amount) {
+    if (!selectedCollaborator.uid || !currency || !amount) {
       console.error('All fields are required.');
       return;
     }

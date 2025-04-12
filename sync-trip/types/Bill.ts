@@ -3,6 +3,7 @@ export interface Bill {
     title: string;
     currency: string;
     summary: Summary;
+    isDraft?: boolean;
 }
 
 export interface Summary {
