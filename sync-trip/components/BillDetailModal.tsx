@@ -1,34 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Platform,
-    ScrollView,
-    Alert,
-  } from 'react-native';
-import {
-  Button,
-  TextInput,
-  Modal,
-  Portal,
-  Menu,
-} from 'react-native-paper';
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Platform,
+} from 'react-native';
+import { Button, TextInput, Modal, Portal, Menu } from 'react-native-paper';
+import { WebView } from 'react-native-webview'; // For native platforms
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
 import { getUserById } from '../utils/userAPI';
 
-
-interface BillDetailModalProps {
-  visible: boolean;
-  bill: Bill | null;
-  collaborators: Collaborator[];
-  currentUserUid: string;
-  onClose: () => void;
-  onSave: (updated: Partial<Bill>) => void;
-  onArchive: (id: string) => void;
-  onDelete:  (id: string) => void;
-}
+// ------------------
+// Helper Functions & Components
+// ------------------
 
 const nameCache: Record<string, string> = {};
 
@@ -36,7 +23,6 @@ const uidToName = async (
   uid: string,
   collaborators: Collaborator[]
 ): Promise<string> => {
-
   if (nameCache[uid]) return nameCache[uid];
 
   const local = collaborators.find(c => c.uid === uid);
@@ -47,12 +33,13 @@ const uidToName = async (
 
   try {
     const user = await getUserById(uid);
-    nameCache[uid] = (user.name ?? uid);
+    nameCache[uid] = user.name ?? uid;
     return nameCache[uid];
   } catch {
     return uid;
   }
 };
+
 interface NameLineProps {
   debtorUid: string;
   creditorUid: string;
@@ -83,6 +70,169 @@ const AsyncNameLine: React.FC<NameLineProps> = ({
   );
 };
 
+// ------------------
+// PayPal Integration Components
+// ------------------
+
+/*
+  PayPalButton (Web):
+  Loads the PayPal JS SDK directly and renders the button into a DOM element.
+  This component works only in a web environment.
+*/
+const PayPalButton = ({
+  amount,
+  currency,
+  onSuccess,
+  onError,
+}: {
+  amount: string;
+  currency: string;
+  onSuccess: (order: any) => void;
+  onError: (error: any) => void;
+}) => {
+  const paypalRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      console.warn('PayPal integration is only available in a web environment.');
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=${currency}`;
+    script.async = true;
+    script.onload = () => {
+      // @ts-ignore
+      window.paypal.Buttons({
+        createOrder: (data: any, actions: any) => {
+          return actions.order.create({
+            purchase_units: [
+              {
+                amount: {
+                  value: amount,
+                },
+              },
+            ],
+          });
+        },
+        onApprove: async (data: any, actions: any) => {
+          try {
+            const order = await actions.order.capture();
+            onSuccess(order);
+          } catch (error) {
+            onError(error);
+          }
+        },
+        onError: onError,
+      }).render(paypalRef.current);
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [amount, currency, onSuccess, onError]);
+
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+  return React.createElement('div', { ref: paypalRef });
+};
+
+/*
+  PayPalWebView (Native):
+  Uses a WebView that loads an HTML snippet containing the PayPal JS SDK.
+  This snippet renders the PayPal button and sends payment events back via postMessage.
+*/
+const PayPalWebView = ({
+  amount,
+  currency,
+  onSuccess,
+  onError,
+  onCancel,
+}: {
+  amount: string;
+  currency: string;
+  onSuccess: (order: any) => void;
+  onError: (error: any) => void;
+  onCancel: () => void;
+}) => {
+  const htmlContent = `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=${currency}"></script>
+    </head>
+    <body>
+      <div id="paypal-button-container"></div>
+      <script>
+        paypal.Buttons({
+          createOrder: function(data, actions) {
+            return actions.order.create({
+              purchase_units: [{
+                amount: {
+                  value: '${amount}'
+                }
+              }]
+            });
+          },
+          onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'success', details: details }));
+            });
+          },
+          onCancel: function (data) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'cancel' }));
+          },
+          onError: function(err) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'error', error: err.toString() }));
+          }
+        }).render('#paypal-button-container');
+      </script>
+    </body>
+  </html>
+  `;
+
+  return (
+    <WebView
+      originWhitelist={['*']}
+      source={{ html: htmlContent }}
+      style={{ height: 300, width: '100%' }} // Ensure the WebView is visible
+      onMessage={(event) => {
+        try {
+          const messageData = JSON.parse(event.nativeEvent.data);
+          if (messageData.status === 'success') {
+            onSuccess(messageData.details);
+          } else if (messageData.status === 'cancel') {
+            onCancel();
+          } else if (messageData.status === 'error') {
+            onError(messageData.error);
+          }
+        } catch (e) {
+          console.error('Error parsing message from PayPal WebView', e);
+          onError(e);
+        }
+      }}
+    />
+  );
+};
+
+// ------------------
+// BillDetailModal Component
+// ------------------
+
+interface BillDetailModalProps {
+  visible: boolean;
+  bill: Bill | null;
+  collaborators: Collaborator[];
+  currentUserUid: string;
+  onClose: () => void;
+  onSave: (updated: Partial<Bill>) => void;
+  onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
+}
 
 const BillDetailModal: React.FC<BillDetailModalProps> = ({
   visible,
@@ -92,7 +242,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   onClose,
   onSave,
   onArchive,
-  onDelete
+  onDelete,
 }) => {
   const [title, setTitle] = useState<string>('');
   const [participants, setParticipants] = useState<string[]>([]);
@@ -102,8 +252,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [showCollaboratorList, setShowCollaboratorList] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showPayPal, setShowPayPal] = useState(false);
   const currencyOptions = ['USD', 'EUR', 'GBP', 'CNY', 'JPY'];
-
 
   useEffect(() => {
     if (bill) {
@@ -123,7 +273,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
   const handleToggleParticipant = (uid: string) => {
     setParticipants((prev) =>
-      prev.includes(uid) ? prev.filter((p) => p !== uid) : [...prev, uid]
+      prev.includes(uid) ? prev.filter(p => p !== uid) : [...prev, uid]
     );
   };
 
@@ -133,31 +283,34 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       return {};
     }
     const share = total / participants.length;
-    return { [currentUserUid]: participants.reduce((acc, uid) => {
-      acc[uid] = share;
-      return acc;
-    }, {} as { [key: string]: number }) };
+    return {
+      [currentUserUid]: participants.reduce((acc, uid) => {
+        acc[uid] = share;
+        return acc;
+      }, {} as { [key: string]: number }),
+    };
   };
 
   const computeCustomSummary = (): { [debtor: string]: { [creditor: string]: number } } => {
-    return { [currentUserUid]: participants.reduce((acc, uid) => {
-      const amt = parseFloat(customAmounts[uid] || '0');
-      if (!isNaN(amt)) {
-        acc[uid] = amt;
-      }
-      return acc;
-    }, {} as { [key: string]: number }) };
+    return {
+      [currentUserUid]: participants.reduce((acc, uid) => {
+        const amt = parseFloat(customAmounts[uid] || '0');
+        if (!isNaN(amt)) {
+          acc[uid] = amt;
+        }
+        return acc;
+      }, {} as { [key: string]: number }),
+    };
   };
-
 
   const handleSave = () => {
     if (!currentUserUid) {
-      Alert.alert('User information loading')
+      Alert.alert('User information loading');
       return;
     }
     const summary =
       distributionMode === 'even' ? computeEvenSummary() : computeCustomSummary();
-    console.log("Computed summary:", summary);
+    console.log('Computed summary:', summary);
     onSave({
       id: bill!.id,
       title,
@@ -172,34 +325,21 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
   return (
     <Portal>
-    <Modal 
-      visible={visible} 
-      onDismiss={onClose}
-      contentContainerStyle={styles.overlay}
-    >
-      <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
+      <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.overlay}>
+        <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Bill Details</Text>
 
-          {/* Title editor */}
+          {/* Title Editor */}
           <Text style={styles.label}>Title:</Text>
-          <TextInput
-            mode="outlined"
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-          />
+          <TextInput mode="outlined" style={styles.input} value={title} onChangeText={setTitle} />
 
-          {/* Details */}
+          {/* Currency Selection */}
           <Text style={styles.detail}>Currency: {currency}</Text>
           <Menu
             visible={menuVisible}
             onDismiss={() => setMenuVisible(false)}
             anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setMenuVisible(true)}
-                style={{ alignSelf: 'flex-start' }}
-              >
+              <Button mode="outlined" onPress={() => setMenuVisible(true)} style={{ alignSelf: 'flex-start' }}>
                 {currency}
               </Button>
             }
@@ -216,37 +356,25 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             ))}
           </Menu>
 
-
+          {/* Participants */}
           <Text style={styles.detail}>Participants:</Text>
           <Text style={styles.detail}>
             {participants.length
-              ? participants
-                  .map(uid => collaborators.find(c => c.uid === uid)?.name ?? uid)
-                  .join(', ')
+              ? participants.map(uid => collaborators.find(c => c.uid === uid)?.name ?? uid).join(', ')
               : 'No participants'}
           </Text>
-
-
-          {/* Select collaborator from list */}
-          <Button
-            mode="contained"
-            style={{ marginVertical: 8 }}
-            onPress={() => setShowCollaboratorList(!showCollaboratorList)}
-          >
-          Add/Remove Participants
+          <Button mode="contained" style={{ marginVertical: 8 }} onPress={() => setShowCollaboratorList(!showCollaboratorList)}>
+            Add/Remove Participants
           </Button>
           {showCollaboratorList && (
             <View style={{ height: 150, width: '100%' }}>
               <ScrollView keyboardShouldPersistTaps="handled">
-                {collaborators.map((item) => {
+                {collaborators.map(item => {
                   const selected = participants.includes(item.uid);
                   return (
                     <Button
                       key={item.uid}
-                      style={[
-                        styles.collaboratorItem,
-                        selected && { backgroundColor: '#cceeff' },
-                      ]}
+                      style={[styles.collaboratorItem, selected && { backgroundColor: '#cceeff' }]}
                       onPress={() => handleToggleParticipant(item.uid)}
                     >
                       {item.name}
@@ -257,6 +385,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             </View>
           )}
 
+          {/* Split Mode Selection */}
           <View style={styles.modeContainer}>
             <Button
               mode={distributionMode === 'even' ? 'contained' : 'outlined'}
@@ -267,8 +396,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             </Button>
             <Button
               mode={distributionMode === 'custom' ? 'contained' : 'outlined'}
-              onPress={() => switchMode('custom')}
               style={styles.modeButton}
+              onPress={() => switchMode('custom')}
             >
               Custom Split
             </Button>
@@ -288,105 +417,115 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           ) : (
             <>
               <Text style={styles.label}>Enter amount for each participant:</Text>
-              {participants.map((uid) => (
+              {participants.map(uid => (
                 <View key={uid} style={styles.customRow}>
-                  <Text style={styles.customLabel}>{collaborators.find(c => c.uid === uid)?.name || uid}:</Text>
+                  <Text style={styles.customLabel}>
+                    {collaborators.find(c => c.uid === uid)?.name || uid}:
+                  </Text>
                   <TextInput
                     style={styles.customInput}
                     placeholder="Amount"
                     keyboardType="numeric"
                     value={customAmounts[uid] || ''}
-                    onChangeText={(text) =>
-                      setCustomAmounts((prev) => ({ ...prev, [uid]: text }))
-                    }
+                    onChangeText={text => setCustomAmounts(prev => ({ ...prev, [uid]: text }))}
                   />
                 </View>
               ))}
             </>
           )}
 
-          {/* Show summary */}
+          {/* Summary Display */}
           {bill.summary && (
             <View style={styles.summarySection}>
               <Text style={styles.summaryTitle}>Summary:</Text>
               {Object.entries(bill.summary).map(([debtorUid, credits]) => (
                 <View key={debtorUid} style={{ marginBottom: 4 }}>
-                  {Object.entries(credits as Record<string, number>).map(
-                    ([creditorUid, amount]) => (
-                      <AsyncNameLine
+                  {Object.entries(credits as Record<string, number>).map(([creditorUid, amount]) => (
+                    <AsyncNameLine
                       key={debtorUid + creditorUid}
                       debtorUid={debtorUid}
                       creditorUid={creditorUid}
                       amount={amount}
                       collaborators={collaborators}
                     />
-                    )
-                  )}
+                  ))}
                 </View>
-              ))} 
+              ))}
             </View>
           )}
 
-          {/* Pay button */}
-          <Button 
-            style={styles.payButton} 
-            onPress={() => {
-              if (bill) {
-                const updatedSummary = { ...bill.summary };
-                delete updatedSummary[currentUserUid];
+          {/* Payment Processing */}
+          {showPayPal ? (
+            <View style={styles.paypalContainer}>
+              {Platform.OS === 'web' ? (
+                <PayPalButton
+                  amount={distributionMode === 'even' ? evenTotal : '0'} // Adjust as needed for custom amounts
+                  currency={currency}
+                  onSuccess={order => {
+                    console.log('Payment successful', order);
+                    onArchive(bill.id);
+                    setShowPayPal(false);
+                  }}
+                  onError={err => {
+                    console.error('Payment error', err);
+                    Alert.alert('Payment failed', 'There was an error processing your payment.');
+                    setShowPayPal(false);
+                  }}
+                />
+              ) : (
+                <PayPalWebView
+                  amount={distributionMode === 'even' ? evenTotal : '0'}
+                  currency={currency}
+                  onSuccess={order => {
+                    console.log('Payment successful', order);
+                    onArchive(bill.id);
+                    setShowPayPal(false);
+                  }}
+                  onError={err => {
+                    console.error('Payment error', err);
+                    Alert.alert('Payment failed', 'There was an error processing your payment.');
+                    setShowPayPal(false);
+                  }}
+                  onCancel={() => setShowPayPal(false)}
+                />
+              )}
+              <Button onPress={() => setShowPayPal(false)}>Cancel Payment</Button>
+            </View>
+          ) : (
+            <Button style={styles.payButton} onPress={() => setShowPayPal(true)}>
+              Pay
+            </Button>
+          )}
 
-                for (const [debtor, debts] of Object.entries(updatedSummary)) {
-                  if (debts[currentUserUid]) {
-                    delete debts[currentUserUid];
-                  }
-                  if (Object.keys(debts).length === 0) {
-                    delete updatedSummary[debtor];
-                  }
-                }
-
-                onSave({
-                  id: bill.id,
-                  summary: updatedSummary,
-                });
-              onArchive(bill.id);
-              }
-            }}
-          >
-           Pay
-          </Button>
-
-          {/* Save button */}
+          {/* Save, Close, and Delete Buttons */}
           <Button style={styles.saveButton} onPress={handleSave}>
             Save Changes
           </Button>
-
-          {/* Close button */}
-          <Button 
-            style={styles.closeButton} 
-            onPress={onClose}
-          >
+          <Button style={styles.closeButton} onPress={onClose}>
             Close
           </Button>
-
           <Button
             mode="outlined"
             textColor="red"
             style={{ marginTop: 12 }}
             onPress={() =>
-              Alert.alert('Delete Bill','Are you sure?',[
-                { text:'Cancel',style:'cancel' },
-                { text:'Delete',style:'destructive', onPress:()=>bill&&onDelete(bill.id) }
+              Alert.alert('Delete Bill', 'Are you sure?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => bill && onDelete(bill.id) },
               ])
             }
           >
             Delete Bill
           </Button>
         </ScrollView>
-    </Modal>
+      </Modal>
     </Portal>
   );
 };
 
+// ------------------
+// Styles
+// ------------------
 const styles = StyleSheet.create({
   overlay: {
     backgroundColor: '#fff',
@@ -415,24 +554,6 @@ const styles = StyleSheet.create({
   detail: {
     fontSize: 16,
     marginVertical: 4,
-  },
-  participantsButton: {
-    backgroundColor: '#88bbee',
-    padding: 10,
-    borderRadius: 4,
-    marginVertical: 8,
-  },
-  participantsButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  collaboratorList: {
-    maxHeight: 150,
-    width: '100%',
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
   },
   collaboratorItem: {
     marginVertical: 2,
@@ -464,15 +585,6 @@ const styles = StyleSheet.create({
     borderColor: '#007aff',
     borderRadius: 4,
   },
-  modeButtonSelected: {},
-  summarySection: {
-    width: '100%',
-    marginTop: 12,
-  },
-  modeButtonText: {
-    fontSize: 14,
-    color: '#007aff',
-  },
   summarySection: {
     width: '100%',
     marginTop: 12,
@@ -490,10 +602,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  payButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   saveButton: {
     backgroundColor: '#00aaff',
     padding: 12,
@@ -502,17 +610,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   closeButton: {
     marginTop: 12,
     padding: 10,
   },
-  closeButtonText: {
-    color: 'red',
-    fontSize: 16,
+  paypalContainer: {
+    width: '100%',
+    marginVertical: 20,
+    alignItems: 'center',
   },
 });
 
