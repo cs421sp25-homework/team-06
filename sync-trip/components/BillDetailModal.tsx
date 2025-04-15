@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Platform,
-    ScrollView,
-    Alert,
-  } from 'react-native';
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  ScrollView,
+  Alert,
+  Linking, // Import Linking to open external URLs
+} from 'react-native';
 import {
   Button,
   TextInput,
@@ -18,7 +19,6 @@ import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
 import { getUserById } from '../utils/userAPI';
 
-
 interface BillDetailModalProps {
   visible: boolean;
   bill: Bill | null;
@@ -28,6 +28,9 @@ interface BillDetailModalProps {
   onSave: (updated: Partial<Bill>) => void;
   onArchive: (id: string) => void;
   onDelete:  (id: string) => void;
+  // Optional prop for the receiver’s PayPal account.
+  // If not provided, the Pay button will simply redirect the user to the PayPal login page.
+  paypalBusinessAccount?: string;
 }
 
 const nameCache: Record<string, string> = {};
@@ -36,7 +39,6 @@ const uidToName = async (
   uid: string,
   collaborators: Collaborator[]
 ): Promise<string> => {
-
   if (nameCache[uid]) return nameCache[uid];
 
   const local = collaborators.find(c => c.uid === uid);
@@ -53,6 +55,7 @@ const uidToName = async (
     return uid;
   }
 };
+
 interface NameLineProps {
   debtorUid: string;
   creditorUid: string;
@@ -83,7 +86,6 @@ const AsyncNameLine: React.FC<NameLineProps> = ({
   );
 };
 
-
 const BillDetailModal: React.FC<BillDetailModalProps> = ({
   visible,
   bill,
@@ -92,7 +94,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   onClose,
   onSave,
   onArchive,
-  onDelete
+  onDelete,
+  paypalBusinessAccount, // now provided via props if available
 }) => {
   const [title, setTitle] = useState<string>('');
   const [participants, setParticipants] = useState<string[]>([]);
@@ -103,7 +106,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [currency, setCurrency] = useState('USD');
   const [menuVisible, setMenuVisible] = useState(false);
   const currencyOptions = ['USD', 'EUR', 'GBP', 'CNY', 'JPY'];
-
 
   useEffect(() => {
     if (bill) {
@@ -149,10 +151,9 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     }, {} as { [key: string]: number }) };
   };
 
-
   const handleSave = () => {
     if (!currentUserUid) {
-      Alert.alert('User information loading')
+      Alert.alert('User information loading');
       return;
     }
     const summary =
@@ -168,16 +169,52 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     onClose();
   };
 
+  // --- Updated PayPal Integration ---
+  // Computes the total amount the current user owes based on the bill summary.
+  const computeUserPaymentAmount = (): string => {
+    if (bill && bill.summary && bill.summary[currentUserUid]) {
+      const total = Object.values(bill.summary[currentUserUid]).reduce(
+        (sum, value) => sum + value, 0
+      );
+      return total.toFixed(2);
+    }
+    return '0.00';
+  };
+
+  // Redirects to a PayPal payment page.
+  // If a paypalBusinessAccount is provided (via props), construct the payment URL;
+  // otherwise, simply redirect the user to the generic PayPal login page.
+  const handlePay = () => {
+    if (bill) {
+      if (paypalBusinessAccount) {
+        const paymentAmount = computeUserPaymentAmount();
+        const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(paypalBusinessAccount)}&item_name=${encodeURIComponent(bill.title)}&amount=${paymentAmount}&currency_code=${currency}`;
+        Linking.openURL(paypalUrl).catch(err => {
+          console.error("Failed to open PayPal URL", err);
+          Alert.alert("Error", "Unable to open PayPal. Please try again later.");
+        });
+      } else {
+        // Without a business account, redirect to the generic PayPal login page.
+        Linking.openURL('https://www.paypal.com/signin')
+          .catch(err => {
+            console.error("Failed to open PayPal login", err);
+            Alert.alert("Error", "Unable to open PayPal. Please try again later.");
+          });
+      }
+    }
+  };
+  // --- End PayPal integration ---
+
   if (!bill) return null;
 
   return (
     <Portal>
-    <Modal 
-      visible={visible} 
-      onDismiss={onClose}
-      contentContainerStyle={styles.overlay}
-    >
-      <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
+      <Modal
+        visible={visible}
+        onDismiss={onClose}
+        contentContainerStyle={styles.overlay}
+      >
+        <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Bill Details</Text>
 
           {/* Title editor */}
@@ -189,7 +226,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             onChangeText={setTitle}
           />
 
-          {/* Details */}
+          {/* Currency selector */}
           <Text style={styles.detail}>Currency: {currency}</Text>
           <Menu
             visible={menuVisible}
@@ -216,7 +253,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             ))}
           </Menu>
 
-
+          {/* Participants */}
           <Text style={styles.detail}>Participants:</Text>
           <Text style={styles.detail}>
             {participants.length
@@ -226,14 +263,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               : 'No participants'}
           </Text>
 
-
           {/* Select collaborator from list */}
           <Button
             mode="contained"
             style={{ marginVertical: 8 }}
             onPress={() => setShowCollaboratorList(!showCollaboratorList)}
           >
-          Add/Remove Participants
+            Add/Remove Participants
           </Button>
           {showCollaboratorList && (
             <View style={{ height: 150, width: '100%' }}>
@@ -290,7 +326,9 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               <Text style={styles.label}>Enter amount for each participant:</Text>
               {participants.map((uid) => (
                 <View key={uid} style={styles.customRow}>
-                  <Text style={styles.customLabel}>{collaborators.find(c => c.uid === uid)?.name || uid}:</Text>
+                  <Text style={styles.customLabel}>
+                    {collaborators.find(c => c.uid === uid)?.name || uid}:
+                  </Text>
                   <TextInput
                     style={styles.customInput}
                     placeholder="Amount"
@@ -314,45 +352,25 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                   {Object.entries(credits as Record<string, number>).map(
                     ([creditorUid, amount]) => (
                       <AsyncNameLine
-                      key={debtorUid + creditorUid}
-                      debtorUid={debtorUid}
-                      creditorUid={creditorUid}
-                      amount={amount}
-                      collaborators={collaborators}
-                    />
+                        key={debtorUid + creditorUid}
+                        debtorUid={debtorUid}
+                        creditorUid={creditorUid}
+                        amount={amount}
+                        collaborators={collaborators}
+                      />
                     )
                   )}
                 </View>
-              ))} 
+              ))}
             </View>
           )}
 
           {/* Pay button */}
-          <Button 
-            style={styles.payButton} 
-            onPress={() => {
-              if (bill) {
-                const updatedSummary = { ...bill.summary };
-                delete updatedSummary[currentUserUid];
-
-                for (const [debtor, debts] of Object.entries(updatedSummary)) {
-                  if (debts[currentUserUid]) {
-                    delete debts[currentUserUid];
-                  }
-                  if (Object.keys(debts).length === 0) {
-                    delete updatedSummary[debtor];
-                  }
-                }
-
-                onSave({
-                  id: bill.id,
-                  summary: updatedSummary,
-                });
-              onArchive(bill.id);
-              }
-            }}
+          <Button
+            style={styles.payButton}
+            onPress={handlePay}
           >
-           Pay
+            Pay with PayPal
           </Button>
 
           {/* Save button */}
@@ -361,8 +379,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           </Button>
 
           {/* Close button */}
-          <Button 
-            style={styles.closeButton} 
+          <Button
+            style={styles.closeButton}
             onPress={onClose}
           >
             Close
@@ -374,15 +392,15 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             style={{ marginTop: 12 }}
             onPress={() =>
               Alert.alert('Delete Bill','Are you sure?',[
-                { text:'Cancel',style:'cancel' },
-                { text:'Delete',style:'destructive', onPress:()=>bill&&onDelete(bill.id) }
+                { text:'Cancel', style:'cancel' },
+                { text:'Delete', style:'destructive', onPress:() => bill && onDelete(bill.id) }
               ])
             }
           >
             Delete Bill
           </Button>
         </ScrollView>
-    </Modal>
+      </Modal>
     </Portal>
   );
 };
@@ -416,24 +434,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginVertical: 4,
   },
-  participantsButton: {
-    backgroundColor: '#88bbee',
-    padding: 10,
-    borderRadius: 4,
-    marginVertical: 8,
-  },
-  participantsButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  collaboratorList: {
-    maxHeight: 150,
-    width: '100%',
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-  },
   collaboratorItem: {
     marginVertical: 2,
   },
@@ -464,15 +464,6 @@ const styles = StyleSheet.create({
     borderColor: '#007aff',
     borderRadius: 4,
   },
-  modeButtonSelected: {},
-  summarySection: {
-    width: '100%',
-    marginTop: 12,
-  },
-  modeButtonText: {
-    fontSize: 14,
-    color: '#007aff',
-  },
   summarySection: {
     width: '100%',
     marginTop: 12,
@@ -490,10 +481,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  payButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   saveButton: {
     backgroundColor: '#00aaff',
     padding: 12,
@@ -502,17 +489,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   closeButton: {
     marginTop: 12,
     padding: 10,
-  },
-  closeButtonText: {
-    color: 'red',
-    fontSize: 16,
   },
 });
 
