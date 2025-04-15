@@ -703,7 +703,7 @@ const MapScreen = () => {
               <Button mode="contained" onPress={() => setPlaceDetailsModalVisible(false)}>
                 Close
               </Button>
-              <Button mode="outlined" onPress={handleMarkDestination}>
+              <Button testID="markPlace" mode="outlined" onPress={handleMarkDestination}>
                 Mark This Place
               </Button>
             </Card.Actions>

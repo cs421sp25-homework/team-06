@@ -1,6 +1,7 @@
 import {auth, firestore} from './firebase';
 import {
     arrayUnion,
+    arrayRemove,
     collection,
     doc,
     getDoc,
@@ -106,4 +107,17 @@ export const addTripToUser = async (userId: string, TripsIdList: string): Promis
         tripsIdList: arrayUnion(TripsIdList), // Adds tripId to the array
         updatedAt: serverTimestamp(),
     });
+};
+
+export const removeTripFromAllUsers = async (tripId: string): Promise<void> => {
+    const usersRef = collection(firestore, "users");
+    const q = query(usersRef, where("tripsIdList", "array-contains", tripId));
+    const querySnapshot = await getDocs(q);
+    const updatePromises = querySnapshot.docs.map(userDoc => {
+        return updateDoc(doc(firestore, "users", userDoc.id), {
+            tripsIdList: arrayRemove(tripId),
+            updatedAt: serverTimestamp(),
+        });
+    });
+    await Promise.all(updatePromises);
 };

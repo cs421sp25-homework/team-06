@@ -55,8 +55,14 @@ appId: "com.s370101387.synctrip"
 - tapOn: { id: "tripTitle" }
 - inputText: "Test Trip"
 - tapOn: { id: "selectDates" }
-- tapOn: "2"
-- tapOn: "5"
+- tapOn:
+    below: "May 2025"
+    containsDescendants:
+      - "28"
+- tapOn:
+    below: "May 2025"
+    containsDescendants:
+      - "31"
 - tapOn: "Save"
 - tapOn: { id: "createTrip" }
 - assertVisible: "Test Trip"
@@ -68,10 +74,11 @@ appId: "com.s370101387.synctrip"
 - inputText: "Johns Hopkins University"
 - doubleTapOn: "Johns Hopkins University, Baltimore, MD, USA"
 - assertVisible: "Johns Hopkins University"
-- tapOn: { id: "closeInfoModal" }
-- longPressOn: { id: "map", point: "50%,50%" }
-- doubleTapOn: "Description"
+- tapOn: { id: "markPlace" }
+- tapOn: "markerName"
 - inputText: "JHU"
+- tapOn: { id: "description" }
+- inputText: "School Tour"
 - tapOn: { id: "selectDate" }
 - tapOn: "3"
 - tapOn: "Save"
@@ -118,7 +125,7 @@ appId: "com.s370101387.synctrip"
     containsDescendants:
       - "Invite"
 - doubleTapOn: {id: "inviteEmailInput"}
-- inputText: "vivanoon6666@gmail.com"
+- inputText: "ym.chen.life@outlook.com"
 - tapOn: { id: "confirmInvitation" }
 - tapOn: "OK"
 - tapOn: {id: "tab-trip"}
