@@ -3,6 +3,7 @@ appId: "com.s370101387.synctrip"
 # launch App
 - launchApp
 # login
+- doubleTapOn: "OK"
 - tapOn: { id: "account" }
 - inputText: "vivanoon6666@gmail.com"
 - tapOn: { id: "password" }
@@ -62,6 +63,7 @@ appId: "com.s370101387.synctrip"
 #
 # Test for Map Screen
 - tapOn: { id: "tab-map" }
+- waitForAnimationToEnd
 - tapOn: { id: "searchPlaces" }
 - inputText: "Johns Hopkins University"
 - doubleTapOn: "Johns Hopkins University, Baltimore, MD, USA"
