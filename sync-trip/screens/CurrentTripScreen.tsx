@@ -27,6 +27,7 @@ import {
   deleteTrip,
   updateDestination
 } from "../utils/tripAPI";
+import {removeTripFromAllUsers} from "../utils/userAPI";
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { TripStatus } from "../types/Trip";
 import { generateICS } from "../utils/icsGenerator";
@@ -178,6 +179,7 @@ const CurrentTripScreen = () => {
           onPress: async () => {
             try {
               await deleteTrip(currentTrip.id);
+              await removeTripFromAllUsers(currentTrip.id);
               setCurrentTrip(null);
               setTabIndex(0);
             } catch (err) {

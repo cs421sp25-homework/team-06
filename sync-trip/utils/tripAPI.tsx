@@ -101,8 +101,30 @@ export const updateDestination = async (
 };
 
 export const deleteTrip = async (tripId: string): Promise<void> => {
-  const tripRef = doc(firestore, "trips", tripId);
-  await deleteDoc(tripRef);
+  // Delete destinations and their nested subcollections (checklists)
+  const destinationsCollection = collection(firestore, "trips", tripId, "destinations");
+  const destinationsSnapshot = await getDocs(destinationsCollection);
+
+  for (const destinationDoc of destinationsSnapshot.docs) {
+    // Delete checklists within each destination
+    const checklistsCollection = collection(firestore, "trips", tripId, "destinations", destinationDoc.id, "checklists");
+    const checklistsSnapshot = await getDocs(checklistsCollection);
+    for (const checklistDoc of checklistsSnapshot.docs) {
+      await deleteDoc(doc(firestore, "trips", tripId, "destinations", destinationDoc.id, "checklists", checklistDoc.id));
+    }
+    // Delete the destination document itself
+    await deleteDoc(doc(firestore, "trips", tripId, "destinations", destinationDoc.id));
+  }
+
+  // Delete announcements (notices) subcollection
+  const noticesCollection = collection(firestore, "trips", tripId, "notices");
+  const noticesSnapshot = await getDocs(noticesCollection);
+  for (const noticeDoc of noticesSnapshot.docs) {
+    await deleteDoc(doc(firestore, "trips", tripId, "notices", noticeDoc.id));
+  }
+
+  // Finally, delete the trip document itself
+  await deleteDoc(doc(firestore, "trips", tripId));
 };
 
 // Checklist API functions

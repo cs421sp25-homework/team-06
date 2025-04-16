@@ -53,17 +53,23 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
   useEffect(() => {
     if (!currentTripId) return;
 
-    // Reference to the bills collection under the current trip
     const billsRef = collection(firestore, "trips", currentTripId, "bills");
-    const unsubscribeBills = onSnapshot(billsRef, (snapshot) => {
-      // Map Firestore documents to Bill objects
-      const billsData = snapshot.docs.map((docSnap) => (
-        parseBill(
-            docSnap.id,
-            docSnap.data(),
-        ))) as Bill[];
-      setBills(billsData.map(b => ({ ...b, archived: archivedIds.has(b.id) })));
-    });
+    const unsubscribeBills = onSnapshot(
+      billsRef,
+      (snapshot) => {
+        if (snapshot && snapshot.docs) {
+          const billsData = snapshot.docs.map((docSnap) =>
+            parseBill(docSnap.id, docSnap.data()),
+          ) as Bill[];
+          setBills(billsData.map(b => ({ ...b, archived: archivedIds.has(b.id) })));
+        } else {
+          console.error("Bills onSnapshot: received a null snapshot");
+        }
+      },
+      (error) => {
+        console.error("Bills onSnapshot error:", error);
+      },
+    );
 
     return () => {
       unsubscribeBills();
