@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { 
-  View, 
+import React, { useState, useEffect } from "react";
+import {
+  View,
   FlatList,
-  ScrollView, 
-  StyleSheet 
+  StyleSheet
 } from "react-native";
 import {
   Button,
@@ -14,10 +13,11 @@ import {
 import { useBillTransaction } from "../context/BillAndTransactionContext";
 import { useTrip } from "../context/TripContext";
 import { useUser } from "../context/UserContext";
-import { getUserById } from "../utils/userAPI"; 
+import { getUserById } from "../utils/userAPI";
 import { Bill } from "../types/Bill";
 import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
+import BillPaymentButton from "../components/BillPaymentButton";
 import { Collaborator } from "../types/User";
 
 const BillScreen = () => {
@@ -31,7 +31,6 @@ const BillScreen = () => {
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [collaboratorsFull, setCollaboratorsFull] = useState<Collaborator[]>([]);
   const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
-
   const [segment, setSegment] = useState<'active' | 'archived'>('active');
 
   const activeBills   = bills.filter(b => !archivedIds.has(b.id));
@@ -39,7 +38,7 @@ const BillScreen = () => {
 
   useEffect(() => {
     async function fetchCollaborators() {
-      if (currentTrip && Array.isArray(currentTrip.collaborators)) {
+      if (currentTrip?.collaborators) {
         try {
           const fetched: Collaborator[] = await Promise.all(
             currentTrip.collaborators.map(async (uid: string) => {
@@ -64,35 +63,25 @@ const BillScreen = () => {
     await archiveBill(id);
     setBillModalVisible(false);
   };
-  
+
   const handleRestore = async (id: string) => {
     await restoreBill(id);
   };
 
-  const balanceForUser = (bill: Bill, uid: string): number => {      // CHANGED
+  const balanceForUser = (bill: Bill, uid: string): number => {
     if (!bill.summary) return 0;
     let bal = 0;
     Object.entries(bill.summary).forEach(([debtorUid, credits]) => {
-      Object.entries(credits as Record<string, number>).forEach(
-        ([creditorUid, amount]) => {
-          if (debtorUid === uid) bal -= amount;
-          if (creditorUid === uid) bal += amount;
-        },
-      );
+      Object.entries(credits as Record<string, number>).forEach(([creditorUid, amount]) => {
+        if (debtorUid === uid)    bal -= amount;
+        if (creditorUid === uid)  bal += amount;
+      });
     });
     return bal;
   };
 
-  // Function to handle the creation of a new bill (to be implemented according to business logic)
   const handleCreateBill = async () => {
     if (!currentTrip) return;
-    //const draft = bills.find(b => b.isDraft);
-    //    if (draft) {
-    //    setSelectedBill(draft);
-    //    setBillModalVisible(true);
-    //    return;
-    //}
-
     const newBill = {
       title: "New Bill",
       participants: [],
@@ -103,27 +92,13 @@ const BillScreen = () => {
     } as Omit<Bill, "id">;
     try {
       await createBill(newBill);
-      //const interval = setInterval(() => {
-      //const found = bills.find(b => b.id === newBillId);
-      //if (found) {
-        //setSelectedBill(found);
       setBillModalVisible(true);
-        //clearInterval(interval);
-        //}
-      //}, 100);
-
-      //setTimeout(() => clearInterval(interval), 5000);
-
-      //const draftBill = bills.find(b => b.isDraft);
-      //setSelectedBill(draftBill || null);
-      //setBillModalVisible(true);
     } catch (error) {
       console.error("Failed to create new bill:", error);
     }
   };
 
   const handleBillPress = (bill: Bill) => {
-    console.log("Opening bill:", bill.id);
     setSelectedBill(bill);
     setBillModalVisible(true);
   };
@@ -133,7 +108,7 @@ const BillScreen = () => {
       updated = { id: selectedBill.id, ...updated };
     }
     try {
-      await updateBill(updated.id, {
+      await updateBill(updated.id!, {
         title: updated.title,
         participants: updated.participants,
         summary: updated.summary,
@@ -153,36 +128,37 @@ const BillScreen = () => {
       <FlatList
         data={segment === 'active' ? activeBills : archivedBills}
         keyExtractor={(item, index) =>
-            item.id && item.id.trim() !== '' ? item.id : `bill_${index}`
+          item.id?.trim() ? item.id : `bill_${index}`
         }
         renderItem={({ item }) => {
           const bal = balanceForUser(item, currentUser?.uid ?? '');
           const bg =
-            bal > 0
-              ? '#e8ffea'
-              : bal < 0
-              ? '#ffecec'
-              : undefined;
+            bal > 0   ? '#e8ffea'
+          : bal < 0   ? '#ffecec'
+          : undefined;
 
           return (
-          <List.Item
-            title={item.title}
-            description={
-              bal === 0
-                ? undefined
-                : bal > 0
-                ? `You should receive ${bal.toFixed(2)}`
-                : `You owe ${(-bal).toFixed(2)}`
-            }
-            onPress={() => handleBillPress(item)}
-            style={[styles.billItem, bg && { backgroundColor: bg }]}
-            left={props => <List.Icon {...props} icon="file-document-outline" />}
-          />
+            <List.Item
+              title={item.title}
+              description={
+                bal === 0
+                  ? undefined
+                  : bal > 0
+                  ? `You should receive ${bal.toFixed(2)}`
+                  : `You owe ${(-bal).toFixed(2)}`
+              }
+              onPress={() => {
+                setSelectedBill(item);
+                setBillModalVisible(true);
+              }}
+              style={[styles.billItem, bg && { backgroundColor: bg }]}
+              left={props => <List.Icon {...props} icon="file-document-outline" />}
+            />
           );
         }}
       />
 
-      <Button 
+      <Button
         mode="contained"
         onPress={handleCreateBill}
         style={styles.createButton}
@@ -199,6 +175,14 @@ const BillScreen = () => {
         ]}
       />
 
+      {/* Payment button outside the editing modal */}
+      {selectedBill && !billModalVisible && (
+        <BillPaymentButton
+          bill={selectedBill}
+          currentUserUid={currentUser?.uid ?? ''}
+        />
+      )}
+
       <BillDetailModal
         visible={billModalVisible}
         bill={selectedBill}
@@ -210,16 +194,15 @@ const BillScreen = () => {
         onDelete={async id => {
           await deleteBill(id);
           setBillModalVisible(false);
-          }}
+        }}
       />
     </View>
   );
 };
 
-
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  header: { marginBottom: 16 },
+  header: { marginBottom: 16, fontSize: 18, fontWeight: 'bold' },
   billItem: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#ccc',
@@ -230,5 +213,5 @@ const styles = StyleSheet.create({
     width: 180,
   },
 });
-  
+
 export default BillScreen;
