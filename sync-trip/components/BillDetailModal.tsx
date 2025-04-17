@@ -17,7 +17,7 @@ import {
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
 import { getUserById } from '../utils/userAPI';
-
+import BillPaymentButton from './BillPaymentButton';
 
 interface BillDetailModalProps {
   visible: boolean;
@@ -169,6 +169,76 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   };
 
   if (!bill) return null;
+
+  if (bill.archived) {
+    return (
+      <Portal>
+        <Modal
+          visible={visible}
+          onDismiss={onClose}
+          contentContainerStyle={styles.overlay}
+        >
+          <ScrollView contentContainerStyle={styles.modalContainer}>
+            <Text style={styles.title}>Archived Bill</Text>
+  
+            <Text style={styles.detail}>Title: {bill.title}</Text>
+
+            {bill.summary && (
+              <View style={styles.summarySection}>
+                <Text style={styles.summaryTitle}>Summary:</Text>
+                {Object.entries(bill.summary).map(
+                  ([debtorUid, credits]) => (
+                    <View key={debtorUid} style={{ marginBottom: 4 }}>
+                      {Object.entries(
+                        credits as Record<string, number>
+                      ).map(([creditorUid, amount]) => (
+                        <AsyncNameLine
+                          key={debtorUid + creditorUid}
+                          debtorUid={debtorUid}
+                          creditorUid={creditorUid}
+                          amount={amount}
+                          collaborators={collaborators}
+                        />
+                      ))}
+                    </View>
+                  )
+                )}
+              </View>
+            )}
+
+            <Button
+              mode="outlined"
+              textColor="red"
+              style={{ marginTop: 20, width: '100%' }}
+              onPress={() =>
+                Alert.alert('Delete Bill', 'Are you sure?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      onDelete(bill.id);
+                      onClose();
+                    },
+                  },
+                ])
+              }
+            >
+              Delete Bill
+            </Button>
+
+            <Button
+              style={[styles.closeButton, { marginTop: 12 }]}
+              onPress={onClose}
+            >
+              Close
+            </Button>
+          </ScrollView>
+        </Modal>
+      </Portal>
+    );
+  }
+  
 
   return (
     <Portal>
@@ -328,32 +398,16 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           )}
 
           {/* Pay button */}
-          <Button
-            style={styles.payButton}
-            onPress={() => {
-              if (bill) {
-                const updatedSummary = { ...bill.summary };
-                delete updatedSummary[currentUserUid];
-
-                for (const [debtor, debts] of Object.entries(updatedSummary)) {
-                  if (debts[currentUserUid]) {
-                    delete debts[currentUserUid];
-                  }
-                  if (Object.keys(debts).length === 0) {
-                    delete updatedSummary[debtor];
-                  }
-                }
-
-                onSave({
-                  id: bill.id,
-                  summary: updatedSummary,
-                });
+          <BillPaymentButton
+            bill={bill}
+            currentUserUid={currentUserUid}
+            //paypalBusinessAccount={itundefined}
+            onArchive={() => {
+              console.log('BillDetailModal: onArchive prop fired for', bill.id);
               onArchive(bill.id);
-              }
+              onClose();
             }}
-          >
-           Pay
-          </Button>
+          />
 
           {/* Save button */}
           <Button style={styles.saveButton} onPress={handleSave}>
@@ -375,7 +429,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             onPress={() =>
               Alert.alert('Delete Bill','Are you sure?',[
                 { text:'Cancel',style:'cancel' },
-                { text:'Delete',style:'destructive', onPress:()=>bill&&onDelete(bill.id) }
+                { text:'Delete',style:'destructive', onPress:()=>onDelete(bill.id) }
               ])
             }
           >

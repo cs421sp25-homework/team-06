@@ -23,7 +23,15 @@ export const parseBill = (id: string, data: any): Bill => {
   if (!data.title || !data.participants) {
     throw new Error("Invalid bill data: missing required fields");
   }
-  return { id, ...data } as Bill;
+  return {
+    id,
+    title: data.title,
+    participants: data.participants,
+    summary: data.summary || {},
+    currency: data.currency || "USD",
+    isDraft: data.isDraft || false,
+    archived: data.archived || false,
+  };
 };
 
   

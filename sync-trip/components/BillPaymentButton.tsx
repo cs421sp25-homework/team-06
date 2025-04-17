@@ -11,12 +11,14 @@ interface BillPaymentButtonProps {
    * If not provided, redirects to generic PayPal login page.
    */
   paypalBusinessAccount?: string;
+  onArchive?: () => void;
 }
 
 const BillPaymentButton: React.FC<BillPaymentButtonProps> = ({
   bill,
   currentUserUid,
   paypalBusinessAccount,
+  onArchive,
 }) => {
   const currency = bill.currency || 'USD';
 
@@ -31,18 +33,21 @@ const BillPaymentButton: React.FC<BillPaymentButtonProps> = ({
   };
 
   const handlePay = () => {
+    onArchive?.();
     if (paypalBusinessAccount) {
       const amount = computeUserPaymentAmount();
       const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(
         paypalBusinessAccount
       )}&item_name=${encodeURIComponent(bill.title)}&amount=${amount}&currency_code=${currency}`;
-      Linking.openURL(url).catch(err => {
+      Linking.openURL(url)
+      .catch(err => {
         console.error('Failed to open PayPal URL', err);
         Alert.alert('Error', 'Unable to open PayPal. Please try again later.');
       });
     } else {
       // Redirect to generic PayPal login
-      Linking.openURL('https://www.paypal.com/signin').catch(err => {
+      Linking.openURL('https://www.paypal.com/signin')
+      .catch(err => {
         console.error('Failed to open PayPal login', err);
         Alert.alert('Error', 'Unable to open PayPal. Please try again later.');
       });
