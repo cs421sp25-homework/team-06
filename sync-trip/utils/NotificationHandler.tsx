@@ -51,9 +51,9 @@ export async function registerForPushNotificationsAsync() {
     } catch (e: unknown) {
       await handleRegistrationError(`${e}`);
     }
-  } else {
-    await handleRegistrationError('Must use physical device for push notifications');
-  }
+  } //else {
+    //await handleRegistrationError('Must use physical device for push notifications');
+  //}
 }
 
 const NotificationHandler = () => {

@@ -511,7 +511,9 @@ const MapScreen = () => {
                 mode="single"
                 visible={markerDatePickerVisible}
                 onDismiss={() => setMarkerDatePickerVisible(false)}
-                date={markerDate || undefined}
+                previous= 'Previous'
+                next= {'Next', testID="nextMonth"}
+                date={markerDate || tripStartDate}
                 onConfirm={({ date }) => {
                   setMarkerDate(date);
                   setMarkerDatePickerVisible(false);
@@ -571,6 +573,7 @@ const MapScreen = () => {
                 style={styles.input}
               />
               <TextInput
+                testID="editDescription"
                 label="Description"
                 value={description}
                 mode="outlined"
@@ -590,7 +593,7 @@ const MapScreen = () => {
                 mode="single"
                 visible={markerDatePickerVisible}
                 onDismiss={() => setMarkerDatePickerVisible(false)}
-                date={markerDate || undefined}
+                date={markerDate || tripStartDate}
                 onConfirm={({ date }) => {
                   setMarkerDate(date);
                   setMarkerDatePickerVisible(false);
