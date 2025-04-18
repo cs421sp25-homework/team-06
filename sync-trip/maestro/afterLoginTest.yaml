@@ -162,6 +162,35 @@ appId: "com.s370101387.synctrip"
 - tapOn: "Archived"
 - tapOn: "Restore"
 - tapOn: "OK"
+- tapOn: { id: "tab-bill"}
+- tapOn: { id: "createBill"}
+- waitForAnimationToEnd
+- tapOn: "New Bill"
+- tapOn: {id: "billTitle"}
+- eraseText
+- inputText: "Test Bill"
+- tapOn: {id: "currencyButton"}
+- tapOn:
+    above: "EUR"
+    containsDescendants:
+      - "USD"
+- tapOn: {id: "participantAdd"}
+- tapOn: {id: "receiver"}
+- tapOn: {id: "participantAdd"}
+- tapOn: {id: "customSplit"}
+- tapOn: {id: "evenSplit"}
+- tapOn: { id: "enterTotalBill" }
+- inputText: "10"
+- scrollUntilVisible:
+    element:
+      id: "saveBill"
+- tapOn: {id: "saveBill"}
+- tapOn: "Test Bill"
+- tapOn: "Pay with PayPal"
+- back
+- tapOn: "Test Bill"
+- tapOn: "Delete Bill"
+- tapOn: "DELETE"
 - tapOn: {id: "tab-trip"}
 - scrollUntilVisible:
     element:
