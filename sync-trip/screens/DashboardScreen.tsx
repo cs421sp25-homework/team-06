@@ -233,6 +233,7 @@ const DashboardScreen = () => {
               label="Email"
               mode="outlined"
               defaultValue={inviteEmail}
+              autoCapitalize="none"
               onChangeText={setInviteEmail}
             />
           </Dialog.Content>

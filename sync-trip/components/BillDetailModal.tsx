@@ -253,6 +253,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           {/* Title editor */}
           <Text style={styles.label}>Title:</Text>
           <TextInput
+            testID="billTitle"
             mode="outlined"
             style={styles.input}
             value={title}
@@ -266,6 +267,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             onDismiss={() => setMenuVisible(false)}
             anchor={
               <Button
+                testID="currencyButton"
                 mode="outlined"
                 onPress={() => setMenuVisible(true)}
                 style={{ alignSelf: 'flex-start' }}
@@ -299,6 +301,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
           {/* Select collaborator from list */}
           <Button
+            testID="participantAdd"
             mode="contained"
             style={{ marginVertical: 8 }}
             onPress={() => setShowCollaboratorList(!showCollaboratorList)}
@@ -312,6 +315,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                   const selected = participants.includes(item.uid);
                   return (
                     <Button
+                      testID="receiver"
                       key={item.uid}
                       style={[
                         styles.collaboratorItem,
@@ -329,6 +333,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
           <View style={styles.modeContainer}>
             <Button
+              testID="evenSplit"
               mode={distributionMode === 'even' ? 'contained' : 'outlined'}
               style={styles.modeButton}
               onPress={() => switchMode('even')}
@@ -336,6 +341,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               Even Split
             </Button>
             <Button
+              testID="customSplit"
               mode={distributionMode === 'custom' ? 'contained' : 'outlined'}
               onPress={() => switchMode('custom')}
               style={styles.modeButton}
@@ -348,6 +354,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             <>
               <Text style={styles.label}>Total Amount:</Text>
               <TextInput
+                testID="enterTotalBill"
                 style={styles.input}
                 placeholder="Enter total amount"
                 keyboardType="numeric"
@@ -399,6 +406,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
           {/* Pay button */}
           <BillPaymentButton
+            testID="payBill"
             bill={bill}
             currentUserUid={currentUserUid}
             //paypalBusinessAccount={itundefined}
@@ -410,7 +418,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           />
 
           {/* Save button */}
-          <Button style={styles.saveButton} onPress={handleSave}>
+          <Button testID="saveBill" style={styles.saveButton} onPress={handleSave}>
             Save Changes
           </Button>
 

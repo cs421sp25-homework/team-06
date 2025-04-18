@@ -204,6 +204,7 @@ const BillScreen = () => {
       )}
 
       <Button
+        testID="createBill"
         mode="contained"
         onPress={handleCreateBill}
         style={styles.createButton}

@@ -83,7 +83,7 @@ const TripCreationScreen = () => {
           startDate={startDate}
           endDate={endDate}
           onConfirm={onConfirm}
-          validRange={{ startDate: new Date(new Date().setDate(new Date().getDate() + 1)) }}
+          validRange={{ startDate: new Date(new Date().setDate(new Date().getDate())) }}
         />
         {/*</Portal>*/}
 

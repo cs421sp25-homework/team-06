@@ -70,7 +70,7 @@ I have added the firebase information file "google-services.json" into "AndroidA
 ## E2E Test
 
 Since we are using expo now, we decided to use Maestro to do E2E test. We setup the flow as shown in
-[maestro-test.yaml](./maestro/maestro-test.yaml).
+[maestro-test.yaml](./sync-trip/.eas/build/maestro-test.yaml).
 
 ```shell
 npm install -g eas-cli
@@ -81,7 +81,7 @@ eas build:configure
 eas build --profile maestro-test
 ```
 
-Or we can test the app locally
+Or we can test the app locally by running [afterLoginTest.yaml](./sync-trip/maestro/afterLoginTest.yaml).
 
 ```shell
 brew install maestro
@@ -90,7 +90,7 @@ npm install -g eas-cli
 eas init
 eas build:configure --platform android
 npx expo run:android
-maestro test ./maestro/dashboardScreen_test.yaml
+maestro test ./maestro/afterLoginTest.yaml
 ```
 
 After running commands above, we can check out the result on Expo portal.
@@ -98,7 +98,7 @@ After running commands above, we can check out the result on Expo portal.
 ## Automated Test
 
 For automated test, we run the workflow in Github Actions. In the yaml file, we run the E2E test
-on Expo portal.
+on Expo portal, and the test is configured in [automated_test.yml](.github/workflows/automated_test.yml)
 
 To trigger the Automated Test, we run the yaml file when create the pull request, so we can merge
 branched in to the main branch with more confidence.
