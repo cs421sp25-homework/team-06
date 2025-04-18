@@ -1,4 +1,5 @@
 export interface Bill {
+    id: string;
     participants: string[];
     title: string;
     currency: string;

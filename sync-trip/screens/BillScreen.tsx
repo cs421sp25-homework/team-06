@@ -17,7 +17,6 @@ import { getUserById } from "../utils/userAPI";
 import { Bill } from "../types/Bill";
 import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
-import BillPaymentButton from "../components/BillPaymentButton";
 import { Collaborator } from "../types/User";
 
 const BillScreen = () => {
@@ -30,11 +29,17 @@ const BillScreen = () => {
   const [billModalVisible, setBillModalVisible] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [collaboratorsFull, setCollaboratorsFull] = useState<Collaborator[]>([]);
-  const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
   const [segment, setSegment] = useState<'active' | 'archived'>('active');
 
-  const activeBills   = bills.filter(b => !archivedIds.has(b.id));
-  const archivedBills = bills.filter(b => archivedIds.has(b.id));
+  const activeBills   = bills.filter(b => !b.archived);
+  const archivedBills = bills.filter(b => b.archived);
+
+  useEffect(() => {
+    console.log('🔔 [BillScreen] bills state:', bills.map(b => ({
+      id: b.id,
+      archived: b.archived,
+    })), ' segment=', segment);
+  }, [bills, segment]);
 
   useEffect(() => {
     async function fetchCollaborators() {
@@ -58,9 +63,17 @@ const BillScreen = () => {
     fetchCollaborators();
   }, [currentTrip]);
 
+  const handleBillPress = (id: string) => {
+    const b = bills.find(x => x.id === id) ?? null;
+    setSelectedBill(b);
+    setBillModalVisible(true);
+  };
+
   const handleArchive = async (id: string) => {
-    setArchivedIds(prev => new Set(prev).add(id));
+    console.log('🔔 BillScreen.handleArchive called with id', id);
     await archiveBill(id);
+    console.log('🔔 BillScreen.handleArchive: archiveBill resolved for id', id);
+    setSegment('archived');
     setBillModalVisible(false);
   };
 
@@ -98,11 +111,6 @@ const BillScreen = () => {
     }
   };
 
-  const handleBillPress = (bill: Bill) => {
-    setSelectedBill(bill);
-    setBillModalVisible(true);
-  };
-
   const handleBillSave = async (updated: Partial<Bill>) => {
     if (!updated.id && selectedBill) {
       updated = { id: selectedBill.id, ...updated };
@@ -124,39 +132,76 @@ const BillScreen = () => {
       <Text style={styles.header}>
         Bill Screen for Trip: {currentTrip?.title || "No Trip Selected"}
       </Text>
+      
+      {segment === 'active' ? (
+        <FlatList
+          key="active"
+          data={activeBills}
+          extraData={[bills]}
+          keyExtractor={(item, index) =>
+            item.id?.trim() ? item.id : `bill_${index}`
+          }
+          renderItem={({ item }) => {
+            const bal = balanceForUser(item, currentUser?.uid ?? '');
+            const bg =
+              bal > 0   ? '#e8ffea'
+            : bal < 0   ? '#ffecec'
+            : undefined;
 
-      <FlatList
-        data={segment === 'active' ? activeBills : archivedBills}
-        keyExtractor={(item, index) =>
-          item.id?.trim() ? item.id : `bill_${index}`
-        }
-        renderItem={({ item }) => {
-          const bal = balanceForUser(item, currentUser?.uid ?? '');
-          const bg =
-            bal > 0   ? '#e8ffea'
-          : bal < 0   ? '#ffecec'
-          : undefined;
+            return (
+              <List.Item
+                title={item.title}
+                description={
+                  bal === 0
+                    ? undefined
+                    : bal > 0
+                    ? `You should receive ${bal.toFixed(2)}`
+                    : `You owe ${(-bal).toFixed(2)}`
+                }
+                onPress={() => {
+                  handleBillPress(item.id)
+                }}
+                style={[styles.billItem, bg && { backgroundColor: bg }]}
+                left={props => <List.Icon {...props} icon="file-document-outline" />}
+              />
+            );
+          }}
+        />
+      ) : (
+        <FlatList
+          key="archived"
+          data={archivedBills}
+          extraData={[bills]}
+          keyExtractor={(item, index) =>
+            item.id?.trim() ? item.id : `bill_${index}`
+          }
+          renderItem={({ item }) => {
+            const bal = balanceForUser(item, currentUser?.uid ?? '');
+            const bg =
+              bal > 0   ? '#e8ffea'
+            : bal < 0   ? '#ffecec'
+            : undefined;
 
-          return (
-            <List.Item
-              title={item.title}
-              description={
-                bal === 0
-                  ? undefined
-                  : bal > 0
-                  ? `You should receive ${bal.toFixed(2)}`
-                  : `You owe ${(-bal).toFixed(2)}`
-              }
-              onPress={() => {
-                setSelectedBill(item);
-                setBillModalVisible(true);
-              }}
-              style={[styles.billItem, bg && { backgroundColor: bg }]}
-              left={props => <List.Icon {...props} icon="file-document-outline" />}
-            />
-          );
-        }}
-      />
+            return (
+              <List.Item
+                title={item.title}
+                description={
+                  bal === 0
+                    ? undefined
+                    : bal > 0
+                    ? `You should receive ${bal.toFixed(2)}`
+                    : `You owe ${(-bal).toFixed(2)}`
+                }
+                onPress={() => {
+                  handleBillPress(item.id)
+                }}
+                style={[styles.billItem, bg && { backgroundColor: bg }]}
+                left={props => <List.Icon {...props} icon="file-document-outline" />}
+              />
+            );
+          }}
+        />
+      )}
 
       <Button
         mode="contained"
@@ -174,14 +219,6 @@ const BillScreen = () => {
           { value: 'archived', label: 'Archived' },
         ]}
       />
-
-      {/* Payment button outside the editing modal */}
-      {selectedBill && !billModalVisible && (
-        <BillPaymentButton
-          bill={selectedBill}
-          currentUserUid={currentUser?.uid ?? ''}
-        />
-      )}
 
       <BillDetailModal
         visible={billModalVisible}
