@@ -172,8 +172,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
   return (
     <Portal>
-    <Modal 
-      visible={visible} 
+    <Modal
+      visible={visible}
       onDismiss={onClose}
       contentContainerStyle={styles.overlay}
     >
@@ -323,13 +323,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                     )
                   )}
                 </View>
-              ))} 
+              ))}
             </View>
           )}
 
           {/* Pay button */}
-          <Button 
-            style={styles.payButton} 
+          <Button
+            style={styles.payButton}
             onPress={() => {
               if (bill) {
                 const updatedSummary = { ...bill.summary };
@@ -361,8 +361,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           </Button>
 
           {/* Close button */}
-          <Button 
-            style={styles.closeButton} 
+          <Button
+            style={styles.closeButton}
             onPress={onClose}
           >
             Close
