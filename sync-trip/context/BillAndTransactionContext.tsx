@@ -67,6 +67,8 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
   const createBill = async (bill: Bill): Promise<string> => {
     if (!currentTripId) throw new Error("No current trip available.");
     const newId = await apiCreateBill(currentTripId, bill);
+    //send notification for the new created bill
+    
     return newId;
   };
 
@@ -79,6 +81,7 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
           cleanData[key] = value;
       }
     }
+    //send notification for the updated bill
 
     await apiUpdateBill(currentTripId, billId, cleanData);
   };
