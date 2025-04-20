@@ -1,6 +1,6 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { collection, doc, onSnapshot } from "@react-native-firebase/firestore";
-import { firestore } from "../utils/firebase";
+import {firestore, getUserDocRef} from "../utils/firebase";
 import { Bill } from "../types/Bill";
 import {
   createBill as apiCreateBill,
@@ -68,7 +68,9 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
     if (!currentTripId) throw new Error("No current trip available.");
     const newId = await apiCreateBill(currentTripId, bill);
     //send notification for the new created bill
-    
+    bill.participants.forEach((participant) => {
+
+    })
     return newId;
   };
 
