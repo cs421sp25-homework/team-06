@@ -23,3 +23,8 @@ export interface DestinationInfo {
     rating?: string | null,
     openingHours?: string | null,
 }
+
+export interface LatLng {
+    latitude: number,
+    longitude: number,
+};

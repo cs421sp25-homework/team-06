@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
-import { DestinationInfo, Destination } from "../types/Destination";
+import polyline from '@mapbox/polyline'
+import { DestinationInfo, Destination, LatLng } from "../types/Destination";
 
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
 // Convert formatted address → latitude & longitude using `expo-location`
@@ -10,7 +11,7 @@ export const getCoordinatesFromAddress = async (address: string): Promise<{ lati
 
         if (geocodeResults.length > 0) {
             const { latitude, longitude } = geocodeResults[0];
-            return { latitude, longitude };
+            return { latitude: latitude, longitude: longitude };
         } else {
             console.error("[Geocode] No results found for address:", address);
             return null;
@@ -94,3 +95,38 @@ export const getInfoFromPlaceId = async (placeId: string): Promise<DestinationIn
         return null;
     }
 };
+
+export async function getRoute(
+    origin: LatLng,
+    destination: LatLng,
+    travelMode: 'DRIVE' | 'WALK' | 'BICYCLE' | 'TRANSIT' = 'DRIVE',
+    departureTimeSeconds?: number     // optional: seconds‑since‑epoch
+): Promise<string /* encoded polyline */> {
+    const body = {
+        origin: { location: { latLng: origin } },
+        destination: { location: { latLng: destination } },
+        travelMode,
+        ...(departureTimeSeconds && { routingPreference: 'TRAFFIC_AWARE', departureTime: { seconds: departureTimeSeconds } })
+    }
+
+    const resp = await fetch(
+        'https://routes.googleapis.com/directions/v2:computeRoutes',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // ideally call this via a secured Cloud Function or use an access token
+                Authorization: `Bearer ${GOOGLE_API_KEY}`
+            },
+            body: JSON.stringify(body)
+        }
+    )
+    const { routes } = await resp.json()
+    return routes[0].polyline.encodedPolyline
+}
+
+export function decodePolyline(encoded: string): LatLng[] {
+    return polyline
+        .decode(encoded)
+        .map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
+}
