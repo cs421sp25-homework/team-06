@@ -70,7 +70,7 @@ export async function sendBillUpdateNotification(bill:Bill) {
   }));
 
   // Send notifications to each token via Expo's push endpoint.
-  sendMessages(messages);
+  await sendMessages(messages);
 
 }
 
@@ -111,7 +111,7 @@ export async function sendBillCreateNotification(bill:Bill) {
   }));
 
   // Send notifications to each token via Expo's push endpoint.
-  sendMessages(messages);
+  await sendMessages(messages);
 
 }
 
@@ -165,7 +165,7 @@ export async function sendTripUpdateNotification(
   }));
 
   // Send notifications to each token via Expo's push endpoint.
-  sendMessages(messages);
+  await sendMessages(messages);
 }
 
 
