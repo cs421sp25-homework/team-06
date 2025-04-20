@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   FlatList,
@@ -132,11 +132,47 @@ const BillScreen = () => {
     }
   };
 
+  const currentUserUid = currentUser?.uid ?? "";
+  const debtSummary = useMemo(() => {
+    const summary: Record<string, number> = {};
+    collaboratorsFull.forEach(c => { summary[c.uid] = 0 });
+  
+    activeBills.forEach(bill => {
+      Object.entries(bill.summary || {}).forEach(([debtor, credits]) => {
+        Object.entries(credits as Record<string, number>).forEach(([creditor, amount]) => {
+          if (debtor === currentUserUid && creditor !== currentUserUid) {
+            summary[creditor] -= amount;
+          } else if (creditor === currentUserUid && debtor !== currentUserUid) {
+            summary[debtor] += amount;
+          }
+        });
+      });
+    });
+  
+    return summary;
+  }, [activeBills, collaboratorsFull, currentUserUid]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>
         Bill Screen for Trip: {currentTrip?.title || "No Trip Selected"}
       </Text>
+
+      {Object.values(debtSummary).some(v => v !== 0) && (
+        <View style={styles.debtSummaryContainer}>
+          {Object.entries(debtSummary).map(([uid, amt]) => {
+            if (amt === 0) return null;
+            const name = collaboratorsFull.find(c => c.uid === uid)?.name || uid;
+            return (
+              <Text key={uid} style={styles.debtSummaryText}>
+                {amt < 0
+                  ? `You owe ${(-amt).toFixed(2)} to ${name}`
+                  : `${name} owes you ${amt.toFixed(2)}`}
+              </Text>
+            );
+          })}
+        </View>
+      )}
       
       {segment === 'active' ? (
         <FlatList
