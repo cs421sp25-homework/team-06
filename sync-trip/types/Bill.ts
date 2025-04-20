@@ -6,6 +6,8 @@ export interface Bill {
     summary: Summary;
     isDraft?: boolean;
     archived?: boolean;
+    description?: string;
+    category?: "food"|"transport"|"lodging"|"activity"|string;
 }
 
 export interface Summary {
