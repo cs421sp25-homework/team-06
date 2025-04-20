@@ -18,6 +18,7 @@ import { Bill } from "../types/Bill";
 import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
 import { Collaborator } from "../types/User";
+import {sendBillCreateNotification, sendBillUpdateNotification} from "../utils/NotificationService";
 
 const BillScreen = () => {
   // Retrieve bills and transactions from the BillTransactionContext
@@ -104,7 +105,9 @@ const BillScreen = () => {
       archived: false,
     } as Omit<Bill, "id">;
     try {
-      await createBill(newBill);
+      const billId = await createBill(newBill);
+      //send new bill notification
+      await sendBillCreateNotification({id:billId, ...newBill});
       setBillModalVisible(true);
     } catch (error) {
       console.error("Failed to create new bill:", error);
@@ -122,6 +125,8 @@ const BillScreen = () => {
         summary: updated.summary,
         currency: updated.currency,
       });
+      //send bill update notification
+      await sendBillUpdateNotification(updated as Bill);
     } catch (error) {
       console.error("Failed to update bill:", error);
     }

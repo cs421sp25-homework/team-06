@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: false,
+    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -65,7 +65,7 @@ const NotificationHandler = () => {
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notification Received:', notification);
-      // Optionally, update state or trigger UI changes
+      // update state or trigger UI changes
       Alert.alert(
         notification.request.content.title || 'Notification',
         notification.request.content.body || ''
