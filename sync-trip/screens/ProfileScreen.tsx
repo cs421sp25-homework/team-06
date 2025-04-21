@@ -1,5 +1,5 @@
-import {auth, getUserDocRef} from "../utils/firebase";
-import {deleteDoc, onSnapshot, serverTimestamp, setDoc} from '@react-native-firebase/firestore';
+import {auth, getUserDocRef, app, firestore} from "../utils/firebase";
+import {deleteDoc, doc, onSnapshot, serverTimestamp, setDoc} from '@react-native-firebase/firestore';
 import React, {useEffect, useState} from 'react';
 import {FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Avatar, Button, Dialog, Divider, Menu, Paragraph, Portal, Snackbar, Text, TextInput,} from 'react-native-paper';
@@ -10,10 +10,15 @@ import {useUser} from "../context/UserContext";
 import {useTrip} from "../context/TripContext";
 
 
-import storage from '@react-native-firebase/storage';
-import firestore from '@react-native-firebase/firestore';
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from '@react-native-firebase/storage';
 import {launchImageLibrary} from 'react-native-image-picker';
 import { ensureGalleryPermission } from '../utils/permissions';
+import * as FileSystem from 'expo-file-system';
 
 const ProfileScreen = () => {
   const [name, setName] = useState('');
@@ -34,6 +39,8 @@ const ProfileScreen = () => {
 
   const {logout: userLogout} = useUser();
   const {logout: tripLogout} = useTrip();
+
+  const storage = getStorage(app);
 
   const [savedProfile, setSavedProfile] = useState({
     name: '',
@@ -114,31 +121,36 @@ const ProfileScreen = () => {
       const { uri } = res.assets[0];
       console.log('Picked URI:', uri);
 
+      // fetch the local file into a Blob
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      console.log('Base64 length:', base64.length);
+
+
       // Upload to Firebase Storage
       const uid = auth.currentUser!.uid;
-      const ref = storage().ref(`profilePictures/${uid}.jpg`);
-      const task = ref.putFile(uri);
+      const ref = storage.ref(`profilePictures/${uid}.jpg`);
+      const snapshot = await ref.putString(base64, 'base64', {
+        contentType: 'image/jpeg',
+      });
+      console.log('Upload complete:', snapshot.metadata.fullPath);
 
-      task.on(
-        'state_changed',
-        snap => console.log(`Uploading: ${snap.bytesTransferred}/${snap.totalBytes}`),
-        err => { throw err; },
-        async () => {
-          console.log('Upload complete');
-          const downloadURL = await ref.getDownloadURL();
-          console.log('Download URL:', downloadURL);
+      const downloadURL = await ref.getDownloadURL();
+      console.log('Download URL:', downloadURL);
 
-          await firestore()
-            .collection('users')
-            .doc(uid)
-            .set({ profilePicture: downloadURL }, { merge: true });
-
-          setProfilePicture(downloadURL);
-          setError('Profile photo updated!');
-          setSnackbarVisible(true);
-          setIsEditing(false);
-        }
+      // 5️⃣ write into Firestore
+      await firestore.collection('users').doc(uid).set(
+        { profilePicture: downloadURL },
+        { merge: true }
       );
+      console.log('Firestore write complete');
+
+      // update UI
+      setProfilePicture(downloadURL);
+      setError('Profile photo updated!');
+      setSnackbarVisible(true);
+      setIsEditing(false);
     } catch (e: any) {
       console.error('Error picking/uploading photo', e);
       setError('Could not upload photo: ' + e.message);
