@@ -38,11 +38,11 @@ appId: "com.s370101387.synctrip"
 - tapOn:
     below: "May 2025"
     containsDescendants:
-      - "14"
+      - text: "14"
 - tapOn:
     below: "May 2025"
     containsDescendants:
-      - "17"
+      - text: "17"
 - waitForAnimationToEnd
 - tapOn: "Save"
 - waitForAnimationToEnd
@@ -110,11 +110,11 @@ appId: "com.s370101387.synctrip"
 - tapOn:
     below: "May 2025"
     containsDescendants:
-      - "13"
+      - text: "13"
 - tapOn:
     below: "May 2025"
     containsDescendants:
-      - "18"
+      - text: "18"
 - waitForAnimationToEnd
 - tapOn: "Save"
 - waitForAnimationToEnd
@@ -169,6 +169,8 @@ appId: "com.s370101387.synctrip"
 - tapOn: {id: "billTitle"}
 - eraseText
 - inputText: "Test Bill"
+- tapOn: "Select…"
+- tapOn: "food"
 - tapOn: {id: "currencyButton"}
 - tapOn:
     above: "EUR"
