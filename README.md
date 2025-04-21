@@ -170,9 +170,15 @@ npx expo run:android
 maestro test ./maestro/afterLoginTest.yaml
 ```
 
-Continuous integration is configured in `.github/workflows/automated_test.yml`.
+This will run the test suite of YAML files stored in `./maestro`. Specifically:
+
+1. `./maestro/afterLoginTest.yaml` checks the main flow of Sync Trip, including trip CRUD, multi-user editing, map interactions and billing system;
+2. `./maestro/loginScreen_test.yaml` checks the login functions, including password reset and email verification;
+3. `./maestro/signUpScreen_test.yaml` checks the sign up function based on Firebase email service.
 
 ## Automated Test
+
+Continuous integration is configured in `.github/workflows/automated_test.yml`.
 
 GitHub Actions triggers the Maestro E2E suite on pull requests via `.github/workflows/automated_test.yml`.
 
