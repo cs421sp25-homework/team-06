@@ -530,7 +530,7 @@ const CurrentTripScreen = () => {
                               setEditingChecklistText(item.text);
                             }}
                           >
-                            {item.text}
+                            {item.text || "New To-Do Item"}
                           </Text>
                           <TouchableOpacity
                             style={styles.editButton}
@@ -556,11 +556,11 @@ const CurrentTripScreen = () => {
                   mode="outlined"
                   onPress={() => {
                     console.log("Add Checklist Item pressed for destination", destination.id);
-                    addChecklistItem(destination.id, "New Checklist Item", false);
+                    addChecklistItem(destination.id, "");
                   }}
                   style={styles.addChecklistButton}
                 >
-                  Add Checklist Item
+                  Create To-Dos
                 </Button>
               </View>
             </View>
