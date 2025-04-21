@@ -45,21 +45,21 @@ const BillScreen = () => {
 
   useEffect(() => {
     async function fetchCollaborators() {
-      if (currentTrip?.collaborators) {
-        try {
-          const fetched: Collaborator[] = await Promise.all(
-            currentTrip.collaborators.map(async (uid: string) => {
-              const user = await getUserById(uid);
-              return { uid, name: user.name || uid } as Collaborator;
-            })
-          );
-          setCollaboratorsFull(fetched);
-        } catch (error) {
+      if (!currentTrip) return;
+
+      const uidSet = new Set<string>(currentTrip.collaborators || []);
+      if (currentTrip.ownerId) uidSet.add(currentTrip.ownerId);
+      try {
+        const fetched: Collaborator[] = await Promise.all(
+          Array.from(uidSet).map(async uid => {
+            const user = await getUserById(uid);
+            return { uid, name: user.name || uid };
+          })
+        );
+        setCollaboratorsFull(fetched);
+      } catch (error) {
           console.error("Error fetching collaborators:", error);
           setCollaboratorsFull([]);
-        }
-      } else {
-        setCollaboratorsFull([]);
       }
     }
     fetchCollaborators();
@@ -125,9 +125,11 @@ const BillScreen = () => {
     try {
       await updateBill(updated.id!, {
         title: updated.title,
-        participants: updated.participants,
-        summary: updated.summary,
-        currency: updated.currency,
+        participants: updated.participants ?? selectedBill?.participants ?? [],
+        summary: updated.summary ?? selectedBill?.summary ?? {},
+        currency: updated.currency ?? selectedBill?.currency ?? 'USD',
+        description: updated.description ?? selectedBill?.description ?? '',
+        category: updated.category ?? selectedBill?.category ?? '',
       });
       //send bill update notification
       await sendBillUpdateNotification(updated as Bill);

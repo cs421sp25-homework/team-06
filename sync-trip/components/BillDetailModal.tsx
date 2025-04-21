@@ -14,6 +14,7 @@ import {
   Portal,
   Menu,
   Dialog,
+  Checkbox
 } from 'react-native-paper';
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
@@ -108,7 +109,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [distributionMode, setDistributionMode] = useState<'even' | 'custom'>('even');
   const [evenTotal, setEvenTotal] = useState<string>('');
   const [customAmounts, setCustomAmounts] = useState<{ [uid: string]: string }>({});
-  const [showCollaboratorList, setShowCollaboratorList] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [currencyMenuVisible, setCurrencyMenuVisible] = useState(false);
@@ -117,7 +117,9 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [category, setCategory] = useState<Bill['category']>('');
   const [customCategoryDialogVisible, setCustomCategoryDialogVisible] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
-
+  const [addParticipantsDialogVisible, setAddParticipantsDialogVisible] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+  
 
   useEffect(() => {
     if (bill) {
@@ -130,6 +132,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       setCategory(bill.category   || '');
     }
   }, [bill]);
+
+  useEffect(() => {
+    if (!bill) return;      
+    const updated = new Set(bill.participants || []);
+    collaborators.forEach(c => updated.add(c.uid));
+    setParticipants(Array.from(updated));
+  }, [bill, collaborators]);
 
   const switchMode = (mode: 'even' | 'custom') => {
     setDistributionMode(mode);
@@ -149,22 +158,27 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       return {};
     }
     const otherParticipants = participants.filter(uid => uid !== currentUserUid);
-    const share = total / (otherParticipants.length || 1);
-    return { [currentUserUid]: otherParticipants.reduce((acc, uid) => {
-      acc[uid] = share;
-      return acc;
-    }, {} as { [key: string]: number }) };
+    const share = total / participants.length;
+
+    const summary: { [debtor: string]: { [creditor: string]: number } } = {};
+
+    otherParticipants.forEach(uid => {
+      summary[uid] = { [currentUserUid]: share };
+    });
+    return summary;
   };
 
   const computeCustomSummary = (): { [debtor: string]: { [creditor: string]: number } } => {
     const otherParticipants = participants.filter(uid => uid !== currentUserUid);
-    return { [currentUserUid]: otherParticipants.reduce((acc, uid) => {
+
+    const summary: { [debtor: string]: { [creditor: string]: number } } = {};
+    otherParticipants.forEach(uid => {
       const amt = parseFloat(customAmounts[uid] || '0');
       if (!isNaN(amt)) {
-        acc[uid] = amt;
+        summary[uid] = { [currentUserUid]: amt };
       }
-      return acc;
-    }, {} as { [key: string]: number }) };
+    });
+    return summary;
   };
 
 
@@ -429,32 +443,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             testID="participantAdd"
             mode="contained"
             style={{ marginVertical: 8 }}
-            onPress={() => setShowCollaboratorList(!showCollaboratorList)}
+            onPress={() => {
+              setSelectedParticipants(new Set(participants));
+              setAddParticipantsDialogVisible(true);
+            }}
           >
           Add/Remove Participants
           </Button>
-          {showCollaboratorList && (
-            <View style={{ height: 150, width: '100%' }}>
-              <ScrollView keyboardShouldPersistTaps="handled">
-                {collaborators.map((item) => {
-                  const selected = participants.includes(item.uid);
-                  return (
-                    <Button
-                      testID="receiver"
-                      key={item.uid}
-                      style={[
-                        styles.collaboratorItem,
-                        selected && { backgroundColor: '#cceeff' },
-                      ]}
-                      onPress={() => handleToggleParticipant(item.uid)}
-                    >
-                      {item.name}
-                    </Button>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
 
           <View style={styles.modeContainer}>
             <Button
@@ -490,9 +485,14 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           ) : (
             <>
               <Text style={styles.label}>Enter amount for each participant:</Text>
-              {participants.map((uid) => (
+              
+              {participants
+                .filter(uid => uid !== currentUserUid)
+                .map((uid) => (
                 <View key={uid} style={styles.customRow}>
-                  <Text style={styles.customLabel}>{collaborators.find(c => c.uid === uid)?.name || uid}:</Text>
+                  <Text style={styles.customLabel}>
+                    {collaborators.find(c => c.uid === uid)?.name || uid}
+                    </Text>
                   <TextInput
                     style={styles.customInput}
                     placeholder="Amount"
@@ -600,6 +600,55 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       </Dialog.Actions>
     </Dialog>
 
+    <Dialog
+      visible={addParticipantsDialogVisible}
+      onDismiss={() => setAddParticipantsDialogVisible(false)}
+    >
+      <Dialog.Title>Select Participants</Dialog.Title>
+      <Dialog.ScrollArea style={{ maxHeight: 300 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true}>
+          {collaborators.map((item) => (
+            <Checkbox.Item
+              key={item.uid}
+              testID={`participantCheckbox-${item.uid}`}
+              label={item.name}
+              status={selectedParticipants.has(item.uid) ? 'checked' : 'unchecked'}
+              onPress={() => {
+                setSelectedParticipants(prev => {
+                  const newSet = new Set(prev);
+                  if (newSet.has(item.uid)) {
+                    newSet.delete(item.uid);
+                  } else {
+                    newSet.add(item.uid);
+                  }
+                  return newSet;
+                });
+              }}
+            />
+          ))}
+        </ScrollView>
+      </Dialog.ScrollArea>
+
+      <Dialog.Actions>
+        <Button
+          testID="cancelParticipantSelection"
+          onPress={() => setAddParticipantsDialogVisible(false)}
+        >
+          Cancel
+        </Button>
+        <Button
+          testID="confirmParticipantSelection"
+          onPress={() => {
+            setParticipants(Array.from(selectedParticipants));
+            setAddParticipantsDialogVisible(false);
+          }}
+        >
+          Confirm
+        </Button>
+      </Dialog.Actions>
+    </Dialog>
+
+
     </Portal>
 
   );
@@ -634,18 +683,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginVertical: 4,
   },
-  participantsButton: {
-    backgroundColor: '#88bbee',
-    padding: 10,
-    borderRadius: 4,
-    marginVertical: 8,
-  },
-  participantsButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
   collaboratorList: {
-    maxHeight: 150,
+    maxHeight: 300,
     width: '100%',
     marginVertical: 8,
     borderWidth: 1,
@@ -672,15 +711,13 @@ const styles = StyleSheet.create({
   },
   modeContainer: {
     flexDirection: 'row',
-    alignSelf: 'stretch',
-    justifyContent: 'space-around',
-    marginVertical: 8,
+    marginVertical: 12,
+    justifyContent: 'space-between',
+    width: '100%'
   },
   modeButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#007aff',
-    borderRadius: 4,
+    flex: 1,
+    marginHorizontal: 4,
   },
   modeButtonSelected: {},
   summarySection: {
@@ -698,10 +735,6 @@ const styles = StyleSheet.create({
   },
   payButton: {
     backgroundColor: '#007aff',
-    padding: 12,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
     marginTop: 20,
   },
   payButtonText: {
@@ -710,10 +743,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#00aaff',
-    padding: 12,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
     marginTop: 12,
   },
   saveButtonText: {
