@@ -129,6 +129,44 @@ Scan the QR code or enter the URL after building with Expo.
 8. User can delete a destination on the current trip screen.
 9. Differnet Users can edit the trip and destinations together **in real-time**, they can see the updated changes with no latency.
 
+## Completed Features in Iteration 3
+
+1. Notices Board
+Group members can post and view announcements in a shared “Notices” screen, with real‑time Firestore syncing and author‑based permissions.
+2. Itinerary Update Notifications
+Integrated Firebase Cloud Messaging and Cloud Functions so that any change to the trip itinerary triggers a push notification to all participants.
+3. Calendar Sync / .ics Export
+Users can export their trip itinerary as an iCalendar (.ics) file via a Cloud Function, then download/import it into external calendar apps.
+4. Trip History & Archiving
+Added a status field (active/archived) to trip documents and a UI toggle, enabling users to archive or delete past trips and filter between active vs. archived.
+5. Search & Mark Points of Interest
+Connected Google Places API to let users search for restaurants, attractions, hotels, or gas stations and place persistent markers on the map.
+6. Visual Collaboration Indicators
+Map markers now display distinct colors or user avatars indicating who added each location, improving multi‑user transparency.
+7. Daily Weather + Itinerary Summaries
+Scheduled Cloud Functions fetch weather forecasts and itinerary details each morning, then send daily push notifications; a dedicated “Daily Summary” screen allows manual review.
+8. Detailed Destination Information
+Tapping a marker opens a detail view populated via Places API (key attractions, local tips, hours), so users get rich destination info without relying on user reviews.
+
+## Completed Features in Iteration 4
+
+1. Shared Expense Creation & Splitting
+Users can create expenses in the trip, assign amounts to members, and split bills automatically, with data stored in Firestore.
+2. Activity‑Level & Total Cost Views
+An Expense screen summarizes per‑activity costs and aggregates total trip spending, updated in real time.
+3. Final Payment Summary
+At trip end, the app generates a “Who Owes Whom” view showing each member’s net balance and suggested settlements.
+4. Historical Cost & Itinerary Review
+Archived trips include a detailed cost history alongside the original itinerary, allowing users to revisit past plans and expenses.
+5. Itinerary Archiving
+Past itineraries are moved out of the active dashboard into an “Archived Trips” section, keeping the main view uncluttered.
+6. Real‑Time Google Maps Interaction
+Enhanced map component integrates live traffic data and route adjustments, so users can plan on the fly based on current conditions.
+7. Expense Update Notifications
+Firebase Cloud Functions now also trigger push notifications when shared expenses are added or modified, keeping everyone in sync.
+
+___
+
 ## Tech Stacks
 
 1. **Framework: React Native (with React Native CLI)**
