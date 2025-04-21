@@ -39,6 +39,7 @@ const ProfileScreen = () => {
 
   const {logout: userLogout} = useUser();
   const {logout: tripLogout} = useTrip();
+  const [paypalEmail, setPaypalEmail] = useState('');
 
   const storage = getStorage(app);
 
@@ -47,6 +48,7 @@ const ProfileScreen = () => {
     bio: '',
     travelPreferences: '',
     profilePicture: null,
+    paypalEmail: '',
   });
 
   const availableImages = [
@@ -80,12 +82,14 @@ const ProfileScreen = () => {
           setBio(data?.bio || '');
           setTravelPreferences(data?.travelPreferences || '');
           setProfilePicture(data?.profilePicture || null);
+          setPaypalEmail(data?.paypalEmail || '');
 
           setSavedProfile({
             name: data?.name || '',
             bio: data?.bio || '',
             travelPreferences: data?.travelPreferences || '',
             profilePicture: data?.profilePicture || null,
+            paypalEmail: data?.paypalEmail || '',
           });
 
           if (data?.name) {
@@ -166,6 +170,13 @@ const ProfileScreen = () => {
       return;
     }
 
+    if (paypalEmail.trim() !== '' &&
+        !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(paypalEmail)) {
+      setError('Please enter a valid PayPal email');
+      setSnackbarVisible(true);
+      return;
+    }
+
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -180,10 +191,11 @@ const ProfileScreen = () => {
         bio,
         travelPreferences,
         profilePicture,
+        paypalEmail: paypalEmail.trim() || null,
         updatedAt: serverTimestamp()
       }, {merge: true});
 
-      setSavedProfile({name, bio, travelPreferences, profilePicture});
+      setSavedProfile({name, bio, travelPreferences, profilePicture, paypalEmail,});
       setError('Profile saved successfully!'); //TODO: coding style: change setError to showMessage.
       setSnackbarVisible(true);
       setIsEditing(false);
@@ -200,6 +212,7 @@ const ProfileScreen = () => {
     setTravelPreferences(savedProfile.travelPreferences);
     setProfilePicture(savedProfile.profilePicture);
     setIsEditing(false);
+    setPaypalEmail(savedProfile.paypalEmail);
   };
 
   const handleLogout = async () => {
@@ -281,6 +294,17 @@ const ProfileScreen = () => {
                 style={styles.input}
                 multiline
               />
+
+              <TextInput
+                  testID="paypalEmail"
+                  label="PayPal Email (optional)"
+                  value={paypalEmail}
+                  onChangeText={setPaypalEmail}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+              />
+
               {/* Travel Preferences drop down */}
               <View style={{width: '100%'}}>
                 <Menu
@@ -331,6 +355,13 @@ const ProfileScreen = () => {
               <View style={styles.infoRow}>
                 <Text style={styles.infoTitle}>Bio:</Text>
                 <Text style={styles.infoContent}>{bio}</Text>
+              </View>
+              <Divider style={styles.divider}/>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoTitle}>PayPal Email:</Text>
+                <Text style={styles.infoContent}>
+                  {paypalEmail || '—'}
+                </Text>
               </View>
               <Divider style={styles.divider}/>
               <View style={styles.infoRow}>

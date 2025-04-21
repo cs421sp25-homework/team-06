@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Platform,
-    ScrollView,
-    Alert,
-  } from 'react-native';
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import {
   Button,
   TextInput,
@@ -14,6 +13,7 @@ import {
   Portal,
   Menu,
   Dialog,
+  Checkbox
 } from 'react-native-paper';
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
@@ -28,7 +28,7 @@ interface BillDetailModalProps {
   onClose: () => void;
   onSave: (updated: Partial<Bill>) => void;
   onArchive: (id: string) => void;
-  onDelete:  (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const nameCache: Record<string, string> = {};
@@ -37,7 +37,6 @@ const uidToName = async (
   uid: string,
   collaborators: Collaborator[]
 ): Promise<string> => {
-
   if (nameCache[uid]) return nameCache[uid];
 
   const local = collaborators.find(c => c.uid === uid);
@@ -54,11 +53,13 @@ const uidToName = async (
     return uid;
   }
 };
+
 interface NameLineProps {
   debtorUid: string;
   creditorUid: string;
   amount: number;
   collaborators: Collaborator[];
+  currentUserUid: string;
 }
 
 const AsyncNameLine: React.FC<NameLineProps> = ({
@@ -66,6 +67,7 @@ const AsyncNameLine: React.FC<NameLineProps> = ({
   creditorUid,
   amount,
   collaborators,
+  currentUserUid,
 }) => {
   const [debtorName, setDebtorName] = useState(debtorUid);
   const [creditorName, setCreditorName] = useState(creditorUid);
@@ -77,13 +79,18 @@ const AsyncNameLine: React.FC<NameLineProps> = ({
     })();
   }, [debtorUid, creditorUid, collaborators]);
 
+  const isReceiving = creditorUid === currentUserUid;
+  const amountColor = isReceiving ? 'green' : 'red';
+
   return (
     <Text style={styles.detail}>
-      {debtorName} → {creditorName}: {amount.toFixed(2)}
+      {debtorName} owes {creditorName}:{' '}
+      <Text style={{ color: amountColor, fontWeight: 'bold' }}>
+        {amount.toFixed(2)}
+      </Text>
     </Text>
   );
 };
-
 
 const BillDetailModal: React.FC<BillDetailModalProps> = ({
   visible,
@@ -93,14 +100,27 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   onClose,
   onSave,
   onArchive,
-  onDelete
+  onDelete,
 }) => {
+  const payInfo = React.useMemo(() => {
+    if (!bill) return { debtorEntry: null, creditorUid: null, creditorPayPal: null };
+
+    const debtorEntry = bill.summary?.[currentUserUid] ?? null;
+    const creditorUid = debtorEntry ? Object.keys(debtorEntry)[0] : null;
+
+    let creditorPayPal: string | null = null;
+    if (creditorUid) {
+      const collab = collaborators.find(c => c.uid === creditorUid);
+      creditorPayPal = collab?.paypalEmail ?? null;
+    }
+    return { debtorEntry, creditorUid, creditorPayPal };
+  }, [bill, collaborators, currentUserUid]);
+
   const [title, setTitle] = useState<string>('');
   const [participants, setParticipants] = useState<string[]>([]);
   const [distributionMode, setDistributionMode] = useState<'even' | 'custom'>('even');
   const [evenTotal, setEvenTotal] = useState<string>('');
   const [customAmounts, setCustomAmounts] = useState<{ [uid: string]: string }>({});
-  const [showCollaboratorList, setShowCollaboratorList] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [currencyMenuVisible, setCurrencyMenuVisible] = useState(false);
@@ -109,7 +129,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [category, setCategory] = useState<Bill['category']>('');
   const [customCategoryDialogVisible, setCustomCategoryDialogVisible] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
-
+  const [addParticipantsDialogVisible, setAddParticipantsDialogVisible] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (bill) {
@@ -119,9 +140,16 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       setCustomAmounts({});
       setCurrency(bill.currency || 'USD');
       setDescription(bill.description || '');
-      setCategory(bill.category   || '');
+      setCategory(bill.category || '');
     }
   }, [bill]);
+
+  useEffect(() => {
+    if (!bill) return;
+    const updated = new Set(bill.participants || []);
+    collaborators.forEach(c => updated.add(c.uid));
+    setParticipants(Array.from(updated));
+  }, [bill, collaborators]);
 
   const switchMode = (mode: 'even' | 'custom') => {
     setDistributionMode(mode);
@@ -129,52 +157,35 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     setCustomAmounts({});
   };
 
-  const handleToggleParticipant = (uid: string) => {
-    setParticipants((prev) =>
-      prev.includes(uid) ? prev.filter((p) => p !== uid) : [...prev, uid]
-    );
-  };
-
   const computeEvenSummary = (): { [debtor: string]: { [creditor: string]: number } } => {
     const total = parseFloat(evenTotal);
-    if (isNaN(total) || participants.length === 0) {
-      return {};
-    }
+    if (isNaN(total) || participants.length === 0) return {};
+    const otherParticipants = participants.filter(uid => uid !== currentUserUid);
     const share = total / participants.length;
-    return { [currentUserUid]: participants.reduce((acc, uid) => {
-      acc[uid] = share;
-      return acc;
-    }, {} as { [key: string]: number }) };
+    const summary: { [debtor: string]: { [creditor: string]: number } } = {};
+    otherParticipants.forEach(uid => {
+      summary[uid] = { [currentUserUid]: share };
+    });
+    return summary;
   };
 
   const computeCustomSummary = (): { [debtor: string]: { [creditor: string]: number } } => {
-    return { [currentUserUid]: participants.reduce((acc, uid) => {
+    const otherParticipants = participants.filter(uid => uid !== currentUserUid);
+    const summary: { [debtor: string]: { [creditor: string]: number } } = {};
+    otherParticipants.forEach(uid => {
       const amt = parseFloat(customAmounts[uid] || '0');
-      if (!isNaN(amt)) {
-        acc[uid] = amt;
-      }
-      return acc;
-    }, {} as { [key: string]: number }) };
+      if (!isNaN(amt)) summary[uid] = { [currentUserUid]: amt };
+    });
+    return summary;
   };
-
 
   const handleSave = () => {
     if (!currentUserUid) {
-      Alert.alert('User information loading')
+      Alert.alert('User information loading');
       return;
     }
-    const summary =
-      distributionMode === 'even' ? computeEvenSummary() : computeCustomSummary();
-    console.log("Computed summary:", summary);
-    onSave({
-      id: bill!.id,
-      title,
-      participants,
-      summary,
-      currency,
-      description,
-      category,
-    });
+    const summary = distributionMode === 'even' ? computeEvenSummary() : computeCustomSummary();
+    onSave({ id: bill!.id, title, participants, summary, currency, description, category });
     onClose();
   };
 
@@ -183,11 +194,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   if (bill.archived) {
     return (
       <Portal>
-        <Modal
-          visible={visible}
-          onDismiss={onClose}
-          contentContainerStyle={styles.overlay}
-        >
+        <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.overlay}>
           <ScrollView contentContainerStyle={styles.modalContainer}>
             <Text style={styles.title}>Archived Bill</Text>
 
@@ -196,7 +203,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               mode="outlined"
               value={description}
               onChangeText={setDescription}
-              placeholder="e.g. dinner at Joe’s, taxi from airport…"
+              placeholder="e.g. dinner at Joe’s…"
               multiline
               style={{ width: '100%', marginBottom: 12 }}
             />
@@ -206,21 +213,22 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               visible={categoryMenuVisible}
               onDismiss={() => setCategoryMenuVisible(false)}
               anchor={
-                <Button mode="outlined" onPress={() => {setCategoryMenuVisible(true); setCurrencyMenuVisible(false);}}>
+                <Button mode="outlined" onPress={() => {
+                  setCategoryMenuVisible(true);
+                  setCurrencyMenuVisible(false);
+                }}>
                   {category || 'Select…'}
                 </Button>
               }
             >
-              {['food','transport','lodging','activity'].map((opt) => (
+              {['food','transport','lodging','activity'].map(opt => (
                 <Menu.Item
                   key={opt}
-                  onPress={() => { setCategory(opt); setCategoryMenuVisible(false);}}
                   title={opt}
+                  onPress={() => { setCategory(opt); setCategoryMenuVisible(false); }}
                 />
               ))}
-
               <Menu.Item
-                key="custom"
                 title="+ Custom category"
                 onPress={() => {
                   setCategoryMenuVisible(false);
@@ -230,32 +238,26 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               />
             </Menu>
 
-            <Text style={styles.detail}>
-              Current category: {category || '—'}
-            </Text>
-  
+            <Text style={styles.detail}>Current category: {category || '—'}</Text>
             <Text style={styles.detail}>Title: {bill.title}</Text>
 
             {bill.summary && (
               <View style={styles.summarySection}>
                 <Text style={styles.summaryTitle}>Summary:</Text>
-                {Object.entries(bill.summary).map(
-                  ([debtorUid, credits]) => (
-                    <View key={debtorUid} style={{ marginBottom: 4 }}>
-                      {Object.entries(
-                        credits as Record<string, number>
-                      ).map(([creditorUid, amount]) => (
-                        <AsyncNameLine
-                          key={debtorUid + creditorUid}
-                          debtorUid={debtorUid}
-                          creditorUid={creditorUid}
-                          amount={amount}
-                          collaborators={collaborators}
-                        />
-                      ))}
-                    </View>
-                  )
-                )}
+                {Object.entries(bill.summary).map(([debtorUid, credits]) => (
+                  <View key={debtorUid} style={{ marginBottom: 4 }}>
+                    {Object.entries(credits as Record<string, number>).map(([creditorUid, amount]) => (
+                      <AsyncNameLine
+                        key={debtorUid + creditorUid}
+                        debtorUid={debtorUid}
+                        creditorUid={creditorUid}
+                        amount={amount}
+                        collaborators={collaborators}
+                        currentUserUid={currentUserUid}
+                      />
+                    ))}
+                  </View>
+                ))}
               </View>
             )}
 
@@ -263,36 +265,24 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               mode="outlined"
               textColor="red"
               style={{ marginTop: 20, width: '100%' }}
-              onPress={() =>
-                Alert.alert('Delete Bill', 'Are you sure?', [
+              onPress={() => Alert.alert(
+                'Delete Bill', 'Are you sure?', [
                   { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => {
-                      onDelete(bill.id);
-                      onClose();
-                    },
-                  },
-                ])
-              }
+                  { text: 'Delete', style: 'destructive', onPress: () => { onDelete(bill.id); onClose(); } },
+                ]
+              )}
             >
               Delete Bill
             </Button>
 
-            <Button
-              style={[styles.closeButton, { marginTop: 12 }]}
-              onPress={onClose}
-            >
+            <Button style={[styles.closeButton, { marginTop: 12 }]} onPress={onClose}>
               Close
             </Button>
           </ScrollView>
         </Modal>
 
-        <Dialog
-          visible={customCategoryDialogVisible}
-          onDismiss={() => setCustomCategoryDialogVisible(false)}
-        >
+        {/* 分类对话框 */}
+        <Dialog visible={customCategoryDialogVisible} onDismiss={() => setCustomCategoryDialogVisible(false)}>
           <Dialog.Title>Add new category</Dialog.Title>
           <Dialog.Content>
             <TextInput
@@ -303,36 +293,25 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setCustomCategoryDialogVisible(false)}>
-              Cancel
-            </Button>
-            <Button
-              onPress={() => {
-                const name = customCategoryInput.trim();
-                if (name) setCategory(name);
-                setCustomCategoryDialogVisible(false);
-              }}
-            >
-              Confirm
-            </Button>
+            <Button onPress={() => setCustomCategoryDialogVisible(false)}>Cancel</Button>
+            <Button onPress={() => {
+              const name = customCategoryInput.trim();
+              if (name) setCategory(name);
+              setCustomCategoryDialogVisible(false);
+            }}>Confirm</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
     );
   }
-  
 
   return (
     <Portal>
-    <Modal
-      visible={visible}
-      onDismiss={onClose}
-      contentContainerStyle={styles.overlay}
-    >
-      <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
+      <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.overlay}>
+        <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Bill Details</Text>
 
-          {/* Title editor */}
+          {/* Title */}
           <Text style={styles.label}>Title:</Text>
           <TextInput
             testID="billTitle"
@@ -342,40 +321,39 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             onChangeText={setTitle}
           />
 
+          {/* Category */}
           <Text style={styles.label}>Category:</Text>
-            <Menu
-              visible={categoryMenuVisible}
-              onDismiss={() => setCategoryMenuVisible(false)}
-              anchor={
-                <Button mode="outlined" onPress={() => {setCategoryMenuVisible(true); setCurrencyMenuVisible(false);}}>
-                  {category || 'Select…'}
-                </Button>
-              }
-            >
-              {['food','transport','lodging','activity'].map((opt) => (
-                <Menu.Item
-                  key={opt}
-                  onPress={() => { setCategory(opt); setCategoryMenuVisible(false);}}
-                  title={opt}
-                />
-              ))}
-
+          <Menu
+            visible={categoryMenuVisible}
+            onDismiss={() => setCategoryMenuVisible(false)}
+            anchor={
+              <Button mode="outlined" onPress={() => {
+                setCategoryMenuVisible(true);
+                setCurrencyMenuVisible(false);
+              }}>
+                {category || 'Select…'}
+              </Button>
+            }
+          >
+            {['food','transport','lodging','activity'].map(opt => (
               <Menu.Item
-                key="custom"
-                title="+ Custom category"
-                onPress={() => {
-                  setCategoryMenuVisible(false);
-                  setCustomCategoryInput("");
-                  setCustomCategoryDialogVisible(true);
-                }}
+                key={opt}
+                title={opt}
+                onPress={() => { setCategory(opt); setCategoryMenuVisible(false); }}
               />
-            </Menu>
+            ))}
+            <Menu.Item
+              title="+ Custom category"
+              onPress={() => {
+                setCategoryMenuVisible(false);
+                setCustomCategoryInput("");
+                setCustomCategoryDialogVisible(true);
+              }}
+            />
+          </Menu>
+          <Text style={styles.detail}>Current category: {category || '—'}</Text>
 
-            <Text style={styles.detail}>
-              Current category: {category || '—'}
-           </Text>
-
-          {/* Details */}
+          {/* Currency */}
           <Text style={styles.detail}>Currency: {currency}</Text>
           <Menu
             visible={currencyMenuVisible}
@@ -384,7 +362,10 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               <Button
                 testID="currencyButton"
                 mode="outlined"
-                onPress={() => { setCategoryMenuVisible(false);setCurrencyMenuVisible(true); }}
+                onPress={() => {
+                  setCategoryMenuVisible(false);
+                  setCurrencyMenuVisible(true);
+                }}
                 style={{ alignSelf: 'flex-start' }}
               >
                 {currency}
@@ -394,75 +375,49 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             {currencyOptions.map(code => (
               <Menu.Item
                 key={code}
+                title={code}
                 onPress={() => {
                   setCurrency(code);
                   setCurrencyMenuVisible(false);
                 }}
-                title={code}
               />
             ))}
           </Menu>
 
-
+          {/* Participants */}
           <Text style={styles.detail}>Participants:</Text>
           <Text style={styles.detail}>
             {participants.length
-              ? participants
-                  .map(uid => collaborators.find(c => c.uid === uid)?.name ?? uid)
-                  .join(', ')
+              ? participants.map(uid => collaborators.find(c => c.uid === uid)?.name ?? uid).join(', ')
               : 'No participants'}
           </Text>
-
-
-          {/* Select collaborator from list */}
           <Button
             testID="participantAdd"
             mode="contained"
             style={{ marginVertical: 8 }}
-            onPress={() => setShowCollaboratorList(!showCollaboratorList)}
+            onPress={() => {
+              setSelectedParticipants(new Set(participants));
+              setAddParticipantsDialogVisible(true);
+            }}
           >
-          Add/Remove Participants
+            Add/Remove Participants
           </Button>
-          {showCollaboratorList && (
-            <View style={{ height: 150, width: '100%' }}>
-              <ScrollView keyboardShouldPersistTaps="handled">
-                {collaborators.map((item) => {
-                  const selected = participants.includes(item.uid);
-                  return (
-                    <Button
-                      testID="receiver"
-                      key={item.uid}
-                      style={[
-                        styles.collaboratorItem,
-                        selected && { backgroundColor: '#cceeff' },
-                      ]}
-                      onPress={() => handleToggleParticipant(item.uid)}
-                    >
-                      {item.name}
-                    </Button>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
 
+          {/* Split mode */}
           <View style={styles.modeContainer}>
             <Button
               testID="evenSplit"
               mode={distributionMode === 'even' ? 'contained' : 'outlined'}
               style={styles.modeButton}
               onPress={() => switchMode('even')}
-            >
-              Even Split
-            </Button>
+            >Even Split</Button>
+
             <Button
               testID="customSplit"
               mode={distributionMode === 'custom' ? 'contained' : 'outlined'}
-              onPress={() => switchMode('custom')}
               style={styles.modeButton}
-            >
-              Custom Split
-            </Button>
+              onPress={() => switchMode('custom')}
+            >Custom Split</Button>
           </View>
 
           {distributionMode === 'even' ? (
@@ -480,118 +435,153 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           ) : (
             <>
               <Text style={styles.label}>Enter amount for each participant:</Text>
-              {participants.map((uid) => (
+              {participants.filter(uid => uid !== currentUserUid).map(uid => (
                 <View key={uid} style={styles.customRow}>
-                  <Text style={styles.customLabel}>{collaborators.find(c => c.uid === uid)?.name || uid}:</Text>
+                  <Text style={styles.customLabel}>
+                    {collaborators.find(c => c.uid === uid)?.name || uid}
+                  </Text>
                   <TextInput
                     style={styles.customInput}
                     placeholder="Amount"
                     keyboardType="numeric"
                     value={customAmounts[uid] || ''}
-                    onChangeText={(text) =>
-                      setCustomAmounts((prev) => ({ ...prev, [uid]: text }))
-                    }
+                    onChangeText={text => setCustomAmounts(prev => ({ ...prev, [uid]: text }))}
                   />
                 </View>
               ))}
             </>
           )}
 
-          {/* Show summary */}
+          {/* Summary */}
           {bill.summary && (
             <View style={styles.summarySection}>
               <Text style={styles.summaryTitle}>Summary:</Text>
               {Object.entries(bill.summary).map(([debtorUid, credits]) => (
                 <View key={debtorUid} style={{ marginBottom: 4 }}>
-                  {Object.entries(credits as Record<string, number>).map(
-                    ([creditorUid, amount]) => (
-                      <AsyncNameLine
+                  {Object.entries(credits as Record<string, number>).map(([creditorUid, amount]) => (
+                    <AsyncNameLine
                       key={debtorUid + creditorUid}
                       debtorUid={debtorUid}
                       creditorUid={creditorUid}
                       amount={amount}
                       collaborators={collaborators}
+                      currentUserUid={currentUserUid}
                     />
-                    )
-                  )}
+                  ))}
                 </View>
               ))}
             </View>
           )}
 
-          {/* Pay button */}
-          <BillPaymentButton
-            testID="payBill"
-            bill={bill}
-            currentUserUid={currentUserUid}
-            //paypalBusinessAccount={itundefined}
-            onArchive={() => {
-              console.log('BillDetailModal: onArchive prop fired for', bill.id);
-              onArchive(bill.id);
-              onClose();
-            }}
-          />
+          {/* Pay with PayPal */}
+          {!!payInfo.debtorEntry && (
+            <BillPaymentButton
+              testID="payBill"
+              bill={bill}
+              currentUserUid={currentUserUid}
+              paypalBusinessAccount={payInfo.creditorPayPal}
+              onArchive={() => {
+                onArchive(bill.id);
+                onClose();
+              }}
+            />
+          )}
 
-          {/* Save button */}
           <Button testID="saveBill" style={styles.saveButton} onPress={handleSave}>
             Save Changes
           </Button>
-
-          {/* Close button */}
-          <Button
-            style={styles.closeButton}
-            onPress={onClose}
-          >
+          <Button style={styles.closeButton} onPress={onClose}>
             Close
           </Button>
 
+          {/* Archive */}
+          {!bill.archived && (
+            <Button
+              mode="outlined"
+              style={{ marginTop: 12 }}
+              onPress={() => Alert.alert(
+                'Archive Bill',
+                'Mark this bill as settled/archived?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Archive', onPress: () => { onArchive(bill.id); onClose(); } },
+                ]
+              )}
+            >
+              Archive Bill
+            </Button>
+          )}
+
+          {/* Delete */}
           <Button
             mode="outlined"
             textColor="red"
             style={{ marginTop: 12 }}
-            onPress={() =>
-              Alert.alert('Delete Bill','Are you sure?',[
-                { text:'Cancel',style:'cancel' },
-                { text:'Delete',style:'destructive', onPress:()=>onDelete(bill.id) }
-              ])
-            }
+            onPress={() => Alert.alert(
+              'Delete Bill',
+              'Are you sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => onDelete(bill.id) },
+              ]
+            )}
           >
             Delete Bill
           </Button>
         </ScrollView>
-    </Modal>
+      </Modal>
 
-    <Dialog
-      visible={customCategoryDialogVisible}
-      onDismiss={() => setCustomCategoryDialogVisible(false)}
-    >
-      <Dialog.Title>Add new category</Dialog.Title>
-      <Dialog.Content>
-        <TextInput
-          label="Category Name"
-          value={customCategoryInput}
-          onChangeText={setCustomCategoryInput}
-          mode="outlined"
-        />
-      </Dialog.Content>
-      <Dialog.Actions>
-        <Button onPress={() => setCustomCategoryDialogVisible(false)}>
-          Cancel
-        </Button>
-        <Button
-          onPress={() => {
+      {/* 分类对话框 */}
+      <Dialog visible={customCategoryDialogVisible} onDismiss={() => setCustomCategoryDialogVisible(false)}>
+        <Dialog.Title>Add new category</Dialog.Title>
+        <Dialog.Content>
+          <TextInput
+            label="Category Name"
+            value={customCategoryInput}
+            onChangeText={setCustomCategoryInput}
+            mode="outlined"
+          />
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setCustomCategoryDialogVisible(false)}>Cancel</Button>
+          <Button onPress={() => {
             const name = customCategoryInput.trim();
             if (name) setCategory(name);
             setCustomCategoryDialogVisible(false);
-          }}
-        >
-          Confirm
-        </Button>
-      </Dialog.Actions>
-    </Dialog>
+          }}>Confirm</Button>
+        </Dialog.Actions>
+      </Dialog>
 
+      <Dialog visible={addParticipantsDialogVisible} onDismiss={() => setAddParticipantsDialogVisible(false)}>
+        <Dialog.Title>Select Participants</Dialog.Title>
+        <Dialog.ScrollArea style={{ maxHeight: 300 }}>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
+            {collaborators.map(item => (
+              <Checkbox.Item
+                key={item.uid}
+                testID={`participantCheckbox-${item.uid}`}
+                label={item.name}
+                status={selectedParticipants.has(item.uid) ? 'checked' : 'unchecked'}
+                onPress={() => {
+                  setSelectedParticipants(prev => {
+                    const newSet = new Set(prev);
+                    newSet.has(item.uid) ? newSet.delete(item.uid) : newSet.add(item.uid);
+                    return newSet;
+                  });
+                }}
+              />
+            ))}
+          </ScrollView>
+        </Dialog.ScrollArea>
+        <Dialog.Actions>
+          <Button onPress={() => setAddParticipantsDialogVisible(false)}>Cancel</Button>
+          <Button onPress={() => {
+            setParticipants(Array.from(selectedParticipants));
+            setAddParticipantsDialogVisible(false);
+          }}>Confirm</Button>
+        </Dialog.Actions>
+      </Dialog>
     </Portal>
-
   );
 };
 
@@ -624,27 +614,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginVertical: 4,
   },
-  participantsButton: {
-    backgroundColor: '#88bbee',
-    padding: 10,
-    borderRadius: 4,
-    marginVertical: 8,
-  },
-  participantsButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  collaboratorList: {
-    maxHeight: 150,
-    width: '100%',
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-  },
-  collaboratorItem: {
-    marginVertical: 2,
-  },
   customRow: {
     flexDirection: 'row',
     alignSelf: 'stretch',
@@ -662,24 +631,13 @@ const styles = StyleSheet.create({
   },
   modeContainer: {
     flexDirection: 'row',
-    alignSelf: 'stretch',
-    justifyContent: 'space-around',
-    marginVertical: 8,
+    marginVertical: 12,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   modeButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#007aff',
-    borderRadius: 4,
-  },
-  modeButtonSelected: {},
-  summarySection: {
-    width: '100%',
-    marginTop: 12,
-  },
-  modeButtonText: {
-    fontSize: 14,
-    color: '#007aff',
+    flex: 1,
+    marginHorizontal: 4,
   },
   summarySection: {
     width: '100%',
@@ -690,29 +648,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  payButton: {
-    backgroundColor: '#007aff',
-    padding: 12,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  payButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   saveButton: {
     backgroundColor: '#00aaff',
-    padding: 12,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
     marginTop: 12,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
   },
   closeButton: {
     marginTop: 12,
