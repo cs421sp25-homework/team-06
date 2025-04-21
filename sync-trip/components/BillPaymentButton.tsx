@@ -23,35 +23,50 @@ const BillPaymentButton: React.FC<BillPaymentButtonProps> = ({
   const currency = bill.currency || 'USD';
 
   // Compute how much the current user owes or is owed
-  const computeUserPaymentAmount = (): string => {
-    if (!bill.summary || !bill.summary[currentUserUid]) return '0.00';
-    const total = Object.values(bill.summary[currentUserUid]).reduce(
-      (sum, value) => sum + value,
-      0
+  const amountOwed = React.useMemo(() => {
+    if (!bill.summary || !bill.summary[currentUserUid]) return 0;
+    return Object.values(bill.summary[currentUserUid]).reduce(
+      (sum, v) => sum + v,
+      0,
     );
-    return total.toFixed(2);
-  };
+  }, [bill.summary, currentUserUid]);
 
-  const handlePay = () => {
-    onArchive?.();
-    if (paypalBusinessAccount) {
-      const amount = computeUserPaymentAmount();
-      const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(
-        paypalBusinessAccount
-      )}&item_name=${encodeURIComponent(bill.title)}&amount=${amount}&currency_code=${currency}`;
-      Linking.openURL(url)
-      .catch(err => {
-        console.error('Failed to open PayPal URL', err);
-        Alert.alert('Error', 'Unable to open PayPal. Please try again later.');
-      });
-    } else {
-      // Redirect to generic PayPal login
-      Linking.openURL('https://www.paypal.com/signin')
-      .catch(err => {
-        console.error('Failed to open PayPal login', err);
-        Alert.alert('Error', 'Unable to open PayPal. Please try again later.');
-      });
+  if (amountOwed <= 0) return null;
+
+  const handlePay = async () => {
+    //onArchive?.();
+    try {
+      if (paypalBusinessAccount) {
+        const url =
+        `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick` +
+        `&business=${encodeURIComponent(paypalBusinessAccount)}` +
+        `&item_name=${encodeURIComponent(bill.title)}` +
+        `&amount=${amountOwed.toFixed(2)}` +
+        `&currency_code=${currency}`;
+
+        await Linking.openURL(url);
+        } else {
+          // Redirect to generic PayPal login
+          await Linking.openURL('https://www.paypal.com/signin');
+        }
+    } catch (err) {
+      console.error('Failed to open PayPal', err);
+      Alert.alert('Error', 'Unable to open PayPal. Please try again later.');
+      return;
     }
+
+    Alert.alert(
+      'Payment confirmation',
+      'Have you completed the payment?',
+      [
+        { text: 'Not yet' },
+        {
+          text: 'Yes, done',
+          onPress: () => onArchive?.(),
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   return (
