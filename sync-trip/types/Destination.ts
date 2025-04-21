@@ -23,3 +23,15 @@ export interface DestinationInfo {
     rating?: string | null,
     openingHours?: string | null,
 }
+
+export interface LatLng {
+    latitude: number,
+    longitude: number,
+};
+
+export type RouteResponse = {
+    encodedPolyline: string
+    distanceMeters: number
+    duration: number            // seconds
+    routeLabels?: string[]      // e.g. ['TOLL_ROAD','HIGHWAY']
+}
