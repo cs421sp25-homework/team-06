@@ -13,6 +13,7 @@ import {
   Modal,
   Portal,
   Menu,
+  Dialog,
 } from 'react-native-paper';
 import { Bill } from '../types/Bill';
 import { Collaborator } from '../types/User';
@@ -101,8 +102,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [customAmounts, setCustomAmounts] = useState<{ [uid: string]: string }>({});
   const [showCollaboratorList, setShowCollaboratorList] = useState(false);
   const [currency, setCurrency] = useState('USD');
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [currencyMenuVisible, setCurrencyMenuVisible] = useState(false);
   const currencyOptions = ['USD', 'EUR', 'GBP', 'CNY', 'JPY'];
+  const [description, setDescription] = useState<string>('');
+  const [category, setCategory] = useState<Bill['category']>('');
+  const [customCategoryDialogVisible, setCustomCategoryDialogVisible] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState("");
 
 
   useEffect(() => {
@@ -112,6 +118,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       setEvenTotal('');
       setCustomAmounts({});
       setCurrency(bill.currency || 'USD');
+      setDescription(bill.description || '');
+      setCategory(bill.category   || '');
     }
   }, [bill]);
 
@@ -164,6 +172,8 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       participants,
       summary,
       currency,
+      description,
+      category,
     });
     onClose();
   };
@@ -180,6 +190,49 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
         >
           <ScrollView contentContainerStyle={styles.modalContainer}>
             <Text style={styles.title}>Archived Bill</Text>
+
+            <Text style={styles.label}>Description:</Text>
+            <TextInput
+              mode="outlined"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="e.g. dinner at Joe’s, taxi from airport…"
+              multiline
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <Text style={styles.label}>Category:</Text>
+            <Menu
+              visible={categoryMenuVisible}
+              onDismiss={() => setCategoryMenuVisible(false)}
+              anchor={
+                <Button mode="outlined" onPress={() => {setCategoryMenuVisible(true); setCurrencyMenuVisible(false);}}>
+                  {category || 'Select…'}
+                </Button>
+              }
+            >
+              {['food','transport','lodging','activity'].map((opt) => (
+                <Menu.Item
+                  key={opt}
+                  onPress={() => { setCategory(opt); setCategoryMenuVisible(false);}}
+                  title={opt}
+                />
+              ))}
+
+              <Menu.Item
+                key="custom"
+                title="+ Custom category"
+                onPress={() => {
+                  setCategoryMenuVisible(false);
+                  setCustomCategoryInput("");
+                  setCustomCategoryDialogVisible(true);
+                }}
+              />
+            </Menu>
+
+            <Text style={styles.detail}>
+              Current category: {category || '—'}
+            </Text>
   
             <Text style={styles.detail}>Title: {bill.title}</Text>
 
@@ -235,6 +288,35 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             </Button>
           </ScrollView>
         </Modal>
+
+        <Dialog
+          visible={customCategoryDialogVisible}
+          onDismiss={() => setCustomCategoryDialogVisible(false)}
+        >
+          <Dialog.Title>Add new category</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Category Name"
+              value={customCategoryInput}
+              onChangeText={setCustomCategoryInput}
+              mode="outlined"
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCustomCategoryDialogVisible(false)}>
+              Cancel
+            </Button>
+            <Button
+              onPress={() => {
+                const name = customCategoryInput.trim();
+                if (name) setCategory(name);
+                setCustomCategoryDialogVisible(false);
+              }}
+            >
+              Confirm
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     );
   }
@@ -260,16 +342,49 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             onChangeText={setTitle}
           />
 
+          <Text style={styles.label}>Category:</Text>
+            <Menu
+              visible={categoryMenuVisible}
+              onDismiss={() => setCategoryMenuVisible(false)}
+              anchor={
+                <Button mode="outlined" onPress={() => {setCategoryMenuVisible(true); setCurrencyMenuVisible(false);}}>
+                  {category || 'Select…'}
+                </Button>
+              }
+            >
+              {['food','transport','lodging','activity'].map((opt) => (
+                <Menu.Item
+                  key={opt}
+                  onPress={() => { setCategory(opt); setCategoryMenuVisible(false);}}
+                  title={opt}
+                />
+              ))}
+
+              <Menu.Item
+                key="custom"
+                title="+ Custom category"
+                onPress={() => {
+                  setCategoryMenuVisible(false);
+                  setCustomCategoryInput("");
+                  setCustomCategoryDialogVisible(true);
+                }}
+              />
+            </Menu>
+
+            <Text style={styles.detail}>
+              Current category: {category || '—'}
+           </Text>
+
           {/* Details */}
           <Text style={styles.detail}>Currency: {currency}</Text>
           <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
+            visible={currencyMenuVisible}
+            onDismiss={() => setCurrencyMenuVisible(false)}
             anchor={
               <Button
                 testID="currencyButton"
                 mode="outlined"
-                onPress={() => setMenuVisible(true)}
+                onPress={() => { setCategoryMenuVisible(false);setCurrencyMenuVisible(true); }}
                 style={{ alignSelf: 'flex-start' }}
               >
                 {currency}
@@ -281,7 +396,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                 key={code}
                 onPress={() => {
                   setCurrency(code);
-                  setMenuVisible(false);
+                  setCurrencyMenuVisible(false);
                 }}
                 title={code}
               />
@@ -445,7 +560,38 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           </Button>
         </ScrollView>
     </Modal>
+
+    <Dialog
+      visible={customCategoryDialogVisible}
+      onDismiss={() => setCustomCategoryDialogVisible(false)}
+    >
+      <Dialog.Title>Add new category</Dialog.Title>
+      <Dialog.Content>
+        <TextInput
+          label="Category Name"
+          value={customCategoryInput}
+          onChangeText={setCustomCategoryInput}
+          mode="outlined"
+        />
+      </Dialog.Content>
+      <Dialog.Actions>
+        <Button onPress={() => setCustomCategoryDialogVisible(false)}>
+          Cancel
+        </Button>
+        <Button
+          onPress={() => {
+            const name = customCategoryInput.trim();
+            if (name) setCategory(name);
+            setCustomCategoryDialogVisible(false);
+          }}
+        >
+          Confirm
+        </Button>
+      </Dialog.Actions>
+    </Dialog>
+
     </Portal>
+
   );
 };
 

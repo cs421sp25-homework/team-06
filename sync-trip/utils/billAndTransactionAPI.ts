@@ -31,6 +31,8 @@ export const parseBill = (id: string, data: any): Bill => {
     currency: data.currency || "USD",
     isDraft: data.isDraft || false,
     archived: data.archived || false,
+    description: data.description || "",
+    category: data.category || "",
   };
 };
 
