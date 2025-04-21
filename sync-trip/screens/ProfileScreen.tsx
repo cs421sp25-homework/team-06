@@ -15,7 +15,7 @@ import firestore from '@react-native-firebase/firestore';
 import {launchImageLibrary} from 'react-native-image-picker';
 import { ensureGalleryPermission } from '../utils/permissions';
 
-const ProfileScreen = () => {
+const ProfileScreen = () => {x
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [travelPreferences, setTravelPreferences] = useState('');
