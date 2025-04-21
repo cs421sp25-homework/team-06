@@ -6,6 +6,7 @@ import MapView, { Polyline, LongPressEvent, Marker, PROVIDER_GOOGLE, Region } fr
 import { ActivityIndicator, Button, Card, Modal, Portal, Text, TextInput, IconButton } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Picker } from '@react-native-picker/picker'
 import { Destination, DestinationInfo, LatLng } from "../types/Destination";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
@@ -68,8 +69,9 @@ const MapScreen = () => {
 
   const mapRef = useRef<MapView | null>(null)
   const [routePlanningMode, setRoutePlanningMode] = useState(false)
-  const [originText, setOriginText] = useState('')
-  const [destinationText, setDestinationText] = useState('')
+
+  const [originId, setOriginId] = useState<string | null>(null)
+  const [destinationId, setDestinationId] = useState<string | null>(null)
 
   // Convert trip's start/end to Date objects
   useEffect(() => {
@@ -133,17 +135,25 @@ const MapScreen = () => {
   };
 
   const handlePlanRoute = async () => {
-    // TODO: convert originText/destinationText into LatLng,
-    // e.g. via a geocoding helper you already have.
-    const origin: LatLng | null = await getCoordinatesFromAddress(originText)
-    const destination: LatLng | null = await getCoordinatesFromAddress(destinationText)
+    if (!originId || !destinationId || !currentTrip) return
+    const originMarker = currentTrip.destinations.find(m => m.id === originId)
+    const destMarker = currentTrip.destinations.find(m => m.id === destinationId)
+    if (!originMarker || !destMarker) return
 
-    if (!origin || !destination) {
-        Alert.alert('Error', 'Please enter valid origin and destination addresses.')
+    const origin: LatLng = {
+      latitude: Number(originMarker.latitude),
+      longitude: Number(originMarker.longitude),
     }
+    const destination: LatLng = {
+      latitude: Number(destMarker.latitude),
+      longitude: Number(destMarker.longitude),
+    }
+
     const encoded = await getRoute(origin, destination, travelMode)
+    console.log('encoded', encoded)
     setRouteCoords(decodePolyline(encoded))
     setRoutePlanningMode(false)
+    console.log('routeCoords', routeCoords)
   }
 
   // Called when user long-presses on the map to add a new marker
@@ -441,32 +451,86 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-
+      
       <View style={styles.searchContainer}>
-        <TextInput
-          testID="searchPlaces"
-          label="Search Places"
-          value={searchQuery}
-          onChangeText={handleSearch}
-          mode="outlined"
-          style={styles.searchInput}
-        />
-        {searchResults.length > 0 && (
-          <FlatList
-            data={searchResults}
-            keyExtractor={(item) => item.place_id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => handleSelectPlace(item.place_id)}
-                style={styles.searchResultItem}
-              >
-                <Text>{item.description}</Text>
-              </TouchableOpacity>
+        {!routePlanningMode ? (
+          <>
+            <TextInput
+              testID="searchPlaces"
+              label="Search Places"
+              value={searchQuery}
+              onChangeText={handleSearch}
+              mode="outlined"
+              style={styles.searchInput}
+            />
+            {searchResults.length > 0 && (
+              <FlatList
+                data={searchResults}
+                keyExtractor={item => item.place_id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => handleSelectPlace(item.place_id)}
+                    style={styles.searchResultItem}
+                  >
+                    <Text>{item.description}</Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.searchResultsList}
+              />
             )}
-            style={styles.searchResultsList}
-          />
+          </>
+        ) : (
+          <View style={styles.routePlanningContainer}>
+            <Picker
+              testID="routeOriginPicker"
+              selectedValue={originId}
+              onValueChange={value => setOriginId(value)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select start" value={currMarker.id} />
+              {currentTrip.destinations.map(m => (
+                <Picker.Item
+                  key={m.id}
+                  label={m.address}
+                  value={m.id}
+                />
+              ))}
+            </Picker>
+
+            <Picker
+              testID="routeDestinationPicker"
+              selectedValue={destinationId}
+              onValueChange={value => setDestinationId(value)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select destination" value={null} />
+              {currentTrip.destinations.map(m => (
+                <Picker.Item
+                  key={m.id}
+                  label={m.address}
+                  value={m.id}
+                />
+              ))}
+            </Picker>
+
+            <View style={styles.buttonRow}>
+              <IconButton
+                testID="confirmRoute"
+                icon="directions"
+                size={24}
+                onPress={handlePlanRoute}
+              />
+              <IconButton
+                testID="cancelRoute"
+                icon="close"
+                size={24}
+                onPress={() => setRoutePlanningMode(false)}
+              />
+            </View>
+          </View>
         )}
       </View>
+
 
       <MapView
         ref={mapRef}
@@ -499,29 +563,6 @@ const MapScreen = () => {
           )
         })}
 
-        {routePlanningMode && (
-          <View style={styles.routeInputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Start point"
-              value={originText}
-              onChangeText={setOriginText}
-            />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Destination"
-              value={destinationText}
-              onChangeText={setDestinationText}
-            />
-            <View style={styles.buttonRow}>
-              <IconButton icon="search" onPress={handlePlanRoute} />
-              <IconButton
-                icon="Cancel"
-                onPress={() => setRoutePlanningMode(false)}
-              />
-            </View>
-          </View>
-        )}
 
         {/* Route polyline */}
         {routeCoords.length > 0 && (
@@ -740,6 +781,14 @@ const MapScreen = () => {
             </Card.Content>
             <Card.Actions>
               <IconButton
+                testID="openRoutePlanning"
+                icon="map-marker-path"
+                onPress={() => {
+                  setInfoModalVisible(false)
+                  setRoutePlanningMode(true)
+                }}
+              />
+              <IconButton
                 testID="showInfo" mode="contained" icon="information" onPress={showDetailedInfo}
               />
               <IconButton
@@ -848,15 +897,15 @@ const MapScreen = () => {
 export default MapScreen;
 
 const styles = StyleSheet.create({
-  routeInputContainer: {
-    position: 'absolute',
-    top: 80,
-    left: 20,
-    right: 20,
+  routePlanningContainer: {
+    width: '100%',
     backgroundColor: 'white',
-    padding: 10,
-    borderRadius: 8,
-    elevation: 4,
+    padding: 8,
+    borderRadius: 4,
+  },
+  picker: {
+    marginVertical: 4,
+    backgroundColor: '#f5f5f5',
   },
   textInput: {
     height: 40,

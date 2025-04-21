@@ -17,7 +17,7 @@ export const getCoordinatesFromAddress = async (address: string): Promise<{ lati
             return null;
         }
     } catch (error) {
-        console.error("[Geocode] Error converting address to coordinates:", error);
+        console.error("[Geocode] Error converting address to coordinates:", address, error);
         return null;
     }
 };
@@ -108,21 +108,24 @@ export async function getRoute(
         travelMode,
         ...(departureTimeSeconds && { routingPreference: 'TRAFFIC_AWARE', departureTime: { seconds: departureTimeSeconds } })
     }
-
-    const resp = await fetch(
-        'https://routes.googleapis.com/directions/v2:computeRoutes',
-        {
+    const url = `https://routes.googleapis.com/directions/v2:computeRoutes?key=${GOOGLE_API_KEY}`
+        + `&fields=routes.polyline.encodedPolyline`;
+    const resp = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // ideally call this via a secured Cloud Function or use an access token
-                Authorization: `Bearer ${GOOGLE_API_KEY}`
-            },
+            headers: { 'Content-Type': 'application/json', },
             body: JSON.stringify(body)
         }
     )
-    const { routes } = await resp.json()
-    return routes[0].polyline.encodedPolyline
+    //console.log('HTTP', resp.status, resp.statusText);
+    const data = await resp.json();
+    console.log('full payload', data.routes[0].polyline.encodedPolyline);
+
+    if (!resp.ok || !data.routes) {
+        throw new Error(
+            `Routes API error ${resp.status}: ${JSON.stringify(data)}`
+        );
+    }
+    return data.routes[0].polyline.encodedPolyline
 }
 
 export function decodePolyline(encoded: string): LatLng[] {
