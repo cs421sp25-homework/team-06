@@ -27,6 +27,7 @@ import {
   deleteTrip,
   updateDestination
 } from "../utils/tripAPI";
+import {removeTripFromAllUsers} from "../utils/userAPI";
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { TripStatus } from "../types/Trip";
 import { generateICS } from "../utils/icsGenerator";
@@ -178,6 +179,7 @@ const CurrentTripScreen = () => {
           onPress: async () => {
             try {
               await deleteTrip(currentTrip.id);
+              await removeTripFromAllUsers(currentTrip.id);
               setCurrentTrip(null);
               setTabIndex(0);
             } catch (err) {
@@ -433,7 +435,7 @@ const CurrentTripScreen = () => {
             >
               Edit Trip
             </Button>
-            <Button mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
+            <Button testID="archiveTrip" mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
               Archive Trip
             </Button>
             <Button
@@ -486,6 +488,7 @@ const CurrentTripScreen = () => {
                   checklists[destination.id].map((item) => (
                     <View key={item.id} style={styles.checklistItemRow}>
                       <Checkbox
+                        testID="checkbox"
                         status={item.completed ? "checked" : "unchecked"}
                         onPress={() =>
                           updateChecklistItem(destination.id, item.id, { completed: !item.completed })
@@ -494,6 +497,7 @@ const CurrentTripScreen = () => {
                       {editingChecklistItemId === item.id ? (
                         <>
                           <TextInput
+                            testID="checklistInput"
                             style={styles.checklistInput}
                             value={editingChecklistText}
                             onChangeText={setEditingChecklistText}
@@ -526,7 +530,7 @@ const CurrentTripScreen = () => {
                               setEditingChecklistText(item.text);
                             }}
                           >
-                            {item.text}
+                            {item.text || "New To-Do Item"}
                           </Text>
                           <TouchableOpacity
                             style={styles.editButton}
@@ -548,14 +552,15 @@ const CurrentTripScreen = () => {
                     </View>
                   ))}
                 <Button
+                  testID="addChecklist"
                   mode="outlined"
                   onPress={() => {
                     console.log("Add Checklist Item pressed for destination", destination.id);
-                    addChecklistItem(destination.id, "New Item", false);
+                    addChecklistItem(destination.id, "");
                   }}
                   style={styles.addChecklistButton}
                 >
-                  Add Checklist Item
+                  Create To-Dos
                 </Button>
               </View>
             </View>
@@ -566,6 +571,7 @@ const CurrentTripScreen = () => {
         <View style={styles.announcementSection}>
           <Title>Announcements</Title>
           <Button
+            testID="addAnnouncement"
             mode="contained"
             onPress={() => {
               setAnnouncementText("");
@@ -597,7 +603,7 @@ const CurrentTripScreen = () => {
                       >
                         Edit
                       </Button>
-                      <Button onPress={() => handleDeleteAnnouncement(announcement.id)}>
+                      <Button testID="deleteAnnouncement" onPress={() => handleDeleteAnnouncement(announcement.id)}>
                         Delete
                       </Button>
                     </Card.Actions>
@@ -615,6 +621,7 @@ const CurrentTripScreen = () => {
         {currentTrip.destinations.length > 0 && (
             <View style={styles.exportRow}>
               <Button
+                testID="exportICS"
                 mode="contained"
                 onPress={handleExportICS}
                 style={styles.exportButton}
@@ -622,6 +629,7 @@ const CurrentTripScreen = () => {
                 Export to Calendar
               </Button>
               <Button
+                testID="helpButton"
                 mode="contained"
                 onPress={() => setHelpModalVisible(true)}
                 style={styles.helpButton}
@@ -641,6 +649,7 @@ const CurrentTripScreen = () => {
           <Dialog.Title>Add Announcement</Dialog.Title>
           <Dialog.Content>
             <TextInput
+              testID="announcementInput"
               label="Announcement Message"
               value={announcementText}
               onChangeText={setAnnouncementText}

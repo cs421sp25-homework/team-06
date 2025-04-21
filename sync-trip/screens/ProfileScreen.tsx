@@ -1,5 +1,5 @@
-import {auth, getUserDocRef} from "../utils/firebase";
-import {deleteDoc, onSnapshot, serverTimestamp, setDoc} from '@react-native-firebase/firestore';
+import {auth, getUserDocRef, app, firestore} from "../utils/firebase";
+import {deleteDoc, doc, onSnapshot, serverTimestamp, setDoc} from '@react-native-firebase/firestore';
 import React, {useEffect, useState} from 'react';
 import {FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Avatar, Button, Dialog, Divider, Menu, Paragraph, Portal, Snackbar, Text, TextInput,} from 'react-native-paper';
@@ -8,6 +8,17 @@ import {useAppNavigation} from '../navigation/useAppNavigation';
 
 import {useUser} from "../context/UserContext";
 import {useTrip} from "../context/TripContext";
+
+
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from '@react-native-firebase/storage';
+import {launchImageLibrary} from 'react-native-image-picker';
+import { ensureGalleryPermission } from '../utils/permissions';
+import * as FileSystem from 'expo-file-system';
 
 const ProfileScreen = () => {
   const [name, setName] = useState('');
@@ -28,12 +39,16 @@ const ProfileScreen = () => {
 
   const {logout: userLogout} = useUser();
   const {logout: tripLogout} = useTrip();
+  const [paypalEmail, setPaypalEmail] = useState('');
+
+  const storage = getStorage(app);
 
   const [savedProfile, setSavedProfile] = useState({
     name: '',
     bio: '',
     travelPreferences: '',
     profilePicture: null,
+    paypalEmail: '',
   });
 
   const availableImages = [
@@ -67,12 +82,14 @@ const ProfileScreen = () => {
           setBio(data?.bio || '');
           setTravelPreferences(data?.travelPreferences || '');
           setProfilePicture(data?.profilePicture || null);
+          setPaypalEmail(data?.paypalEmail || '');
 
           setSavedProfile({
             name: data?.name || '',
             bio: data?.bio || '',
             travelPreferences: data?.travelPreferences || '',
             profilePicture: data?.profilePicture || null,
+            paypalEmail: data?.paypalEmail || '',
           });
 
           if (data?.name) {
@@ -90,10 +107,72 @@ const ProfileScreen = () => {
     return () => unsubscribe();
   }, []);
 
+
+  const pickAndUploadProfilePhoto = async () => {
+    try {
+      // Make sure we have access
+      const ok = await ensureGalleryPermission();
+      if (!ok) {
+        setError('Gallery permission is required to choose a photo.');
+        setSnackbarVisible(true);
+        return;
+      }
+
+      // Let the user pick
+      const res = await launchImageLibrary({ mediaType: 'photo' });
+      if (res.didCancel || !res.assets?.length) return;
+
+      const { uri } = res.assets[0];
+      console.log('Picked URI:', uri);
+
+      // fetch the local file into a Blob
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      console.log('Base64 length:', base64.length);
+
+
+      // Upload to Firebase Storage
+      const uid = auth.currentUser!.uid;
+      const ref = storage.ref(`profilePictures/${uid}.jpg`);
+      const snapshot = await ref.putString(base64, 'base64', {
+        contentType: 'image/jpeg',
+      });
+      console.log('Upload complete:', snapshot.metadata.fullPath);
+
+      const downloadURL = await ref.getDownloadURL();
+      console.log('Download URL:', downloadURL);
+
+      // 5️⃣ write into Firestore
+      await firestore.collection('users').doc(uid).set(
+        { profilePicture: downloadURL },
+        { merge: true }
+      );
+      console.log('Firestore write complete');
+
+      // update UI
+      setProfilePicture(downloadURL);
+      setError('Profile photo updated!');
+      setSnackbarVisible(true);
+      setIsEditing(false);
+    } catch (e: any) {
+      console.error('Error picking/uploading photo', e);
+      setError('Could not upload photo: ' + e.message);
+      setSnackbarVisible(true);
+    }
+  };
+
   // save profile
   const handleSaveProfile = async () => {
     if (name.trim() === '') {
       setError('Name is required');
+      setSnackbarVisible(true);
+      return;
+    }
+
+    if (paypalEmail.trim() !== '' &&
+        !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(paypalEmail)) {
+      setError('Please enter a valid PayPal email');
       setSnackbarVisible(true);
       return;
     }
@@ -112,10 +191,11 @@ const ProfileScreen = () => {
         bio,
         travelPreferences,
         profilePicture,
+        paypalEmail: paypalEmail.trim() || null,
         updatedAt: serverTimestamp()
       }, {merge: true});
 
-      setSavedProfile({name, bio, travelPreferences, profilePicture});
+      setSavedProfile({name, bio, travelPreferences, profilePicture, paypalEmail,});
       setError('Profile saved successfully!'); //TODO: coding style: change setError to showMessage.
       setSnackbarVisible(true);
       setIsEditing(false);
@@ -132,6 +212,7 @@ const ProfileScreen = () => {
     setTravelPreferences(savedProfile.travelPreferences);
     setProfilePicture(savedProfile.profilePicture);
     setIsEditing(false);
+    setPaypalEmail(savedProfile.paypalEmail);
   };
 
   const handleLogout = async () => {
@@ -188,24 +269,17 @@ const ProfileScreen = () => {
         <View style={styles.container}>
           {/* avatar container */}
           <View
-            style={styles.avatarContainer}
-            onLayout={(event) => {
-              const layout = event.nativeEvent.layout;
-              setAvatarCenterY(layout.y + layout.height / 2 + offset);
-            }}>
-            {isEditing ? (
-              <TouchableOpacity onPress={() => setModalVisible(true)}>
-                <Avatar.Image
-                  size={100}
-                  source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
-                />
-              </TouchableOpacity>
-            ) : (
+            style={styles.avatarContainer}>
+            <TouchableOpacity onPress={isEditing ? pickAndUploadProfilePhoto : undefined}>
               <Avatar.Image
                 size={100}
-                source={profilePicture ? profilePicture : require('../assets/profile_pic.png')}
+                source={
+                  profilePicture
+                    ? { uri: profilePicture }
+                    : require('../assets/profile_pic.png')
+                }
               />
-            )}
+            </TouchableOpacity>
           </View>
 
           {isEditing ? (
@@ -220,6 +294,17 @@ const ProfileScreen = () => {
                 style={styles.input}
                 multiline
               />
+
+              <TextInput
+                  testID="paypalEmail"
+                  label="PayPal Email (optional)"
+                  value={paypalEmail}
+                  onChangeText={setPaypalEmail}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+              />
+
               {/* Travel Preferences drop down */}
               <View style={{width: '100%'}}>
                 <Menu
@@ -270,6 +355,13 @@ const ProfileScreen = () => {
               <View style={styles.infoRow}>
                 <Text style={styles.infoTitle}>Bio:</Text>
                 <Text style={styles.infoContent}>{bio}</Text>
+              </View>
+              <Divider style={styles.divider}/>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoTitle}>PayPal Email:</Text>
+                <Text style={styles.infoContent}>
+                  {paypalEmail || '—'}
+                </Text>
               </View>
               <Divider style={styles.divider}/>
               <View style={styles.infoRow}>

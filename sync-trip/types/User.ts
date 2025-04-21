@@ -7,4 +7,7 @@ export interface User {
     currentTripId?: string;
     profilePicture?: string; //picture link?
     tripsIdList: string[];
+    paypalEmail?: string;
 }
+
+export type Collaborator = Pick<User, 'uid' | 'name'>;

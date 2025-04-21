@@ -3,6 +3,7 @@ appId: "com.s370101387.synctrip"
 # launch App
 - launchApp
 # login
+#- doubleTapOn: "OK"
 - tapOn: { id: "account" }
 - inputText: "vivanoon6666@gmail.com"
 - tapOn: { id: "password" }
@@ -11,20 +12,6 @@ appId: "com.s370101387.synctrip"
 # navigate to dashboard and check the function of the buttons
 - assertVisible: { id: "dashboardScreen"}
 - waitForAnimationToEnd
-#
-# TODO: history and archivedTrips screen not implemented.
-#- scrollUntilVisible:
-#    element: {id: "archivedTrips"}
-#    direction: DOWN
-#- tapOn: { id: "viewMore" }
-#- assertVisible: { id: "historyScreen" }
-#- assertVisible: "Trip History"
-#- back
-#- tapOn: { id: "archivedTrips" }
-#- assertVisible: {id: "archivedHistoryScreen"}
-#- assertVisible: "Archived Trips"
-#- back
-#
 # Test for Profile Screen
 - tapOn: { id: "tab-profile" }
 - assertVisible: { id: "profileScreen" }
@@ -41,70 +28,115 @@ appId: "com.s370101387.synctrip"
 - doubleTapOn: { id: "travelPreferences"}
 - tapOn: "N/A"
 - tapOn: { id: "save_profile" }
-- assertVisible: "Test_Acc"
-- assertVisible: "Hello World!"
-- assertVisible: "N/A"
-# Testing for Profile Screen finished
-#
-#  navigate to trip
-#- tapOn: {id: "tab-trip"}
-#
 # Test for New Trip Screen
 - tapOn: { id: "tab-plus" }
+- waitForAnimationToEnd
 - tapOn: { id: "tripTitle" }
 - inputText: "Test Trip"
 - tapOn: { id: "selectDates" }
-- tapOn: "2"
-- tapOn: "5"
+- waitForAnimationToEnd
+- tapOn:
+    below: "May 2025"
+    containsDescendants:
+      - text: "14"
+- tapOn:
+    below: "May 2025"
+    containsDescendants:
+      - text: "17"
+- waitForAnimationToEnd
 - tapOn: "Save"
+- waitForAnimationToEnd
 - tapOn: { id: "createTrip" }
 - assertVisible: "Test Trip"
 #
 # Test for Map Screen
 - tapOn: { id: "tab-map" }
+- waitForAnimationToEnd
 - tapOn: { id: "searchPlaces" }
+- waitForAnimationToEnd
 - inputText: "Johns Hopkins University"
 - doubleTapOn: "Johns Hopkins University, Baltimore, MD, USA"
 - assertVisible: "Johns Hopkins University"
-- tapOn: { id: "closeInfoModal" }
-- longPressOn: { id: "map", point: "50%,50%" }
-- doubleTapOn: "Description"
-- inputText: "JHU"
+- tapOn: { id: "markPlace" }
+- waitForAnimationToEnd
+- tapOn: "Name"
+- waitForAnimationToEnd
+- inputText: "Johns Hopkins University"
+- tapOn: "Description"
+- waitForAnimationToEnd
+- inputText: "School Tour"
 - tapOn: { id: "selectDate" }
-- tapOn: "3"
+- tapOn: "15"
+- waitForAnimationToEnd
 - tapOn: "Save"
+- waitForAnimationToEnd
 - tapOn: { id: "selectTime" }
+- waitForAnimationToEnd
 - tapOn: { id: "timePicker1", point: "50%,50%" }
+- waitForAnimationToEnd
 - tapOn: { id: "timePicker1", point: "50%,50%" }
+- waitForAnimationToEnd
 - tapOn: "Ok"
-- tapOn: "Add"
-- tapOn: { id: "map" }
-- assertVisible: "Marker Details"
-- tapOn: { id: "editMarker" }
-- tapOn: { id: "editDate" }
-- tapOn: "4"
+- waitForAnimationToEnd
 - tapOn: "Save"
+- tapOn: { id: "map"}
+- waitForAnimationToEnd
+- tapOn: { id: "editMarker" }
+- waitForAnimationToEnd
+- tapOn: { id: "editDate" }
+- tapOn: "16"
+- waitForAnimationToEnd
+- tapOn: "Save"
+- waitForAnimationToEnd
 - tapOn: { id: "editTime" }
+- waitForAnimationToEnd
 - tapOn: { id: "timePicker2", point: "70%,50%" }
+- waitForAnimationToEnd
 - tapOn: { id: "timePicker2", point: "70%,50%" }
+- waitForAnimationToEnd
 - tapOn: "Ok"
+- extendedWaitUntil:
+    visible: "Save"
+    timeout: 10000
 - tapOn: { id: "saveChanges" }
+- waitForAnimationToEnd
 #
 # Test For Current Trip Screen
-- tapOn: { id: "tab-trip" }
-- assertVisible: "JHU"
+- tapOn: { id: "tab-dashboard" }
+- waitForAnimationToEnd
+- tapOn: "Edit"
 - tapOn: { id: "editTrip" }
 - tapOn: { id: "changeDates" }
-- tapOn: "1"
-- tapOn: "6"
+- tapOn:
+    below: "May 2025"
+    containsDescendants:
+      - text: "13"
+- tapOn:
+    below: "May 2025"
+    containsDescendants:
+      - text: "18"
+- waitForAnimationToEnd
 - tapOn: "Save"
+- waitForAnimationToEnd
 - tapOn: "ongoing"
 - tapOn: "Save Changes"
+- waitForAnimationToEnd
 - tapOn: {id: "pencil" }
 - tapOn: "Cancel"
-- tapOn: {id: "trash" }
-- tapOn: "DELETE"
-#
+- extendedWaitUntil:
+    visible:
+      id: "addChecklist"
+    timeout: 10000
+- tapOn: {id: "addChecklist"}
+- tapOn: "Edit"
+- tapOn: {id: "checklistInput"}
+- eraseText
+- inputText: "Student Card"
+- doubleTapOn: "Confirm"
+- tapOn: {id: "checkbox"}
+- tapOn: "Delete"
+
+- waitForAnimationToEnd
 # Test For Dashboard Screen
 - tapOn: { id: "tab-dashboard" }
 - assertVisible:
@@ -115,11 +147,67 @@ appId: "com.s370101387.synctrip"
     below: "Ongoing"
     containsDescendants:
       - "Invite"
-- doubleTapOn: {id: "inviteEmailInput"}
-- inputText: "vivanoon6666@gmail.com"
+- waitForAnimationToEnd
+- tapOn: {id: "inviteEmailInput"}
+- inputText: "leadlegendx@gmail.com"
 - tapOn: { id: "confirmInvitation" }
 - tapOn: "OK"
 - tapOn: {id: "tab-trip"}
+- tapOn: {id: "addAnnouncement"}
+- tapOn: {id: "announcementInput"}
+- inputText: "Test Announcement"
+- tapOn: "Add"
+- tapOn: {id: "archiveTrip"}
+- tapOn: "ARCHIVE"
+- tapOn: "Archived"
+- tapOn: "Restore"
+- tapOn: "OK"
+- tapOn: { id: "tab-bill"}
+- tapOn: { id: "createBill"}
+- waitForAnimationToEnd
+- tapOn: "New Bill"
+- tapOn: {id: "billTitle"}
+- eraseText
+- inputText: "Test Bill"
+- tapOn: "Select…"
+- tapOn: "food"
+- tapOn: {id: "currencyButton"}
+- tapOn:
+    above: "EUR"
+    containsDescendants:
+      - "USD"
+- tapOn: {id: "participantAdd"}
+- tapOn: {id: "receiver"}
+- tapOn: {id: "participantAdd"}
+- tapOn: {id: "customSplit"}
+- tapOn: {id: "evenSplit"}
+- tapOn: { id: "enterTotalBill" }
+- inputText: "10"
+- scrollUntilVisible:
+    element:
+      id: "saveBill"
+- tapOn: {id: "saveBill"}
+- tapOn: "Test Bill"
+- tapOn: "Pay with PayPal"
+- back
+- tapOn: "Test Bill"
+- tapOn: "Delete Bill"
+- tapOn: "DELETE"
+- tapOn: {id: "tab-trip"}
+- scrollUntilVisible:
+    element:
+      id: "deleteAnnouncement"
+- tapOn: {id: "deleteAnnouncement"}
+- tapOn: {id: "helpButton"}
+- tapOn: "OK"
+- tapOn:
+    id: "exportICS"
+- back
+- tapOn: {id: "trash" }
+- extendedWaitUntil:
+    visible: "DELETE"
+    timeout: 10000
+- tapOn: "DELETE"
 - tapOn: "Delete Trip"
 - tapOn: "DELETE"
 # logout

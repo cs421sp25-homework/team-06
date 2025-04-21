@@ -62,11 +62,24 @@ const DashboardScreen = () => {
   const activeTrips = trips.filter((trip) => trip.status !== TripStatus.ARCHIVED);
   const archivedTrips = trips.filter((trip) => trip.status === TripStatus.ARCHIVED);
 
-  // For active trips, further categorize them by status
+  const sortCurrentTripFirst = (trips: any[]) => {
+    return [...trips].sort((a, b) => {
+      const aIsCurrent = a.id === currentUser?.currentTripId;
+      const bIsCurrent = b.id === currentUser?.currentTripId;
+      if (aIsCurrent && !bIsCurrent) return -1;
+      if (!aIsCurrent && bIsCurrent) return 1;
+      // If neither is the current trip, sort by startDate ascending
+      const dateA = new Date(a.startDate);
+      const dateB = new Date(b.startDate);
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
+  // For active trips, further categorize them by status and place the current trip at the top
   const categorizedTrips = {
-    planning: activeTrips.filter((trip) => trip.status === TripStatus.PLANNING),
-    ongoing: activeTrips.filter((trip) => trip.status === TripStatus.ONGOING),
-    completed: activeTrips.filter((trip) => trip.status === TripStatus.COMPLETED),
+    planning: sortCurrentTripFirst(activeTrips.filter((trip) => trip.status === TripStatus.PLANNING)),
+    ongoing: sortCurrentTripFirst(activeTrips.filter((trip) => trip.status === TripStatus.ONGOING)),
+    completed: sortCurrentTripFirst(activeTrips.filter((trip) => trip.status === TripStatus.COMPLETED)),
   };
 
   const handleJumpToTrip = (trip: any) => {
@@ -220,6 +233,7 @@ const DashboardScreen = () => {
               label="Email"
               mode="outlined"
               defaultValue={inviteEmail}
+              autoCapitalize="none"
               onChangeText={setInviteEmail}
             />
           </Dialog.Content>
