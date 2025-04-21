@@ -7,7 +7,7 @@ import { ActivityIndicator, Button, Card, Modal, Portal, Text, TextInput, IconBu
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Picker } from '@react-native-picker/picker'
-import { Destination, DestinationInfo, LatLng } from "../types/Destination";
+import { Destination, DestinationInfo, LatLng, RouteResponse } from "../types/Destination";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { useUser } from "../context/UserContext";
@@ -57,22 +57,21 @@ const MapScreen = () => {
   const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
   const [tripEndDate, setTripEndDate] = useState<Date | null>(null);
 
-  const [origin, setOrigin] = useState<LatLng | null>(null)
-  const [destination, setDestination] = useState<LatLng | null>(null)
   // 2) Travel mode: DRIVE, WALK, BICYCLE, or TRANSIT
   type TravelMode = 'DRIVE' | 'WALK' | 'BICYCLE' | 'TRANSIT'
   const [travelMode, setTravelMode] = useState<TravelMode>('DRIVE')
   // 3) Departure time as ISO string (you can hook this up to a DatePicker)
-  const [departureTime, setDepartureTime] = useState<string>('')
   // 4) Decoded route coordinates for your Polyline
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([])
 
   const mapRef = useRef<MapView | null>(null)
   const [routePlanningMode, setRoutePlanningMode] = useState(false)
-
+  const [routeInfo, setRouteInfo] = useState<RouteResponse | null>(null)
   const [originId, setOriginId] = useState<string | null>(null)
   const [destinationId, setDestinationId] = useState<string | null>(null)
-
+  const [departureTime, setDepartureTime] = useState<Date | null>(null)
+  const [showDeparturePicker, setShowDeparturePicker] = useState(false)
+  const [departureDateTime, setDepartureDateTime] = useState<Date | null>(null)
   // Convert trip's start/end to Date objects
   useEffect(() => {
     if (currentTrip) {
@@ -149,11 +148,28 @@ const MapScreen = () => {
       longitude: Number(destMarker.longitude),
     }
 
-    const encoded = await getRoute(origin, destination, travelMode)
-    console.log('encoded', encoded)
-    setRouteCoords(decodePolyline(encoded))
+    const depDate = new Date(convertTimestampToDate(originMarker.date))          // e.g. "2025-04-21"
+    //console.log('depDate', depDate, originMarker.date)
+    if (departureTime) {
+      depDate.setHours(
+        departureTime.getHours(),
+        departureTime.getMinutes(),
+        0, 0
+      )
+    }
+    setDepartureDateTime(depDate)
+
+    // 4) pass that full timestamp to the API
+    const departureSeconds = Math.floor(depDate.getTime() / 1000)
+    //console.log('departureSeconds', departureSeconds)
+    const resp = await getRoute(origin, destination, travelMode, departureSeconds)
+
+    setRouteInfo(resp)
+    setRouteCoords(decodePolyline(resp.encodedPolyline))
+    setOriginId(null)
+    setDestinationId(null)
     setRoutePlanningMode(false)
-    console.log('routeCoords', routeCoords)
+    console.log('route info', resp)
   }
 
   // Called when user long-presses on the map to add a new marker
@@ -480,7 +496,30 @@ const MapScreen = () => {
             )}
           </>
         ) : (
-          <View style={styles.routePlanningContainer}>
+            <View style={styles.routePlanningContainer}>
+              <View style={styles.modeSelector}>
+                {(['DRIVE', 'WALK', 'BICYCLE', 'TRANSIT'] as const).map((mode) => {
+                  const icons = { DRIVE: 'car', WALK: 'walk', BICYCLE: 'bike', TRANSIT: 'bus' }
+                  const selected = travelMode === mode
+                  return (
+                    <View
+                      key={mode}
+                      style={[
+                        styles.modeButton,
+                        selected && styles.modeButtonSelected
+                      ]}
+                    >
+                      <IconButton
+                        testID={`mode-${mode}`}
+                        icon={icons[mode]}
+                        color={selected ? '#fff' : '#666'}
+                        size={20}
+                        onPress={() => setTravelMode(mode)}
+                      />
+                    </View>
+                  )
+                })}
+              </View>
             <Picker
               testID="routeOriginPicker"
               selectedValue={originId}
@@ -519,7 +558,12 @@ const MapScreen = () => {
                 icon="directions"
                 size={24}
                 onPress={handlePlanRoute}
-              />
+                />
+                <IconButton
+                  testID="selectDepartureTime"
+                  icon="clock-outline"
+                  onPress={() => setShowDeparturePicker(true)}
+                />
               <IconButton
                 testID="cancelRoute"
                 icon="close"
@@ -574,6 +618,95 @@ const MapScreen = () => {
           />
         )}
       </MapView>
+      <TimePickerModal
+        visible={showDeparturePicker}
+        onDismiss={() => setShowDeparturePicker(false)}
+        onConfirm={({ hours, minutes }) => {
+          const now = new Date()
+          now.setHours(hours, minutes, 0, 0)
+          setDepartureTime(now)
+          setShowDeparturePicker(false)
+        }}
+        hours={departureTime?.getHours() ?? 8}
+        minutes={departureTime?.getMinutes() ?? 0}
+      />
+      {routeInfo && (
+        <Card style={styles.routeCard}>
+          <Card.Title
+            title="Route Details"
+            right={props => (
+              <IconButton
+                {...props}
+                testID="closeRouteInfo"
+                icon="close"
+                onPress={() => setRouteInfo(null)}
+              />
+            )}
+          />
+          <Card.Content>
+            {/* Travel Mode */}
+            <View style={styles.row}>
+              <IconButton
+                icon={
+                  travelMode === 'DRIVE' ? 'car' :
+                    travelMode === 'WALK' ? 'walk' :
+                      travelMode === 'BICYCLE' ? 'bike' :
+                        'bus'
+                }
+                size={20}
+              />
+              <Text>{travelMode}</Text>
+            </View>
+
+            {/* Distance */}
+            <Text>
+              Distance:{' '}
+              {(routeInfo.distanceMeters / 1000).toFixed(1)} km
+            </Text>
+
+            {/* Duration */}
+            {(() => {
+              const secs = routeInfo.duration
+              const h = Math.floor(secs / 3600)
+              const m = Math.floor((secs % 3600) / 60)
+              return (
+                <Text>
+                  Duration:{' '}
+                  {h > 0 && `${h} hour `}
+                  {m} mins
+                </Text>
+              )
+            })()}
+
+            <Text>
+              Start Time:{' '}
+              {departureTime
+                ? departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '--:--'}
+            </Text>
+
+            {/* Arrival Time */}
+            <Text>
+              Arrival Time:{' '}
+              {departureTime && routeInfo
+                ? new Date(departureTime.getTime() + routeInfo.duration * 1000)
+                  .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '--:--'}
+            </Text>
+
+            {/* Warnings or Tips */}
+            {routeInfo.routeLabels?.length > 0 && routeInfo.routeLabels[0] != 'DEFAULT_ROUTE' ? (
+              <Text style={styles.warning}>
+                Warnings: {routeInfo.routeLabels.join(', ')}
+              </Text>
+            ) : (
+              <Text style={styles.tips}>
+                Tips: No tolls or highways on this route—everything should go smoothly!
+              </Text>
+            )}
+          </Card.Content>
+        </Card>
+      )}
 
       {loading && (
         <View style={styles.loadingOverlay}>
@@ -898,10 +1031,42 @@ export default MapScreen;
 
 const styles = StyleSheet.create({
   routePlanningContainer: {
-    width: '100%',
     backgroundColor: 'white',
-    padding: 8,
     borderRadius: 4,
+    padding: 8,
+    // keep it positioned under your search bar
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 6,
+  },
+  modeButton: {
+    borderRadius: 24,
+    padding: 4,
+  },
+  modeButtonSelected: {
+    backgroundColor: '#007AFF',
+  },
+  routeCard: {
+    position: 'absolute',
+    top: '40%',          // middle of screen
+    left: 20,
+    right: 20,
+    elevation: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  warning: {
+    color: 'red',
+    marginTop: 6,
+  },
+  tips: {
+    color: '#444',
+    marginTop: 6,
   },
   picker: {
     marginVertical: 4,

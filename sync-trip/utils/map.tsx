@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import polyline from '@mapbox/polyline'
-import { DestinationInfo, Destination, LatLng } from "../types/Destination";
+import { DestinationInfo, Destination, LatLng, RouteResponse } from "../types/Destination";
 
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
 // Convert formatted address → latitude & longitude using `expo-location`
@@ -100,32 +100,50 @@ export async function getRoute(
     origin: LatLng,
     destination: LatLng,
     travelMode: 'DRIVE' | 'WALK' | 'BICYCLE' | 'TRANSIT' = 'DRIVE',
-    departureTimeSeconds?: number     // optional: seconds‑since‑epoch
-): Promise<string /* encoded polyline */> {
-    const body = {
+    departureTimeSeconds?: number
+): Promise<RouteResponse> {
+    // request only the fields we need
+    const url =
+        `https://routes.googleapis.com/directions/v2:computeRoutes` +
+        `?key=${GOOGLE_API_KEY}` +
+        `&fields=routes.polyline.encodedPolyline,` +
+        `routes.distanceMeters,` +
+        `routes.duration,` +
+        `routes.routeLabels`
+
+    const body: any = {
         origin: { location: { latLng: origin } },
         destination: { location: { latLng: destination } },
-        travelMode,
-        ...(departureTimeSeconds && { routingPreference: 'TRAFFIC_AWARE', departureTime: { seconds: departureTimeSeconds } })
+        travelMode
     }
-    const url = `https://routes.googleapis.com/directions/v2:computeRoutes?key=${GOOGLE_API_KEY}`
-        + `&fields=routes.polyline.encodedPolyline`;
-    const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', },
-            body: JSON.stringify(body)
-        }
-    )
-    //console.log('HTTP', resp.status, resp.statusText);
-    const data = await resp.json();
-    console.log('full payload', data.routes[0].polyline.encodedPolyline);
+    if (departureTimeSeconds != null) {
+        //body.routingPreference = 'TRAFFIC_AWARE'
+        //body.departureTime = { seconds: departureTimeSeconds }
+    }
+    console.log('body', body)
 
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    const data = await resp.json()
     if (!resp.ok || !data.routes) {
-        throw new Error(
-            `Routes API error ${resp.status}: ${JSON.stringify(data)}`
-        );
+        throw new Error(`Routes API error ${resp.status}: ${JSON.stringify(data)}`)
     }
-    return data.routes[0].polyline.encodedPolyline
+
+    const r = data.routes[0]
+    const rawDuration = r.duration
+    const durationSecs =
+        typeof rawDuration === 'string'
+            ? parseInt(rawDuration.replace(/[^0-9]/g, ''), 10)
+            : rawDuration
+    return {
+        encodedPolyline: r.polyline.encodedPolyline,
+        distanceMeters: r.distanceMeters,
+        duration: durationSecs,
+        routeLabels: r.routeLabels
+    }
 }
 
 export function decodePolyline(encoded: string): LatLng[] {
