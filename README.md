@@ -221,7 +221,8 @@ GitHub Actions triggers the Maestro E2E suite on pull requests via `.github/work
 4. Archived trip cost & itinerary review.  
 5. Archived‑trips section for dashboard cleanup.  
 6. Real‑time Google Maps integration (traffic & dynamic routes).  
-7. Expense update notifications via FCM & Cloud Functions.  
+7. Expense update notifications via FCM & Cloud Functions.
+8. Profile Avatar can be uploaded and stored.
 
 ## Tech Stack
 
