@@ -38,6 +38,10 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "useNextNotificationsApi": true,
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCSDzZzv6ML01c-nMlVaFc4wiBXwe8ERuI"
