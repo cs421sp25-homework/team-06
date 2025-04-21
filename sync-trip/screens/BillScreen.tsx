@@ -194,7 +194,6 @@ const BillScreen = () => {
         </View>
       )}
 
-      {/*
      {segment === 'active' ? (
         <FlatList
           key="active"
@@ -266,39 +265,6 @@ const BillScreen = () => {
           }}
         />
       )}
-        */}
-
-      <SectionList
-        sections={ segment === 'active' ? activeSections : archivedSections }
-        keyExtractor={item => item.id}
-        renderSectionHeader={({ section }) => (
-          <Text style={styles.sectionHeader}>{section.title}</Text>
-        )}
-        renderItem={({ item }) => {
-          const bal = balanceForUser(item, currentUser?.uid ?? '');
-          const bg =
-            bal > 0   ? '#e8ffea'
-          : bal < 0   ? '#ffecec'
-          : undefined;
-
-          return (
-            <List.Item
-              title={item.title}
-              description={
-                bal === 0
-                  ? undefined
-                  : bal > 0
-                    ? `You should receive ${bal.toFixed(2)}`
-                    : `You owe ${(-bal).toFixed(2)}`
-              }
-              onPress={() => handleBillPress(item.id)}
-              style={[styles.billItem, bg && { backgroundColor: bg }]}
-              left={props => <List.Icon {...props} icon="file-document-outline" />}
-            />
-          );
-        }}
-      />
-
 
       <Button
         testID="createBill"

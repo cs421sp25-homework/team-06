@@ -59,6 +59,7 @@ interface NameLineProps {
   creditorUid: string;
   amount: number;
   collaborators: Collaborator[];
+  currentUserUid: string;
 }
 
 const AsyncNameLine: React.FC<NameLineProps> = ({
@@ -66,6 +67,7 @@ const AsyncNameLine: React.FC<NameLineProps> = ({
   creditorUid,
   amount,
   collaborators,
+  currentUserUid,
 }) => {
   const [debtorName, setDebtorName] = useState(debtorUid);
   const [creditorName, setCreditorName] = useState(creditorUid);
@@ -77,9 +79,15 @@ const AsyncNameLine: React.FC<NameLineProps> = ({
     })();
   }, [debtorUid, creditorUid, collaborators]);
 
+  const isReceiving = creditorUid === currentUserUid;
+  const amountColor = isReceiving ? 'green' : 'red';
+
   return (
     <Text style={styles.detail}>
-      {debtorName} → {creditorName}: {amount.toFixed(2)}
+      {debtorName} owes {creditorName}:{' '} 
+      <Text style={{ color: amountColor, fontWeight: 'bold' }}>
+        {amount.toFixed(2)}
+      </Text>
     </Text>
   );
 };
@@ -140,15 +148,17 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     if (isNaN(total) || participants.length === 0) {
       return {};
     }
-    const share = total / participants.length;
-    return { [currentUserUid]: participants.reduce((acc, uid) => {
+    const otherParticipants = participants.filter(uid => uid !== currentUserUid);
+    const share = total / (otherParticipants.length || 1);
+    return { [currentUserUid]: otherParticipants.reduce((acc, uid) => {
       acc[uid] = share;
       return acc;
     }, {} as { [key: string]: number }) };
   };
 
   const computeCustomSummary = (): { [debtor: string]: { [creditor: string]: number } } => {
-    return { [currentUserUid]: participants.reduce((acc, uid) => {
+    const otherParticipants = participants.filter(uid => uid !== currentUserUid);
+    return { [currentUserUid]: otherParticipants.reduce((acc, uid) => {
       const amt = parseFloat(customAmounts[uid] || '0');
       if (!isNaN(amt)) {
         acc[uid] = amt;
@@ -680,10 +690,6 @@ const styles = StyleSheet.create({
   modeButtonText: {
     fontSize: 14,
     color: '#007aff',
-  },
-  summarySection: {
-    width: '100%',
-    marginTop: 12,
   },
   summaryTitle: {
     fontSize: 18,
