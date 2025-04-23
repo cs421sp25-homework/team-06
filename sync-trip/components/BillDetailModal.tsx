@@ -200,6 +200,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
             <Text style={styles.label}>Description:</Text>
             <TextInput
+              testID="billDescription"
               mode="outlined"
               value={description}
               onChangeText={setDescription}
@@ -262,6 +263,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             )}
 
             <Button
+              testID="deleteBill"
               mode="outlined"
               textColor="red"
               style={{ marginTop: 20, width: '100%' }}
@@ -497,6 +499,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           {/* Archive */}
           {!bill.archived && (
             <Button
+              testID="archiveBill"
               mode="outlined"
               style={{ marginTop: 12 }}
               onPress={() => Alert.alert(

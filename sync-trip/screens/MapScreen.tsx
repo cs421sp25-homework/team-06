@@ -792,7 +792,7 @@ const MapScreen = () => {
               />
             </Card.Content>
             <Card.Actions>
-              <IconButton icon="check" mode="contained" onPress={saveNewMarker}
+              <IconButton testID="confirmDestination" icon="check" mode="contained" onPress={saveNewMarker}
               />
               <IconButton
                 testID="showInfo" mode="contained" icon="information" onPress={showDetailedInfo}

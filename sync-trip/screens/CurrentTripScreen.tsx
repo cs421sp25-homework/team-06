@@ -542,6 +542,7 @@ const CurrentTripScreen = () => {
                             <Text style={styles.editButtonText}>Edit</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
+                            testID="deleteChecklistItem"
                             style={styles.deleteButton}
                             onPress={() => deleteChecklistItem(destination.id, item.id)}
                           >

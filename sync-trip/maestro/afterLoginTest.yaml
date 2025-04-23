@@ -78,7 +78,7 @@ appId: "com.s370101387.synctrip"
 - waitForAnimationToEnd
 - tapOn: "Ok"
 - waitForAnimationToEnd
-- tapOn: "Save"
+- tapOn: {id: "confirmDestination"}
 - tapOn: { id: "map"}
 - waitForAnimationToEnd
 - tapOn: { id: "editMarker" }
@@ -95,9 +95,6 @@ appId: "com.s370101387.synctrip"
 - tapOn: { id: "timePicker2", point: "70%,50%" }
 - waitForAnimationToEnd
 - tapOn: "Ok"
-- extendedWaitUntil:
-    visible: "Save"
-    timeout: 10000
 - tapOn: { id: "saveChanges" }
 - waitForAnimationToEnd
 #
@@ -130,12 +127,11 @@ appId: "com.s370101387.synctrip"
 - tapOn: {id: "addChecklist"}
 - tapOn: "Edit"
 - tapOn: {id: "checklistInput"}
-- eraseText
+# - eraseText
 - inputText: "Student Card"
 - doubleTapOn: "Confirm"
 - tapOn: {id: "checkbox"}
-- tapOn: "Delete"
-
+- tapOn: {id: "deleteChecklistItem"}
 - waitForAnimationToEnd
 # Test For Dashboard Screen
 - tapOn: { id: "tab-dashboard" }
@@ -177,8 +173,8 @@ appId: "com.s370101387.synctrip"
     containsDescendants:
       - "USD"
 - tapOn: {id: "participantAdd"}
-- tapOn: {id: "receiver"}
-- tapOn: {id: "participantAdd"}
+- tapOn: "Confirm"
+#- tapOn: {id: "participantAdd"}
 - tapOn: {id: "customSplit"}
 - tapOn: {id: "evenSplit"}
 - tapOn: { id: "enterTotalBill" }
@@ -188,10 +184,17 @@ appId: "com.s370101387.synctrip"
       id: "saveBill"
 - tapOn: {id: "saveBill"}
 - tapOn: "Test Bill"
-- tapOn: "Pay with PayPal"
-- back
+# - tapOn: "Pay with PayPal"
+- scrollUntilVisible:
+    element:
+      id: "archiveBill"
+- tapOn: {id: "archiveBill"}
+- tapOn: "ARCHIVE"
+#- back
 - tapOn: "Test Bill"
-- tapOn: "Delete Bill"
+- tapOn: {id: "billDescription"}
+- inputText: "Dinner"
+- doubleTapOn: "Delete Bill"
 - tapOn: "DELETE"
 - tapOn: {id: "tab-trip"}
 - scrollUntilVisible:
@@ -203,6 +206,48 @@ appId: "com.s370101387.synctrip"
 - tapOn:
     id: "exportICS"
 - back
+- tapOn: { id: "tab-map" }
+- waitForAnimationToEnd
+- tapOn: { id: "searchPlaces" }
+- waitForAnimationToEnd
+- inputText: "The White House"
+- doubleTapOn: "The White House, Washington, DC, USA"
+- tapOn: { id: "markPlace" }
+- waitForAnimationToEnd
+- tapOn: "Name"
+- waitForAnimationToEnd
+- inputText: "The White House"
+- tapOn: "Description"
+- waitForAnimationToEnd
+- inputText: "Tour"
+- tapOn: { id: "selectDate" }
+- tapOn: "17"
+- waitForAnimationToEnd
+- tapOn: "Save"
+- waitForAnimationToEnd
+- tapOn: { id: "selectTime" }
+- waitForAnimationToEnd
+- tapOn: { id: "timePicker1", point: "50%,50%" }
+- waitForAnimationToEnd
+- tapOn: { id: "timePicker1", point: "50%,50%" }
+- waitForAnimationToEnd
+- tapOn: "Ok"
+- waitForAnimationToEnd
+- tapOn: {id: "confirmDestination"}
+- tapOn: { id: "map"}
+- tapOn: {id: "openRoutePlanning"}
+- tapOn: {id: "routeOriginPicker"}
+- tapOn: "Baltimore, MD 21218, USA"
+- tapOn: {id: "routeDestinationPicker"}
+- tapOn: "Washington, DC, USA"
+- tapOn: {id: "confirmRoute"}
+- tapOn: {id: "closeRouteInfo"}
+- tapOn: {id: "tab-trip"}
+- tapOn: {id: "trash" }
+- extendedWaitUntil:
+    visible: "DELETE"
+    timeout: 10000
+- tapOn: "DELETE"
 - tapOn: {id: "trash" }
 - extendedWaitUntil:
     visible: "DELETE"
