@@ -392,29 +392,29 @@ const MapScreen = () => {
     setDescription('');
   };
 
-    const handleDeleteDestination = async () => {
-      const markerId = (currMarker as any).id;
-      if (!markerId) {
-        Alert.alert("Error", "Destination missing ID.");
-        return;
-      }
-      Alert.alert(
-        "Delete Destination",
-        "Are you sure you want to delete this destination?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              if (!currentTrip.id) throw new Error("currentTrip missing ID");
-              await deleteDestinationInTrip(currentTrip.id, markerId);
-              setInfoModalVisible(false)
-            },
+  const handleDeleteDestination = async () => {
+    const markerId = (currMarker as any).id;
+    if (!markerId) {
+      Alert.alert("Error", "Destination missing ID.");
+      return;
+    }
+    Alert.alert(
+      "Delete Destination",
+      "Are you sure you want to delete this destination?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!currentTrip.id) throw new Error("currentTrip missing ID");
+            await deleteDestinationInTrip(currentTrip.id, markerId);
+            setInfoModalVisible(false)
           },
-        ]
-      );
-    };
+        },
+      ]
+    );
+  };
 
   // --- Google Places Search (Autocomplete) ---
   const handleSearch = async (query: string) => {
@@ -465,7 +465,7 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-      
+
       <View style={styles.searchContainer}>
         {!routePlanningMode ? (
           <>
@@ -494,30 +494,30 @@ const MapScreen = () => {
             )}
           </>
         ) : (
-            <View style={styles.routePlanningContainer}>
-              <View style={styles.modeSelector}>
-                {(['DRIVE', 'WALK', 'BICYCLE', 'TRANSIT'] as const).map((mode) => {
-                  const icons = { DRIVE: 'car', WALK: 'walk', BICYCLE: 'bike', TRANSIT: 'bus' }
-                  const selected = travelMode === mode
-                  return (
-                    <View
-                      key={mode}
-                      style={[
-                        styles.modeButton,
-                        selected && styles.modeButtonSelected
-                      ]}
-                    >
-                      <IconButton
-                        testID={`mode-${mode}`}
-                        icon={icons[mode]}
-                        color={selected ? '#fff' : '#666'}
-                        size={20}
-                        onPress={() => setTravelMode(mode)}
-                      />
-                    </View>
-                  )
-                })}
-              </View>
+          <View style={styles.routePlanningContainer}>
+            <View style={styles.modeSelector}>
+              {(['DRIVE', 'WALK', 'BICYCLE', 'TRANSIT'] as const).map((mode) => {
+                const icons = { DRIVE: 'car', WALK: 'walk', BICYCLE: 'bike', TRANSIT: 'bus' }
+                const selected = travelMode === mode
+                return (
+                  <View
+                    key={mode}
+                    style={[
+                      styles.modeButton,
+                      selected && styles.modeButtonSelected
+                    ]}
+                  >
+                    <IconButton
+                      testID={`mode-${mode}`}
+                      icon={icons[mode]}
+                      color={selected ? '#fff' : '#666'}
+                      size={20}
+                      onPress={() => setTravelMode(mode)}
+                    />
+                  </View>
+                )
+              })}
+            </View>
             <Picker
               testID="routeOriginPicker"
               selectedValue={originId}
@@ -556,17 +556,21 @@ const MapScreen = () => {
                 icon="directions"
                 size={24}
                 onPress={handlePlanRoute}
-                />
-                <IconButton
-                  testID="selectDepartureTime"
-                  icon="clock-outline"
-                  onPress={() => setShowDeparturePicker(true)}
-                />
+              />
+              <IconButton
+                testID="selectDepartureTime"
+                icon="clock-outline"
+                onPress={() => setShowDeparturePicker(true)}
+              />
               <IconButton
                 testID="cancelRoute"
                 icon="close"
                 size={24}
-                onPress={() => setRoutePlanningMode(false)}
+                onPress={() => {
+                  setRoutePlanningMode(false)
+                  setTravelMode('DRIVE')
+                }
+                }
               />
             </View>
           </View>
@@ -760,8 +764,8 @@ const MapScreen = () => {
                 mode="single"
                 visible={markerDatePickerVisible}
                 onDismiss={() => setMarkerDatePickerVisible(false)}
-                previous= 'Previous'
-                next= {'Next', testID="nextMonth"}
+                previous='Previous'
+                next={'Next', testID = "nextMonth"}
                 date={markerDate || tripStartDate}
                 onConfirm={({ date }) => {
                   setMarkerDate(date);
@@ -819,31 +823,31 @@ const MapScreen = () => {
               )}
             />
             <Card.Content>
-                  <Text style={styles.addressText}>{currMarker?.address}</Text>
-                  <TextInput
-                    testID="editMarkerName"
-                    label="Name"
-                    value={markerName}
-                    mode="outlined"
-                    onChangeText={setMarkerName}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    testID="editDescription"
-                    label="Description"
-                    value={description}
-                    mode="outlined"
-                    onChangeText={setDescription}
-                    style={styles.input}
-                  />
+              <Text style={styles.addressText}>{currMarker?.address}</Text>
+              <TextInput
+                testID="editMarkerName"
+                label="Name"
+                value={markerName}
+                mode="outlined"
+                onChangeText={setMarkerName}
+                style={styles.input}
+              />
+              <TextInput
+                testID="editDescription"
+                label="Description"
+                value={description}
+                mode="outlined"
+                onChangeText={setDescription}
+                style={styles.input}
+              />
 
               {/* Date/time pickers for editing */}
-                  <Button testID="editDate" onPress={() => setMarkerDatePickerVisible(true)}>
-                    {markerDate
-                      ? `Date: ${markerDate.toDateString()}`
-                      : "Select Date"
-                    }
-                  </Button>
+              <Button testID="editDate" onPress={() => setMarkerDatePickerVisible(true)}>
+                {markerDate
+                  ? `Date: ${markerDate.toDateString()}`
+                  : "Select Date"
+                }
+              </Button>
               <DatePickerModal
                 locale="en"
                 mode="single"
@@ -860,12 +864,12 @@ const MapScreen = () => {
                 }}
               />
 
-                  <Button testID="editTime" onPress={() => setMarkerTimePickerVisible(true)}>
-                    {markerTime
-                      ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
+              <Button testID="editTime" onPress={() => setMarkerTimePickerVisible(true)}>
+                {markerTime
+                  ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
                   : "Select Time"
                 }
-                  </Button>
+              </Button>
               <TimePickerModal
                 testID="timePicker2"
                 visible={markerTimePickerVisible}
@@ -873,7 +877,7 @@ const MapScreen = () => {
                 onConfirm={onConfirmMarkerTime}
                 hours={markerTime?.hours || 12}
                 minutes={markerTime?.minutes || 0}
-                  />
+              />
             </Card.Content>
             <Card.Actions>
               <IconButton
@@ -912,14 +916,6 @@ const MapScreen = () => {
             </Card.Content>
             <Card.Actions>
               <IconButton
-                testID="openRoutePlanning"
-                icon="map-marker-path"
-                onPress={() => {
-                  setInfoModalVisible(false)
-                  setRoutePlanningMode(true)
-                }}
-              />
-              <IconButton
                 testID="showInfo" mode="contained" icon="information" onPress={showDetailedInfo}
               />
               <IconButton
@@ -943,12 +939,22 @@ const MapScreen = () => {
             <Card.Title
               title={fetchedPlaceDetails?.name || "Place Details"}
               right={props => (
-                <IconButton
-                  {...props}
-                  testID="closeBottomSheet"
-                  icon="close"
-                  onPress={() => setBottomSheetVisible(false)}
-                />
+                <View style={{ flexDirection: 'row' }}>
+                  <IconButton
+                    {...props}
+                    mode="contained-tonal"
+                    testID="markPlace"
+                    icon="plus"
+                    onPress={handleMarkDestination}
+                  />
+                  <IconButton
+                    {...props}
+                    testID="closeBottomSheet"
+                    mode="contained-tonal"
+                    icon="close"
+                    onPress={() => setBottomSheetVisible(false)}
+                  />
+                </View>
               )}
             />
             <Card.Content>
@@ -974,10 +980,16 @@ const MapScreen = () => {
                 </Text>
               </View>
             </Card.Content>
-            <Card.Actions>
-              <Button testID="markPlace" mode="contained" onPress={handleMarkDestination}>
-                Mark This Place
-              </Button>
+            <Card.Actions style={{ flexDirection: 'row' }}>
+              <IconButton
+                testID="openRoutePlanning"
+                icon="car"
+                onPress={() => {
+                  setBottomSheetVisible(false)
+                  setInfoModalVisible(false)
+                  setRoutePlanningMode(true)
+                }}
+              />
             </Card.Actions>
           </Card>
         </Modal>
@@ -989,31 +1001,6 @@ const MapScreen = () => {
 export default MapScreen;
 
 const styles = StyleSheet.create({
-  routePlanningContainer: {
-    backgroundColor: 'white',
-    borderRadius: 4,
-    padding: 8,
-    // keep it positioned under your search bar
-  },
-  modeSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 6,
-  },
-  modeButton: {
-    borderRadius: 24,
-    padding: 4,
-  },
-  modeButtonSelected: {
-    backgroundColor: '#007AFF',
-  },
-  routeCard: {
-    position: 'absolute',
-    top: '40%',          // middle of screen
-    left: 20,
-    right: 20,
-    elevation: 4,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1091,9 +1078,9 @@ const styles = StyleSheet.create({
   // Search bar styles
   searchContainer: {
     position: 'absolute',
-    top: 40,
+    top: 10,
     left: 10,
-    right: 10,
+    right: 60,
     zIndex: 1,
     backgroundColor: 'white',
     borderRadius: 5,
@@ -1110,5 +1097,29 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+  },
+  routePlanningContainer: {
+    backgroundColor: 'white',
+    borderRadius: 4,
+    padding: 8,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 6,
+  },
+  modeButton: {
+    borderRadius: 24,
+    padding: 4,
+  },
+  modeButtonSelected: {
+    backgroundColor: '#007AFF',
+  },
+  routeCard: {
+    position: 'absolute',
+    top: '40%',          // middle of screen
+    left: 20,
+    right: 20,
+    elevation: 4,
   },
 });
