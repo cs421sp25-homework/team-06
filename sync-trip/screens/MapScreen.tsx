@@ -51,7 +51,6 @@ const MapScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<DestinationInfo | null>(null);
-  const [placeDetailsModalVisible, setPlaceDetailsModalVisible] = useState(false);
 
   // We'll store the trip's start/end date in local states
   const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
@@ -279,7 +278,6 @@ const MapScreen = () => {
     setCurrMarker(marker);
 
     // Close the bottom sheet and open the marker creation modal
-    setPlaceDetailsModalVisible(false);
     setBottomSheetVisible(false);
     setModalVisible(true);
   };
@@ -450,7 +448,7 @@ const MapScreen = () => {
         longitudeDelta: 0.05,
       });
       setSelectedPlaceDetails(response);
-      setPlaceDetailsModalVisible(true);
+      setBottomSheetVisible(true);
       setSearchResults([]);
       setSearchQuery('');
     }
@@ -936,59 +934,23 @@ const MapScreen = () => {
           </Card>
         </Modal>
 
-        {/* Modal for detailed place information (from search) */}
-        <Modal
-          visible={placeDetailsModalVisible}
-          onDismiss={() => setPlaceDetailsModalVisible(false)}
-          contentContainerStyle={[styles.modalContainer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}
-        >
-          <Card style={styles.card}>
-            <Card.Title title={selectedPlaceDetails?.name || "Place Details"} />
-            <Card.Content>
-              <Text style={styles.addressText}>{selectedPlaceDetails?.address}</Text>
-              {selectedPlaceDetails?.phone && (
-                <Text>Phone: {selectedPlaceDetails.phone}</Text>
-              )}
-              {selectedPlaceDetails?.website && (
-                <Text>Website: {selectedPlaceDetails.website}</Text>
-              )}
-              {selectedPlaceDetails?.rating && (
-                <View style={styles.ratingContainer}>
-                  {renderStars(selectedPlaceDetails.rating)}
-                  <Text style={styles.ratingText}>{selectedPlaceDetails.rating.toFixed(1)}</Text>
-                </View>
-              )}
-              {selectedPlaceDetails?.openingHours && (
-                <View style={styles.openingHoursContainer}>
-                  <Text style={{
-                    color: selectedPlaceDetails.openingHours.open_now ? 'green' : 'red',
-                    fontWeight: 'bold'
-                  }}>
-                    {selectedPlaceDetails.openingHours.open_now ? 'Open Now' : 'Closed'}
-                  </Text>
-                  <Text style={styles.weekdayText}>
-                    {getTodayOpeningHours(selectedPlaceDetails.openingHours.weekday_text)}
-                  </Text>
-                </View>
-              )}
-            </Card.Content>
-            <Card.Actions>
-              <Button mode="contained" onPress={() => setPlaceDetailsModalVisible(false)}>
-                Close
-              </Button>
-              <Button testID="markPlace" mode="outlined" onPress={handleMarkDestination}>
-                Mark This Place
-              </Button>
-            </Card.Actions>
-          </Card>
-        </Modal>
         <Modal
           visible={bottomSheetVisible}
           onDismiss={() => setBottomSheetVisible(false)}
           contentContainerStyle={[styles.modalContainer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}
         >
           <Card style={styles.card}>
-            <Card.Title title={fetchedPlaceDetails?.name || "Place Details"} />
+            <Card.Title
+              title={fetchedPlaceDetails?.name || "Place Details"}
+              right={props => (
+                <IconButton
+                  {...props}
+                  testID="closeBottomSheet"
+                  icon="close"
+                  onPress={() => setBottomSheetVisible(false)}
+                />
+              )}
+            />
             <Card.Content>
               <Text style={styles.addressText}>{fetchedPlaceDetails?.address}</Text>
               <Text style={styles.infoText}>Phone: {fetchedPlaceDetails?.phone || "N/A"}</Text>
@@ -1013,11 +975,8 @@ const MapScreen = () => {
               </View>
             </Card.Content>
             <Card.Actions>
-              <Button mode="contained" onPress={handleMarkDestination}>
+              <Button testID="markPlace" mode="contained" onPress={handleMarkDestination}>
                 Mark This Place
-              </Button>
-              <Button mode="outlined" onPress={() => setBottomSheetVisible(false)}>
-                Cancel
               </Button>
             </Card.Actions>
           </Card>
