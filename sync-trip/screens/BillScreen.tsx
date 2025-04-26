@@ -3,13 +3,14 @@ import {
   View,
   FlatList,
   StyleSheet,
-  SectionList
 } from "react-native";
 import {
   Button,
   List,
   Text,
   SegmentedButtons,
+  Card, 
+  Divider,
 } from 'react-native-paper';
 import { useBillTransaction } from "../context/BillAndTransactionContext";
 import { useTrip } from "../context/TripContext";
@@ -158,6 +159,12 @@ const BillScreen = () => {
     return summary;
   }, [activeBills, collaboratorsFull, currentUserUid]);
 
+  const totalYouOwe = useMemo(() => {
+    return Object.values(debtSummary)
+      .filter(v => v < 0)
+      .reduce((sum, v) => sum + (-v), 0);
+  }, [debtSummary]);
+
   const makeSections = (list: Bill[]) => {
     const map: Record<string, Bill[]> = {};
     list.forEach(bill => {
@@ -181,19 +188,26 @@ const BillScreen = () => {
       </Text>
 
       {Object.values(debtSummary).some(v => v !== 0) && (
-        <View style={styles.debtSummaryContainer}>
-          {Object.entries(debtSummary).map(([uid, amt]) => {
-            if (amt === 0) return null;
-            const name = collaboratorsFull.find(c => c.uid === uid)?.name || uid;
-            return (
-              <Text key={uid} style={styles.debtSummaryText}>
-                {amt < 0
-                  ? `You owe ${(-amt).toFixed(2)} to ${name}`
-                  : `${name} owes you ${amt.toFixed(2)}`}
-              </Text>
-            );
-          })}
-        </View>
+        <Card style={styles.debtCard}>
+          <Card.Title title="Balance Summary" />
+          <Card.Content>
+            {Object.entries(debtSummary).map(([uid, amt]) => {
+              if (amt === 0) return null;
+              const name = collaboratorsFull.find(c => c.uid === uid)?.name || uid;
+              return (
+                <Text key={uid} style={styles.debtLine}>
+                  {amt < 0
+                    ? `You owe $${(-amt).toFixed(2)} to ${name}`
+                    : `${name} owes you $${amt.toFixed(2)}`}
+                </Text>
+              );
+            })}
+            <Divider style={styles.debtDivider} />
+            <Text style={styles.totalOweText}>
+              Total you owe: ${totalYouOwe.toFixed(2)}
+            </Text>
+          </Card.Content>
+        </Card>
       )}
 
      {segment === 'active' ? (
@@ -214,15 +228,20 @@ const BillScreen = () => {
             return (
               <List.Item
                 title={item.title}
-                description={
-                  <>
-                  {item.category && <Text style={styles.categoryBadge}>{item.category}</Text>}
-                  <Text>{item.description}</Text>
-                  <Text style={styles.balanceText}>
-                    {bal === 0 ? "" : bal > 0 ? `You should receive ${bal}` : `You owe ${-bal}`}
-                  </Text>
-                </>
-                }
+                description={() => (
+                  <View style={styles.itemDescription}>
+                    <Text style={styles.categoryBadge}>
+                      {item.category || 'Uncategorized'}
+                    </Text>
+                    <Text style={styles.balanceText}>
+                      {bal === 0
+                        ? 'No balance'
+                        : bal > 0
+                        ? `Receives $${bal.toFixed(2)}`
+                        : `Owes $${(-bal).toFixed(2)}`}
+                    </Text>
+                  </View>
+                )}
                 onPress={() => {
                   handleBillPress(item.id)
                 }}
@@ -250,13 +269,20 @@ const BillScreen = () => {
             return (
               <List.Item
                 title={item.title}
-                description={
-                  bal === 0
-                    ? undefined
-                    : bal > 0
-                    ? `You should receive ${bal.toFixed(2)}`
-                    : `You owe ${(-bal).toFixed(2)}`
-                }
+                description={() => (
+                  <View style={styles.itemDescription}>
+                    <Text style={styles.categoryBadge}>
+                      {item.category || 'Uncategorized'}
+                    </Text>
+                    <Text style={styles.balanceText}>
+                      {bal === 0
+                        ? 'No balance'
+                        : bal > 0
+                        ? `Receives $${bal.toFixed(2)}`
+                        : `Owes $${(-bal).toFixed(2)}`}
+                    </Text>
+                  </View>
+                )}
                 onPress={() => {
                   handleBillPress(item.id)
                 }}
@@ -306,14 +332,51 @@ const BillScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   header: { marginBottom: 16, fontSize: 18, fontWeight: 'bold' },
-  billItem: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
   createButton: {
-    marginTop: 20,
+    marginTop: 10,
     alignSelf: 'center',
     width: 180,
+    marginBottom: 10,
+  },
+  debtCard: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 2,
+  },
+  debtLine: {
+    marginVertical: 4,
+    fontSize: 14,
+  },
+  debtDivider: {
+    marginVertical: 8,
+  },
+  totalOweText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  billItem: {
+    borderRadius: 8,
+    marginVertical: 6,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  itemDescription: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,  // 与 List.Item 文本对齐
+  },
+  categoryBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  balanceText: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });
 
