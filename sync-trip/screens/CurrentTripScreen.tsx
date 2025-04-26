@@ -429,22 +429,32 @@ const CurrentTripScreen = () => {
           <View style={styles.buttonRow}>
             <Button
               testID="editTrip"
-              mode="contained"
+              icon="pencil"
+              mode="text"
               onPress={handleBeginEditCurrentTrip}
-              style={styles.smallButton}
+              style={styles.iconTextButton}
             >
-              Edit Trip
+              Edit
             </Button>
-            <Button testID="archiveTrip" mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
-              Archive Trip
+            <Button 
+              testID="archiveTrip" 
+              icon="archive"
+              mode="text"
+              compact
+              onPress={handleArchiveTrip}
+              style={styles.iconTextButton}
+            >
+              Archive
             </Button>
             <Button
-              mode="contained"
+              icon="delete"
+              mode="text"
+              compact
+              textColor="#e53935"
               onPress={handleDeleteTrip}
-              buttonColor="#e53935"
-              style={styles.smallButton}
+              style={styles.iconTextButton}
             >
-              Delete Trip
+              Delete
             </Button>
           </View>
         )}
@@ -830,10 +840,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     margin: 10,
   },
-  smallButton: {
-    marginHorizontal: 1,
-    paddingHorizontal: 2,
-    width: 130
+  iconTextButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 6,
   },
   checklistContainer: {
     marginTop: 10,
