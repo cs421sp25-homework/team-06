@@ -159,11 +159,17 @@ const BillScreen = () => {
     return summary;
   }, [activeBills, collaboratorsFull, currentUserUid]);
 
-  const totalYouOwe = useMemo(() => {
-    return Object.values(debtSummary)
-      .filter(v => v < 0)
-      .reduce((sum, v) => sum + (-v), 0);
-  }, [debtSummary]);
+  const totalYouOwe = useMemo(
+    () => Object.values(debtSummary).filter(v => v < 0).reduce((sum, v) => sum + (-v), 0),
+    [debtSummary]
+  );
+
+  const totalYouReceive = useMemo(
+    () => Object.values(debtSummary).filter(v => v > 0).reduce((sum, v) => sum + v, 0),
+    [debtSummary]
+  );
+
+  const netBalance = totalYouReceive - totalYouOwe;
 
   const makeSections = (list: Bill[]) => {
     const map: Record<string, Bill[]> = {};
@@ -194,18 +200,28 @@ const BillScreen = () => {
             {Object.entries(debtSummary).map(([uid, amt]) => {
               if (amt === 0) return null;
               const name = collaboratorsFull.find(c => c.uid === uid)?.name || uid;
-              return (
+              const isReceive = amt > 0;
+                return (
                 <Text key={uid} style={styles.debtLine}>
-                  {amt < 0
-                    ? `You owe $${(-amt).toFixed(2)} to ${name}`
-                    : `${name} owes you $${amt.toFixed(2)}`}
+                  {isReceive
+                    ? `${name} owes you `
+                    : `You owe `}
+                  <Text style={isReceive ? styles.receives : styles.owes}>
+                    ${Math.abs(amt).toFixed(2)}
+                  </Text>
+                  {isReceive ? '' : ` to ${name}`}
                 </Text>
-              );
+                );
             })}
             <Divider style={styles.debtDivider} />
-            <Text style={styles.totalOweText}>
-              Total you owe: ${totalYouOwe.toFixed(2)}
-            </Text>
+             <Text style={styles.totalText}>
+               {netBalance >= 0
+                 ? 'Total you receive: '
+                 : 'Total you owe: '}
+               <Text style={netBalance >= 0 ? styles.receives : styles.owes}>
+                 ${Math.abs(netBalance).toFixed(2)}
+               </Text>
+             </Text>
           </Card.Content>
         </Card>
       )}
@@ -320,6 +336,7 @@ const BillScreen = () => {
         onClose={() => setBillModalVisible(false)}
         onSave={handleBillSave}
         onArchive={handleArchive}
+        onRestore={handleRestore} 
         onDelete={async id => {
           await deleteBill(id);
           setBillModalVisible(false);
@@ -368,7 +385,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,  // 与 List.Item 文本对齐
+    paddingHorizontal: 16,
   },
   categoryBadge: {
     fontSize: 12,
@@ -378,6 +395,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
   },
+  receives: {
+    color: 'green',
+  },
+  owes: {
+    color: 'red',
+  },
+  totalText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    marginTop: 8,
+  },
+
 });
 
 export default BillScreen;
