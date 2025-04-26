@@ -224,6 +224,10 @@ const CurrentTripScreen = () => {
     );
   };
 
+  const handleCancelEdit = () => {
+    setEditMode(false);
+  };
+
   const openDestinationDialogForEdit = (destination: Destination) => {
     setEditingDestinationId(destination.id || null);
     setDestinationName(destination.name || ""); // Use 'name' for the event title
@@ -422,29 +426,50 @@ const CurrentTripScreen = () => {
           </Card>
         )}
         {editMode ? (
-          <Button mode="contained" onPress={handleSaveTrip} style={{ margin: 15 }}>
-            Save Changes
-          </Button>
+          <>
+            <Button mode="contained" onPress={handleSaveTrip} style={styles.saveButton}>
+              Save Changes
+            </Button>
+            <Button
+              mode="text"
+              onPress={handleCancelEdit}
+              style={styles.cancelButton}
+              textColor="#e53935"
+            >
+              Cancel
+            </Button>
+          </>
+          
         ) : (
           <View style={styles.buttonRow}>
             <Button
               testID="editTrip"
-              mode="contained"
+              icon="pencil"
+              mode="text"
               onPress={handleBeginEditCurrentTrip}
-              style={styles.smallButton}
+              style={styles.iconTextButton}
             >
-              Edit Trip
+              Edit
             </Button>
-            <Button testID="archiveTrip" mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
-              Archive Trip
+            <Button 
+              testID="archiveTrip" 
+              icon="archive"
+              mode="text"
+              compact
+              onPress={handleArchiveTrip}
+              style={styles.iconTextButton}
+            >
+              Archive
             </Button>
             <Button
-              mode="contained"
+              icon="delete"
+              mode="text"
+              compact
+              textColor="#e53935"
               onPress={handleDeleteTrip}
-              buttonColor="#e53935"
-              style={styles.smallButton}
+              style={styles.iconTextButton}
             >
-              Delete Trip
+              Delete
             </Button>
           </View>
         )}
@@ -830,10 +855,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     margin: 10,
   },
-  smallButton: {
-    marginHorizontal: 1,
-    paddingHorizontal: 2,
-    width: 130
+  iconTextButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 6,
   },
   checklistContainer: {
     marginTop: 10,
@@ -919,6 +944,16 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     marginVertical: 8,
   },
+  saveButton: {
+    margin: 15,
+  },
+  cancelButton: {
+    marginHorizontal: 15,
+    marginBottom: 15,
+    borderColor: '#e53935',
+    borderWidth: 1,
+  },
+
 });
 
 export default CurrentTripScreen;

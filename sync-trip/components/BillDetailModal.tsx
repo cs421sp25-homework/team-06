@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,15 @@ interface BillDetailModalProps {
   onClose: () => void;
   onSave: (updated: Partial<Bill>) => void;
   onArchive: (id: string) => void;
+  onRestore: (id: string) => void; 
   onDelete: (id: string) => void;
+}
+interface NameLineProps {
+  debtorUid: string;
+  creditorUid: string;
+  amount: number;
+  collaborators: Collaborator[];
+  currentUserUid: string;
 }
 
 const nameCache: Record<string, string> = {};
@@ -53,14 +61,6 @@ const uidToName = async (
     return uid;
   }
 };
-
-interface NameLineProps {
-  debtorUid: string;
-  creditorUid: string;
-  amount: number;
-  collaborators: Collaborator[];
-  currentUserUid: string;
-}
 
 const AsyncNameLine: React.FC<NameLineProps> = ({
   debtorUid,
@@ -100,6 +100,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   onClose,
   onSave,
   onArchive,
+  onRestore,
   onDelete,
 }) => {
   const payInfo = React.useMemo(() => {
@@ -131,6 +132,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   const [customCategoryInput, setCustomCategoryInput] = useState("");
   const [addParticipantsDialogVisible, setAddParticipantsDialogVisible] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+  const [customTotal, setCustomTotal] = useState<string>('');
 
   useEffect(() => {
     if (bill) {
@@ -141,6 +143,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       setCurrency(bill.currency || 'USD');
       setDescription(bill.description || '');
       setCategory(bill.category || '');
+      setCustomTotal('');
     }
   }, [bill]);
 
@@ -150,6 +153,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     collaborators.forEach(c => updated.add(c.uid));
     setParticipants(Array.from(updated));
   }, [bill, collaborators]);
+
+  const billTotal = useMemo(() => {
+    if (!bill?.summary) return 0;
+    return Object.values(bill.summary)
+      .flatMap(credits => Object.values(credits as Record<string, number>))
+      .reduce((sum, amt) => sum + amt, 0);
+  }, [bill?.summary]);
 
   const switchMode = (mode: 'even' | 'custom') => {
     setDistributionMode(mode);
@@ -184,19 +194,34 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       Alert.alert('User information loading');
       return;
     }
+
+    if (distributionMode === 'custom') {
+      const sum = participants
+      .filter(uid => uid !== currentUserUid)
+      .reduce((acc, uid) => acc + (parseFloat(customAmounts[uid] || '0')), 0);
+      const total = parseFloat(customTotal);
+      if (isNaN(total) || sum > total) {
+        Alert.alert('Error', 'Custom splits total exceeds the entered total amount');
+        return;
+      }
+    }
+
     const summary = distributionMode === 'even' ? computeEvenSummary() : computeCustomSummary();
     onSave({ id: bill!.id, title, participants, summary, currency, description, category });
     onClose();
   };
 
   if (!bill) return null;
-
+  
   if (bill.archived) {
     return (
       <Portal>
         <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.overlay}>
           <ScrollView contentContainerStyle={styles.modalContainer}>
             <Text style={styles.title}>Archived Bill</Text>
+            <Text style={styles.detail}>Title: {bill.title}</Text>
+
+            <Text style={styles.totalAmount}>Total Amount: ${billTotal.toFixed(2)}</Text>
 
             <Text style={styles.label}>Description:</Text>
             <TextInput
@@ -206,7 +231,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               onChangeText={setDescription}
               placeholder="e.g. dinner at Joe’s…"
               multiline
-              style={{ width: '100%', marginBottom: 12 }}
+              style={styles.input}
             />
 
             <Text style={styles.label}>Category:</Text>
@@ -239,9 +264,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               />
             </Menu>
 
-            <Text style={styles.detail}>Current category: {category || '—'}</Text>
-            <Text style={styles.detail}>Title: {bill.title}</Text>
-
             {bill.summary && (
               <View style={styles.summarySection}>
                 <Text style={styles.summaryTitle}>Summary:</Text>
@@ -261,6 +283,29 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                 ))}
               </View>
             )}
+
+            <Button
+              mode="outlined"
+              onPress={() => {
+              onSave({ id: bill.id, description });
+                Alert.alert('Saved', 'Description saved');
+             }}
+              style={styles.fullBtn}
+            >
+              Save Description
+            </Button>
+
+            <Button
+              mode="contained"
+              onPress={() => {
+                onSave({ id: bill.id, description }); 
+                onRestore(bill.id);
+                onClose();
+              }}
+              style={styles.fullBtn}
+            >
+               Unarchive Bill
+            </Button>
 
             <Button
               testID="deleteBill"
@@ -312,7 +357,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
       <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.overlay}>
         <ScrollView contentContainerStyle={styles.modalContainer} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Bill Details</Text>
-
+          <Text style={styles.totalAmount}>Total Amount: ${billTotal.toFixed(2)}</Text>
           {/* Title */}
           <Text style={styles.label}>Title:</Text>
           <TextInput
@@ -353,10 +398,9 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               }}
             />
           </Menu>
-          <Text style={styles.detail}>Current category: {category || '—'}</Text>
 
           {/* Currency */}
-          <Text style={styles.detail}>Currency: {currency}</Text>
+          <Text style={styles.label}>Currency: </Text>
           <Menu
             visible={currencyMenuVisible}
             onDismiss={() => setCurrencyMenuVisible(false)}
@@ -387,7 +431,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           </Menu>
 
           {/* Participants */}
-          <Text style={styles.detail}>Participants:</Text>
+          <Text style={styles.label}>Participants:</Text>
           <Text style={styles.detail}>
             {participants.length
               ? participants.map(uid => collaborators.find(c => c.uid === uid)?.name ?? uid).join(', ')
@@ -451,6 +495,16 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
                   />
                 </View>
               ))}
+
+            <Text style={styles.label}>Total Amount:</Text>
+              <TextInput
+                testID="enterCustomTotal"
+                style={styles.input}
+                placeholder="Enter total amount"
+                keyboardType="numeric"
+                value={customTotal}
+                onChangeText={setCustomTotal}
+              />
             </>
           )}
 
@@ -475,6 +529,17 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             </View>
           )}
 
+          <Text style={styles.label}>Description:</Text>
+            <TextInput
+              testID="billDescription"
+              mode="outlined"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="e.g. dinner at Joe’s…"
+              multiline
+              style={styles.input}
+          />
+
           {/* Pay with PayPal */}
           {!!payInfo.debtorEntry && (
             <BillPaymentButton
@@ -491,9 +556,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
           <Button testID="saveBill" style={styles.saveButton} onPress={handleSave}>
             Save Changes
-          </Button>
-          <Button style={styles.closeButton} onPress={onClose}>
-            Close
           </Button>
 
           {/* Archive */}
@@ -531,6 +593,11 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           >
             Delete Bill
           </Button>
+
+          <Button style={styles.closeButton} onPress={onClose}>
+            Close
+          </Button>
+
         </ScrollView>
       </Modal>
 
@@ -626,6 +693,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     width: '40%',
   },
+  selectButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
   customInput: {
     alignSelf: 'stretch',
     flex: 1,
@@ -662,6 +733,16 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: 'red',
     fontSize: 16,
+  },
+  totalAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    alignSelf: 'flex-start',
+    marginVertical: 8,
+  },
+  fullBtn: {                                   // ← 新增：全宽按钮
+    marginVertical: 12,
+    alignSelf: 'stretch',
   },
 });
 
