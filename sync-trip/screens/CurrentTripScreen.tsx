@@ -479,12 +479,31 @@ const CurrentTripScreen = () => {
           <Text style={styles.sectionTitle}>Destinations</Text>
         </View>
         {currentTrip.destinations.length === 0 ? (
-          <Text style={{ marginHorizontal: 15 }}>No destinations added yet.</Text>
+          <Text style={{ marginHorizontal: 15 }}>No Destinations Added Yet.</Text>
         ) : (
           currentTrip.destinations.map((destination) => (
             <View key={destination.id} style={styles.destinationCard}>
               <List.Item
                 title={destination.name}
+                titleStyle={styles.cardTitle}
+                right={props => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: -25, marginTop: -75 }}>
+                  <IconButton
+                    {...props}
+                    testID="pencil"
+                      icon="pencil"
+                      size={18}
+                    onPress={() => openDestinationDialogForEdit(destination)}
+                    />
+                    <IconButton
+                      {...props}
+                      testID="trash"
+                      icon="trash-can"
+                      size={18}
+                      onPress={() => handleDeleteDestination(destination)}
+                    />
+                  </View>
+                )}
                 description={() => (
                   <Text>
                     {destination.description ? destination.description + "\n" : ""}
@@ -496,16 +515,18 @@ const CurrentTripScreen = () => {
                 )}
               />
               <View style={styles.buttonContainer}>
-                <IconButton
-                  testID="pencil"
-                  icon="pencil"
-                  onPress={() => openDestinationDialogForEdit(destination)}
-                />
-                <IconButton
-                  testID="trash"
-                  icon="trash-can"
-                  onPress={() => handleDeleteDestination(destination)}
-                />
+                <Button
+                  testID="addChecklist"
+                  mode=""
+                  icon="plus"
+                  onPress={() => {
+                    //console.log("Add Checklist Item pressed for destination", destination.id);
+                    addChecklistItem(destination.id, "");
+                  }}
+                  style={styles.addChecklistButton}
+                >
+                  TODOs
+                </Button>
               </View>
               {/* --- Checklist Section for this Destination --- */}
               <View style={styles.checklistContainer}>
@@ -527,67 +548,62 @@ const CurrentTripScreen = () => {
                             value={editingChecklistText}
                             onChangeText={setEditingChecklistText}
                           />
-                          <TouchableOpacity
+                          <IconButton
+                            testID="confirmChecklistItem"
+                            icon="check"
+                            size={16}
                             style={styles.editButton}
+                            iconColor={styles.editButtonText.color}
                             onPress={() => {
                               updateChecklistItem(destination.id, item.id, { text: editingChecklistText });
                               setEditingChecklistItemId(null);
                             }}
-                          >
-                            <Text style={styles.editButtonText}>Confirm</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
+                          />
+
+                          <IconButton
+                            testID="cancelChecklistItem"
+                            icon="close"
+                            size={16}
                             style={styles.deleteButton}
+                            iconColor={styles.deleteButtonText.color}  // reuse your red color
                             onPress={() => {
                               setEditingChecklistItemId(null);
                               setEditingChecklistText("");
                             }}
-                          >
-                            <Text style={styles.deleteButtonText}>Cancel</Text>
-                          </TouchableOpacity>
+                          />
                         </>
                       ) : (
                         <>
                           <Text
-                            style={[styles.checklistText, item.completed && styles.completedText]}
+                              style={[styles.checklistText, item.completed && styles.completedText]}
                             onLongPress={() => {
                               setEditingChecklistItemId(item.id);
                               setEditingChecklistText(item.text);
                             }}
                           >
-                            {item.text || "New To-Do Item"}
+                            {item.text || "Your To-Do Item"}
                           </Text>
-                          <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => {
-                              setEditingChecklistItemId(item.id);
-                              setEditingChecklistText(item.text);
-                            }}
-                          >
-                            <Text style={styles.editButtonText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            testID="deleteChecklistItem"
-                            style={styles.deleteButton}
-                            onPress={() => deleteChecklistItem(destination.id, item.id)}
-                          >
-                            <Text style={styles.deleteButtonText}>Delete</Text>
-                          </TouchableOpacity>
+                            <IconButton
+                              testID="editChecklistItem"
+                              icon="pencil"
+                              size={16}
+                              onPress={() => {
+                                setEditingChecklistItemId(item.id);
+                                setEditingChecklistText(item.text);
+                              }}
+                            />
+                            <IconButton
+                              testID="deleteChecklistItem"
+                              icon="trash-can"
+                              size={16}
+                              //iconColor={styles.cancelButton.borderColor}
+                              style={styles.deleteButton}
+                              onPress={() => deleteChecklistItem(destination.id, item.id)}
+                            />
                         </>
                       )}
                     </View>
                   ))}
-                <Button
-                  testID="addChecklist"
-                  mode="outlined"
-                  onPress={() => {
-                    console.log("Add Checklist Item pressed for destination", destination.id);
-                    addChecklistItem(destination.id, "");
-                  }}
-                  style={styles.addChecklistButton}
-                >
-                  Create To-Dos
-                </Button>
               </View>
             </View>
           ))
@@ -811,6 +827,11 @@ const styles = StyleSheet.create({
   card: {
     margin: 15
   },
+  cardTitle: {
+    fontSize: 18,         // Bigger
+    fontWeight: 'bold',   // Bold
+    //color: theme.colors.primary, // App theme color
+  },
   form: {
     backgroundColor: "white",
     padding: 9,
@@ -873,7 +894,7 @@ const styles = StyleSheet.create({
   },
   checklistText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 13,
   },
   checklistInput: {
     flex: 1,
@@ -894,7 +915,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     marginLeft: 5,
-    padding: 4
+    padding: 4,
   },
   deleteButtonText: {
     color: "red"
@@ -953,7 +974,6 @@ const styles = StyleSheet.create({
     borderColor: '#e53935',
     borderWidth: 1,
   },
-
 });
 
 export default CurrentTripScreen;
