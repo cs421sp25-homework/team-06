@@ -224,6 +224,10 @@ const CurrentTripScreen = () => {
     );
   };
 
+  const handleCancelEdit = () => {
+    setEditMode(false);
+  };
+
   const openDestinationDialogForEdit = (destination: Destination) => {
     setEditingDestinationId(destination.id || null);
     setDestinationName(destination.name || ""); // Use 'name' for the event title
@@ -422,9 +426,20 @@ const CurrentTripScreen = () => {
           </Card>
         )}
         {editMode ? (
-          <Button mode="contained" onPress={handleSaveTrip} style={{ margin: 15 }}>
-            Save Changes
-          </Button>
+          <>
+            <Button mode="contained" onPress={handleSaveTrip} style={styles.saveButton}>
+              Save Changes
+            </Button>
+            <Button
+              mode="text"
+              onPress={handleCancelEdit}
+              style={styles.cancelButton}
+              textColor="#e53935"
+            >
+              Cancel
+            </Button>
+          </>
+          
         ) : (
           <View style={styles.buttonRow}>
             <Button
@@ -929,6 +944,16 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     marginVertical: 8,
   },
+  saveButton: {
+    margin: 15,
+  },
+  cancelButton: {
+    marginHorizontal: 15,
+    marginBottom: 15,
+    borderColor: '#e53935',
+    borderWidth: 1,
+  },
+
 });
 
 export default CurrentTripScreen;
