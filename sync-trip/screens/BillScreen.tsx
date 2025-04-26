@@ -106,7 +106,8 @@ const BillScreen = () => {
       isDraft: false,
       archived: false,
       description: "",
-      category: "", 
+      category: "",
+      createdBy: currentUserUid,
     } as Omit<Bill, "id">;
     try {
       const billId = await createBill(newBill);
@@ -235,6 +236,7 @@ const BillScreen = () => {
             item.id?.trim() ? item.id : `bill_${index}`
           }
           renderItem={({ item }) => {
+            const creatorName = collaboratorsFull.find(c => c.uid === item.createdBy)?.name ?? 'Unknown';
             const bal = balanceForUser(item, currentUser?.uid ?? '');
             const bg =
               bal > 0   ? '#e8ffea'
@@ -245,17 +247,20 @@ const BillScreen = () => {
               <List.Item
                 title={item.title}
                 description={() => (
-                  <View style={styles.itemDescription}>
-                    <Text style={styles.categoryBadge}>
-                      {item.category || 'Uncategorized'}
-                    </Text>
-                    <Text style={styles.balanceText}>
-                      {bal === 0
-                        ? 'No balance'
-                        : bal > 0
-                        ? `Receives $${bal.toFixed(2)}`
-                        : `Owes $${(-bal).toFixed(2)}`}
-                    </Text>
+                  <View>
+                    <Text style={styles.creator}>Created by {creatorName}</Text>
+                    <View style={styles.itemDescription}>
+                      <Text style={styles.categoryBadge}>
+                        {item.category || 'Uncategorized'}
+                      </Text>
+                      <Text style={styles.balanceText}>
+                        {bal === 0
+                          ? 'No balance'
+                          : bal > 0
+                          ? `Receives $${bal.toFixed(2)}`
+                          : `Owes $${(-bal).toFixed(2)}`}
+                      </Text>
+                    </View>
                   </View>
                 )}
                 onPress={() => {
@@ -276,6 +281,7 @@ const BillScreen = () => {
             item.id?.trim() ? item.id : `bill_${index}`
           }
           renderItem={({ item }) => {
+            const creatorName = collaboratorsFull.find(c => c.uid === item.createdBy)?.name ?? 'Unknown';
             const bal = balanceForUser(item, currentUser?.uid ?? '');
             const bg =
               bal > 0   ? '#e8ffea'
@@ -286,17 +292,20 @@ const BillScreen = () => {
               <List.Item
                 title={item.title}
                 description={() => (
-                  <View style={styles.itemDescription}>
-                    <Text style={styles.categoryBadge}>
-                      {item.category || 'Uncategorized'}
-                    </Text>
-                    <Text style={styles.balanceText}>
-                      {bal === 0
-                        ? 'No balance'
-                        : bal > 0
-                        ? `Receives $${bal.toFixed(2)}`
-                        : `Owes $${(-bal).toFixed(2)}`}
-                    </Text>
+                  <View>
+                    <Text style={styles.creator}>Created by {creatorName}</Text>
+                    <View style={styles.itemDescription}>
+                      <Text style={styles.categoryBadge}>
+                        {item.category || 'Uncategorized'}
+                      </Text>
+                      <Text style={styles.balanceText}>
+                        {bal === 0
+                          ? 'No balance'
+                          : bal > 0
+                          ? `Receives $${bal.toFixed(2)}`
+                          : `Owes $${(-bal).toFixed(2)}`}
+                      </Text>
+                    </View>
                   </View>
                 )}
                 onPress={() => {
@@ -385,11 +394,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    marginLeft: 8,
   },
   categoryBadge: {
     fontSize: 12,
     fontWeight: '600',
+    fontStyle: 'italic',
+    fontWeight: 'bold'
   },
   balanceText: {
     fontSize: 12,
@@ -407,7 +418,11 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 8,
   },
-
+  creator: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginLeft: 8,
+  },
 });
 
 export default BillScreen;
