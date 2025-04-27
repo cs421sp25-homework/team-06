@@ -46,7 +46,25 @@ const DashboardScreen = () => {
   const [isEditAnnouncementVisible, setEditAnnouncementVisible] = useState(false);
   const [announcementText, setAnnouncementText] = useState("");
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
-  
+
+  // get all the collaborators
+  useEffect(() => {
+    // collect every ownerId + collaboratorId from all trips
+    const allIds = trips.flatMap(t => [t.ownerId, ...(t.collaborators||[])]);
+    const uniqueIds = Array.from(new Set(allIds));
+    // only fetch the ones we haven’t resolved yet
+    const toFetch = uniqueIds.filter(id => !uidToNameMap[id]);
+    if (!toFetch.length) return;
+
+    (async () => {
+      const users = await Promise.all(toFetch.map(uid => getUserById(uid)));
+      const newEntries = users.reduce((acc, u, i) => {
+        acc[toFetch[i]] = u.name || "Unknown";
+        return acc;
+      }, {} as Record<string,string>);
+      setUidToNameMap(m => ({ ...m, ...newEntries }));
+    })();
+  }, [trips]);
 
   useEffect(() => {
     if (!currentUser || !currentUser.tripsIdList) return;
@@ -152,50 +170,49 @@ const DashboardScreen = () => {
     }
   };
 
-  const CollaboratorsNames = ({ collaboratorIds }: { collaboratorIds: string[] }) => {
-    useEffect(() => {
-      const fetchAllNames = async () => {
-        const newMap: { [uid: string]: string } = {};
-        const promises = collaboratorIds.map(async (uid) => {
-          if (!newMap[uid]) {
-            try {
-              const user = await getUserById(uid);
-              newMap[uid] = user.name || "Unknown";
-            } catch (error) {
-              newMap[uid] = "Unknown";
-            }
-          }
-        });
-        await Promise.all(promises);
-        setUidToNameMap(prev => ({ ...prev, ...newMap }));
-      };
+  // const CollaboratorsNames = ({ collaboratorIds }: { collaboratorIds: string[] }) => {
+  //   useEffect(() => {
+  //     const fetchAllNames = async () => {
+  //       const newMap: { [uid: string]: string } = {};
+  //       const promises = collaboratorIds.map(async (uid) => {
+  //         if (!newMap[uid]) {
+  //           try {
+  //             const user = await getUserById(uid);
+  //             newMap[uid] = user.name || "Unknown";
+  //           } catch (error) {
+  //             newMap[uid] = "Unknown";
+  //           }
+  //         }
+  //       });
+  //       await Promise.all(promises);
+  //       setUidToNameMap(prev => ({ ...prev, ...newMap }));
+  //     };
+  //
+  //     fetchAllNames();
+  //   }, [collaboratorIds]);
 
-      fetchAllNames();
-    }, [collaboratorIds]);
-
-    const names = collaboratorIds.map(uid => uidToNameMap[uid]);
-    //console.log("map:",uidToNameMap)
-    return (
-      <Text>{`Members: ${names.join(", ")}`}</Text>
-    );
-  };
+  //   const names = collaboratorIds.map(uid => uidToNameMap[uid]);
+  //   //console.log("map:",uidToNameMap)
+  //   return (
+  //     <Text>{`Members: ${names.join(", ")}`}</Text>
+  //   );
+  // };
 
   // Render each trip as a Card.
   const renderItem = ({ item }: { item: any }) => {
     const isCurrentTrip = item.id === currentUser?.currentTripId;
     const startDate = convertTimestampToDate(item.startDate).toLocaleDateString();
     const endDate = convertTimestampToDate(item.endDate).toLocaleDateString();
+    const names = [item.ownerId, ...(item.collaborators||[])]
+      .map(uid => uidToNameMap[uid] || "…")
+      .join(", ");
     return (
       <Card style={styles.card} elevation={3}>
         <Card.Title title={item.title} />
         <Card.Content>
           <Text>{`Start Date: ${startDate}`}</Text>
           <Text>{`End Date: ${endDate}`}</Text>
-          {isCurrentTrip ? (
-            <CollaboratorsNames collaboratorIds={[item.ownerId, ...(item.collaborators || [])]} />
-          ) : (
-            <Text>{`Members: ${item.collaborators?.length + 1 || 1}`}</Text>
-          )}
+          <Text>{ isCurrentTrip ? `Members: ${names}` : `Members: ${names.split(",").length}` }</Text>
         </Card.Content>
         <Card.Actions style={styles.cardActions}>
           {!isCurrentTrip && (
@@ -292,7 +309,6 @@ const DashboardScreen = () => {
           <Title style={styles.announcementHeader}>Announcements</Title>
           <Button
             testID="addAnnouncement"
-            mode=""
             icon="plus"
             onPress={() => {
               setAnnouncementText("");
