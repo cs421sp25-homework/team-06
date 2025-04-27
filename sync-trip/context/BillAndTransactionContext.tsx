@@ -1,6 +1,6 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { collection, doc, onSnapshot } from "@react-native-firebase/firestore";
-import {firestore, getUserDocRef} from "../utils/firebase";
+import { collection, onSnapshot } from "@react-native-firebase/firestore";
+import { firestore } from "../utils/firebase";
 import { Bill } from "../types/Bill";
 import {
   createBill as apiCreateBill,
@@ -10,7 +10,7 @@ import {
 } from "../utils/billAndTransactionAPI";
 import { useTrip } from "./TripContext"; // Import current trip context to get the currentTripId
 
-// Define the context type for bills and transactions
+// Define the context type for bills
 interface BillTransactionContextType {
   bills: Bill[];
   // Bill API functions
@@ -24,7 +24,7 @@ interface BillTransactionContextType {
 const BillTransactionContext = createContext<BillTransactionContextType | undefined>(undefined);
 
 export const BillTransactionProvider = ({ children }: { children: ReactNode }) => {
-  // State for bills and transactions
+  // State for bills
   const [bills, setBills] = useState<Bill[]>([]);
 
   // Get the current trip from TripContext

@@ -11,7 +11,6 @@ import {
   getDocs,
 } from "@react-native-firebase/firestore"
 import { Bill } from "../types/Bill";
-import { Transaction } from "../types/Transaction";
 
 
 
@@ -85,92 +84,4 @@ export const subscribeToBill = (
         callback(null);
       }
     });
-};
-
-
-
-/* =========================
-    TRANSACTION API FUNCTIONS
-   ========================= */
-
-
-
-export const getTransactionById = async (
-tripId: string,
-transactionId: string
-): Promise<Transaction> => {
-const transactionRef = doc(firestore, "trips", tripId, "transactions", transactionId);
-const transactionSnap = await getDoc(transactionRef);
-if (!transactionSnap.exists) {
-    throw new Error(`Transaction with ID ${transactionId} doesn't exist in trip ${tripId}`);
-}
-return { transactionId: transactionSnap.id, ...transactionSnap.data() } as Transaction;
-};
-
-export const createTransaction = async (
-    tripId: string,
-    transactionData: Omit<Transaction, "transactionId">
-  ): Promise<string> => {
-    const transactionsRef = collection(firestore, "trips", tripId, "transactions");
-    const docRef = await addDoc(transactionsRef, {
-      ...transactionData,
-      timestamp: serverTimestamp(),
-    });
-    return docRef.id;
-};
-
-export const updateTransaction = async (
-    tripId: string,
-    transactionId: string,
-    updatedData: Partial<Transaction>
-  ): Promise<void> => {
-    const transactionRef = doc(firestore, "trips", tripId, "transactions", transactionId);
-    await updateDoc(transactionRef, {
-      ...updatedData,
-      updatedAt: serverTimestamp(),
-    });
-};
-
-export const deleteTransaction = async (
-    tripId: string,
-    transactionId: string
-  ): Promise<void> => {
-    const transactionRef = doc(firestore, "trips", tripId, "transactions", transactionId);
-    await deleteDoc(transactionRef);
-};
-
-export const subscribeToTransactions = (
-    tripId: string,
-    callback: (transactions: Transaction[]) => void
-  ) => {
-
-    if (!tripId) {
-      console.error("subscribeToTransactions: tripId is invalid.");
-      callback([]);
-      return () => {};
-    }
-
-    const transactionsRef = collection(firestore, "trips", tripId, "transactions");
-    return onSnapshot(
-      transactionsRef,
-      (snapshot) => {
-        if (!snapshot) {
-          console.error("subscribeToTransactions: Received null snapshot.");
-          callback([]);
-          return;
-        }
-
-        const transactionsArray: Transaction[] = [];
-        snapshot.forEach((docSnap) => {
-          if (docSnap.exists) {
-            transactionsArray.push({ transactionId: docSnap.id, ...docSnap.data() } as Transaction);
-          }
-        });
-      callback(transactionsArray);
-    },
-    (error) => {
-      console.error("subscribeToTransactions: onSnapshot error:", error);
-      callback([]);
-    }
-  );
 };

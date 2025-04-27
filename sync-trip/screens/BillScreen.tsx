@@ -17,13 +17,12 @@ import { useTrip } from "../context/TripContext";
 import { useUser } from "../context/UserContext";
 import { getUserById } from "../utils/userAPI";
 import { Bill } from "../types/Bill";
-import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
 import { Collaborator } from "../types/User";
 import {sendBillCreateNotification, sendBillUpdateNotification} from "../utils/NotificationService";
 
 const BillScreen = () => {
-  // Retrieve bills and transactions from the BillTransactionContext
+  // Retrieve bills from the BillTransactionContext
   const { bills, createBill, updateBill, deleteBill, archiveBill, restoreBill } = useBillTransaction();
   // Retrieve the current trip information from the TripContext
   const { currentTrip } = useTrip();
