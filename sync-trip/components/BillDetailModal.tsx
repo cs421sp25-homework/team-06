@@ -298,7 +298,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             <Button
               mode="contained"
               onPress={() => {
-                onSave({ id: bill.id, description }); 
                 onRestore(bill.id);
                 onClose();
               }}
