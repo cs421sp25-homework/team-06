@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { ScrollView, FlatList, StyleSheet, View } from "react-native";
 import {
   Button,
   IconButton,
@@ -40,7 +40,7 @@ const DashboardScreen = () => {
   // get all the collaborators
   useEffect(() => {
     // collect every ownerId + collaboratorId from all trips
-    const allIds = trips.flatMap(t => [t.ownerId, ...(t.collaborators||[])]);
+    const allIds = trips.flatMap(t => [t.ownerId, ...(t.collaborators || [])]);
     const uniqueIds = Array.from(new Set(allIds));
     // only fetch the ones we haven’t resolved yet
     const toFetch = uniqueIds.filter(id => !uidToNameMap[id]);
@@ -51,7 +51,7 @@ const DashboardScreen = () => {
       const newEntries = users.reduce((acc, u, i) => {
         acc[toFetch[i]] = u.name || "Unknown";
         return acc;
-      }, {} as Record<string,string>);
+      }, {} as Record<string, string>);
       setUidToNameMap(m => ({ ...m, ...newEntries }));
     })();
   }, [trips]);
@@ -111,9 +111,9 @@ const DashboardScreen = () => {
     completed: sortCurrentTripFirst(activeTrips.filter((trip) => trip.status === TripStatus.COMPLETED)),
   };
 
-  const handleJumpToTrip = (trip: any) => {
+  const handleJumpToTrip = (trip: any, index: number) => {
     setCurrentTripId(getCurrentUserId(), trip.id);
-    setTabIndex(1);
+    setTabIndex(index);
   };
 
   // Function to handle setting a trip as the current trip
@@ -165,35 +165,52 @@ const DashboardScreen = () => {
     const isCurrentTrip = item.id === currentUser?.currentTripId;
     const startDate = convertTimestampToDate(item.startDate).toLocaleDateString();
     const endDate = convertTimestampToDate(item.endDate).toLocaleDateString();
-    const names = [item.ownerId, ...(item.collaborators||[])]
+    const names = [item.ownerId, ...(item.collaborators || [])]
       .map(uid => uidToNameMap[uid] || "…")
       .join(", ");
     return (
       <Card style={styles.card} elevation={3}>
-        <Card.Title title={item.title} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginTop: 8 }}>
+          <Text style={styles.cardTitle}>
+            {item.title}
+          </Text>
+          {selectedSegment !== "Archived" && (
+            <Button
+              mode="text"
+              icon="account-multiple-plus"
+              onPress={() => showInviteDialog(item.id)}
+              compact
+            >
+              Invite
+            </Button>
+          )}
+        </View>
+
         <Card.Content>
           <Text>{`Start Date: ${startDate}`}</Text>
           <Text>{`End Date: ${endDate}`}</Text>
-          <Text>{ isCurrentTrip ? `Members: ${names}` : `Members: ${names.split(",").length}` }</Text>
+          <Text>{isCurrentTrip ? `Members: ${names}` : `Members: ${names.split(",").length}`}</Text>
         </Card.Content>
+
         <Card.Actions style={styles.cardActions}>
-          {!isCurrentTrip && (
-            <Button mode="contained" onPress={() => handleSetCurrentTrip(item)}>
-              Set as Current
+          {selectedSegment !== "Archived" && !isCurrentTrip && (
+            <Button mode="contained" icon="eye" onPress={() => handleSetCurrentTrip(item)}>
+              View
             </Button>
           )}
-          {isCurrentTrip && (
-            <Button mode="contained" onPress={() => handleJumpToTrip(item)}>
+          {selectedSegment !== "Archived" && isCurrentTrip && (
+            <Button mode="contained" icon="pencil" onPress={() => handleJumpToTrip(item, 1)}>
               Edit
             </Button>
           )}
-          {selectedSegment === "Archived" ? (
+          {selectedSegment !== "Archived" && isCurrentTrip && (
+            <Button mode="contained" icon="wallet" onPress={() => handleJumpToTrip(item, 4)}>
+              Bills
+            </Button>
+          )}
+          {selectedSegment === "Archived" && (
             <Button mode="outlined" onPress={() => handleRestoreTrip(item)}>
               Restore
-            </Button>
-          ) : (
-            <Button mode="outlined" onPress={() => showInviteDialog(item.id)}>
-              Invite
             </Button>
           )}
         </Card.Actions>
@@ -204,23 +221,23 @@ const DashboardScreen = () => {
   // Render a section of trips with a title.
   const renderSection = (title: string, trips: any[]) => {
     return (
-      <>
+      <View style={{ marginBottom: 20 }}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {trips.length > 0 ? (
-          <FlatList
-            data={trips}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-          />
+          trips.map((item) => (
+            <View key={item.id} style={{ marginBottom: 10 }}>
+              {renderItem({ item })}
+            </View>
+          ))
         ) : (
           <Text style={styles.emptyText}>No {title} Trip Here</Text>
         )}
-      </>
+      </View>
     );
   };
 
   return (
-    <View testID="dashboardScreen" style={styles.container}>
+    <ScrollView testID="dashboardScreen" style={styles.container}>
       {/* Announcements Section */}
       {selectedSegment === "Active" && <View style={annouceStyles.announcementSection}>
         <View style={annouceStyles.annoucementTitle}>
@@ -250,7 +267,7 @@ const DashboardScreen = () => {
                   {`${uidToNameMap[announcements[0].authorID]} says:`}
                 </Text>
               }
-              />
+            />
 
             <Card.Content>
               <Markdown>{announcements[0].message}</Markdown>
@@ -306,7 +323,7 @@ const DashboardScreen = () => {
           ]}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -314,6 +331,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 10, backgroundColor: "#f5f5f5" },
   card: { marginBottom: 10 },
   cardActions: { justifyContent: "flex-end" },
+  cardTitle: {
+    fontSize: 18,         // Bigger
+    fontWeight: 'bold',   // Bold
+  },
   emptyText: {
     textAlign: "center",
     marginTop: 10,
@@ -323,7 +344,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 10 },
   segmentedControlContainer: {
     marginTop: "auto",
-    marginBottom: 0,
+    marginBottom: 10,
   },
 });
 
