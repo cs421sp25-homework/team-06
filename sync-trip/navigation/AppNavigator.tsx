@@ -3,11 +3,9 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {NavigationContainer} from '@react-navigation/native';
 import SignUpScreen from '../screens/SignUpScreen';
 import LogInScreen from '../screens/LogInScreen';
+import AnnouceScreen from '../screens/AnnounceScreen';
 import BottomTabsNavigator from './BottomTabsNavigator';
 import {RootStackParamList} from './useAppNavigation';
-import {UserProvider} from "../context/UserContext";
-import {TripProvider} from "../context/TripContext";
-import { BillTransactionProvider } from "../context/BillAndTransactionContext";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -21,18 +19,14 @@ export default function AppNavigator() {
 
                 <Stack.Screen
                     name="App"
-                    component={() => (
-                        <UserProvider>
-                            <TripProvider>
-                                <BillTransactionProvider>
-                                    <BottomTabsNavigator/>
-                                </BillTransactionProvider>
-                            </TripProvider>
-                        </UserProvider>
-                    )}
+                    component={BottomTabsNavigator}
                     options={{headerShown: false}}
                 />
-                {/*<Stack.Screen name="History" component={HistoryScreen} options={{ title: 'Trip Log' }} />*/}
+                <Stack.Screen
+                    name="Annouce"
+                    component={AnnouceScreen}
+                    options={{ title: 'Trip Announcement' }}
+                />
                 {/*<Stack.Screen name="ArchivedHistory" component={ArchivedHistoryScreen} options={{ title: 'Archived Trips' }} />*/}
             </Stack.Navigator>
         </NavigationContainer>

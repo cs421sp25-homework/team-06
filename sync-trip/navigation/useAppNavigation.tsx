@@ -32,7 +32,7 @@ export type RootStackParamList = {
     Login: undefined;
     Profile: undefined;
     App: undefined;
-    History: undefined;
+    Annouce: undefined;
     ArchivedHistory: undefined;
 };
 
