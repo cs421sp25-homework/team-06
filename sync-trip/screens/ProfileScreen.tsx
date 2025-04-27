@@ -2,6 +2,7 @@ import {auth, getUserDocRef, app, firestore} from "../utils/firebase";
 import {deleteDoc, doc, onSnapshot, serverTimestamp, setDoc} from '@react-native-firebase/firestore';
 import React, {useEffect, useState} from 'react';
 import {FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View, ImageBackground, Platform} from 'react-native';
+import { CommonActions } from '@react-navigation/native';
 import {Avatar, Button, Dialog, Divider, Menu, Paragraph, Portal, Snackbar, Text, TextInput,} from 'react-native-paper';
 
 import {useAppNavigation} from '../navigation/useAppNavigation';
@@ -288,7 +289,14 @@ const ProfileScreen = () => {
       await auth.signOut();
       userLogout();
       tripLogout();
-      navigation.navigate('Login');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            { name: 'Login' },   // ← the screen you want to land on
+          ],
+        })
+      );
     } catch (err) {
       setError('Error logging out');
       console.log(err);
@@ -312,7 +320,14 @@ const ProfileScreen = () => {
       // delete account
       await user.delete();
       // navigate to home once deletion successful
-      navigation.navigate('Login');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            { name: 'Login' },   // ← the screen you want to land on
+          ],
+        })
+      );
     } catch (err) {
       setError('Error deleting account: ' + (err as Error).message);
       setSnackbarVisible(true);
