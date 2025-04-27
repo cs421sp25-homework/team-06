@@ -27,7 +27,7 @@ const SignUpScreen = () => {
       await userCredential.user.sendEmailVerification();
       setError('Signup successful! Please check your email to verify your account.');
       setSnackbarVisible(true);
-      navigation.navigate('Home');
+      navigation.navigate('Login');
     } catch (err) {
       const er = err as Error;
       setError(er.message);
