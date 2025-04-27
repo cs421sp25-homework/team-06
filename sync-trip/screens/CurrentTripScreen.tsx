@@ -1,6 +1,6 @@
 // file: screens/CurrentTripScreen.tsx
 import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import {
   Button,
   Card,
@@ -14,11 +14,9 @@ import {
   SegmentedButtons,
   Checkbox
 } from "react-native-paper";
-import Markdown from 'react-native-markdown-display';
 import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import * as Clipboard from "expo-clipboard";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
@@ -27,7 +25,7 @@ import {
   deleteTrip,
   updateDestination
 } from "../utils/tripAPI";
-import {removeTripFromAllUsers} from "../utils/userAPI";
+import { removeTripFromAllUsers } from "../utils/userAPI";
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { TripStatus } from "../types/Trip";
 import { generateICS } from "../utils/icsGenerator";
@@ -41,10 +39,6 @@ const CurrentTripScreen = () => {
     addChecklistItem,
     updateChecklistItem,
     deleteChecklistItem,
-    announcements,
-    createAnnouncement,
-    updateAnnouncement,
-    deleteAnnouncement,
   } = useTrip();
   const { setTabIndex } = useTabs();
 
@@ -72,12 +66,6 @@ const CurrentTripScreen = () => {
 
   // Help modal state for ICS instructions
   const [helpModalVisible, setHelpModalVisible] = useState(false);
-
-  // Announcement Dialog states
-  const [isAddAnnouncementVisible, setAddAnnouncementVisible] = useState(false);
-  const [isEditAnnouncementVisible, setEditAnnouncementVisible] = useState(false);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
@@ -325,50 +313,6 @@ const CurrentTripScreen = () => {
     }
   };
 
-  // Announcement Section
-  const groupedAnnouncements = announcements.reduce((groups, announcement) => {
-    const dateStr = announcement.updatedAt.toLocaleDateString();
-    if (!groups[dateStr]) {
-      groups[dateStr] = [];
-    }
-    groups[dateStr].push(announcement);
-    return groups;
-  }, {} as { [date: string]: typeof announcements });
-
-  const sortedAnnouncementDates = Object.keys(groupedAnnouncements).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
-
-  const handleAddAnnouncement = async () => {
-    try {
-      await createAnnouncement(announcementText);
-      setAddAnnouncementVisible(false);
-      setAnnouncementText("");
-    } catch (err: any) {
-      console.error("Error adding announcement:", err);
-    }
-  };
-
-  const handleEditAnnouncement = async () => {
-    if (!editingAnnouncementId) return;
-    try {
-      await updateAnnouncement(editingAnnouncementId, announcementText);
-      setEditAnnouncementVisible(false);
-      setAnnouncementText("");
-      setEditingAnnouncementId(null);
-    } catch (err: any) {
-      console.error("Error updating announcement:", err);
-    }
-  };
-
-  const handleDeleteAnnouncement = async (announcementId: string) => {
-    try {
-      await deleteAnnouncement(announcementId);
-    } catch (err: any) {
-      console.error("Error deleting announcement:", err);
-    }
-  };
-
   return (
     <>
       <ScrollView style={styles.scrollContainer}>
@@ -439,7 +383,7 @@ const CurrentTripScreen = () => {
               Cancel
             </Button>
           </>
-          
+
         ) : (
           <View style={styles.buttonRow}>
             <Button
@@ -451,8 +395,8 @@ const CurrentTripScreen = () => {
             >
               Edit
             </Button>
-            <Button 
-              testID="archiveTrip" 
+            <Button
+              testID="archiveTrip"
               icon="archive"
               mode="text"
               compact
@@ -479,7 +423,7 @@ const CurrentTripScreen = () => {
           <Text style={styles.sectionTitle}>Destinations</Text>
         </View>
         {currentTrip.destinations.length === 0 ? (
-          <Text style={{ marginHorizontal: 15 }}>No Destinations Added Yet.</Text>
+          <Text style={styles.emptyText}>No Destinations Added Yet.</Text>
         ) : (
           currentTrip.destinations.map((destination) => (
             <View key={destination.id} style={styles.destinationCard}>
@@ -488,12 +432,12 @@ const CurrentTripScreen = () => {
                 titleStyle={styles.cardTitle}
                 right={props => (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: -25, marginTop: -75 }}>
-                  <IconButton
-                    {...props}
-                    testID="pencil"
+                    <IconButton
+                      {...props}
+                      testID="pencil"
                       icon="pencil"
                       size={18}
-                    onPress={() => openDestinationDialogForEdit(destination)}
+                      onPress={() => openDestinationDialogForEdit(destination)}
                     />
                     <IconButton
                       {...props}
@@ -575,7 +519,7 @@ const CurrentTripScreen = () => {
                       ) : (
                         <>
                           <Text
-                              style={[styles.checklistText, item.completed && styles.completedText]}
+                            style={[styles.checklistText, item.completed && styles.completedText]}
                             onLongPress={() => {
                               setEditingChecklistItemId(item.id);
                               setEditingChecklistText(item.text);
@@ -583,23 +527,23 @@ const CurrentTripScreen = () => {
                           >
                             {item.text || "Your To-Do Item"}
                           </Text>
-                            <IconButton
-                              testID="editChecklistItem"
-                              icon="pencil"
-                              size={16}
-                              onPress={() => {
-                                setEditingChecklistItemId(item.id);
-                                setEditingChecklistText(item.text);
-                              }}
-                            />
-                            <IconButton
-                              testID="deleteChecklistItem"
-                              icon="trash-can"
-                              size={16}
-                              //iconColor={styles.cancelButton.borderColor}
-                              style={styles.deleteButton}
-                              onPress={() => deleteChecklistItem(destination.id, item.id)}
-                            />
+                          <IconButton
+                            testID="editChecklistItem"
+                            icon="pencil"
+                            size={16}
+                            onPress={() => {
+                              setEditingChecklistItemId(item.id);
+                              setEditingChecklistText(item.text);
+                            }}
+                          />
+                          <IconButton
+                            testID="deleteChecklistItem"
+                            icon="trash-can"
+                            size={16}
+                            //iconColor={styles.cancelButton.borderColor}
+                            style={styles.deleteButton}
+                            onPress={() => deleteChecklistItem(destination.id, item.id)}
+                          />
                         </>
                       )}
                     </View>
@@ -609,122 +553,28 @@ const CurrentTripScreen = () => {
           ))
         )}
 
-        {/* Announcements Section */}
-        <View style={styles.announcementSection}>
-          <Title>Announcements</Title>
-          <Button
-            testID="addAnnouncement"
-            mode="contained"
-            onPress={() => {
-              setAnnouncementText("");
-              setAddAnnouncementVisible(true);
-            }}
-            style={styles.addButton}
-          >
-            Add Announcement
-          </Button>
-          {sortedAnnouncementDates.map((dateStr) => (
-            <View key={dateStr}>
-              <Text style={styles.dateHeader}>{dateStr}</Text>
-              {groupedAnnouncements[dateStr].map((announcement, index) => (
-                <View key={announcement.id}>
-                  <Card style={styles.announcementCard}>
-                    <Card.Title
-                      title={`Created: ${announcement.createdAt.toLocaleDateString()} | Updated: ${announcement.updatedAt.toLocaleDateString()}`}
-                    />
-                    <Card.Content>
-                      <Markdown>{announcement.message}</Markdown>
-                    </Card.Content>
-                    <Card.Actions>
-                      <Button
-                        onPress={() => {
-                          setEditingAnnouncementId(announcement.id);
-                          setAnnouncementText(announcement.message);
-                          setEditAnnouncementVisible(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button testID="deleteAnnouncement" onPress={() => handleDeleteAnnouncement(announcement.id)}>
-                        Delete
-                      </Button>
-                    </Card.Actions>
-                  </Card>
-                  {index < groupedAnnouncements[dateStr].length - 1 && (
-                    <View style={styles.separator} />
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
-        </View>
-
         {/* ICS Export Row */}
         {currentTrip.destinations.length > 0 && (
-            <View style={styles.exportRow}>
-              <Button
-                testID="exportICS"
-                mode="contained"
-                onPress={handleExportICS}
-                style={styles.exportButton}
-              >
-                Export to Calendar
-              </Button>
-              <Button
-                testID="helpButton"
-                mode="contained"
-                onPress={() => setHelpModalVisible(true)}
-                style={styles.helpButton}
-              >
-                ?
-              </Button>
-        </View>
+          <View style={styles.exportRow}>
+            <Button
+              testID="exportICS"
+              mode="contained"
+              onPress={handleExportICS}
+              style={styles.exportButton}
+            >
+              Export to Calendar
+            </Button>
+            <Button
+              testID="helpButton"
+              mode="contained"
+              onPress={() => setHelpModalVisible(true)}
+              style={styles.helpButton}
+            >
+              ?
+            </Button>
+          </View>
         )}
       </ScrollView>
-      
-      {/* Announcement Dialog */}
-      <Portal>
-        <Dialog
-          visible={isAddAnnouncementVisible}
-          onDismiss={() => setAddAnnouncementVisible(false)}
-        >
-          <Dialog.Title>Add Announcement</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              testID="announcementInput"
-              label="Announcement Message"
-              value={announcementText}
-              onChangeText={setAnnouncementText}
-              multiline
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setAddAnnouncementVisible(false)}>Cancel</Button>
-            <Button onPress={handleAddAnnouncement}>Add</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-    <Portal>
-      <Dialog
-        visible={isEditAnnouncementVisible}
-        onDismiss={() => setEditAnnouncementVisible(false)}
-      >
-        <Dialog.Title>Edit Announcement</Dialog.Title>
-        <Dialog.Content>
-          <TextInput
-            label="Announcement Message"
-            value={announcementText}
-            onChangeText={setAnnouncementText}
-            multiline
-          />
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={() => setEditAnnouncementVisible(false)}>Cancel</Button>
-          <Button onPress={handleEditAnnouncement}>Save</Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
 
       {/* Help Modal for ICS instructions */}
       <Portal>
@@ -942,28 +792,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#BEBEBE"
   },
-  announcementSection: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    elevation: 2,
-    marginHorizontal: 15,
-  },
-  dateHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 8,
-    color: "#555",
-  },
-  announcementCard: {
-    marginVertical: 8,
-  },
-  separator: {
-    borderBottomColor: "gray",
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    marginVertical: 8,
+  emptyText: {
+    marginTop: 10,
+    textAlign: 'center',
+    color: 'gray',
+    fontStyle: 'italic',
   },
   saveButton: {
     margin: 15,
