@@ -2,15 +2,19 @@ import React, { useEffect, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import {
   Button,
+  IconButton,
   Card,
   Dialog,
   Paragraph,
   Portal,
   SegmentedButtons,
   Text,
+  Title,
   TextInput,
 } from "react-native-paper";
+import Markdown from 'react-native-markdown-display';
 import { useUser } from "../context/UserContext";
+import { useTrip } from "../context/TripContext";
 import { addCollaboratorByEmail, setCurrentTripId, getUserById } from "../utils/userAPI";
 import { TripStatus } from "../types/Trip";
 import { doc, onSnapshot, updateDoc } from "@react-native-firebase/firestore";
@@ -26,6 +30,41 @@ const DashboardScreen = () => {
   const [tripIdForInvite, setTripIdForInvite] = useState<string | null>(null);
   const [selectedSegment, setSelectedSegment] = useState("Active");
   const { setTabIndex } = useTabs();
+  const [uidToNameMap, setUidToNameMap] = useState<{ [uid: string]: string }>({});
+
+  const {
+      currentTrip,
+      setCurrentTrip,
+      updateTrip,
+      announcements,
+      createAnnouncement,
+      updateAnnouncement,
+      deleteAnnouncement,
+  } = useTrip();
+  
+  // Announcement Dialog states
+  const [isEditAnnouncementVisible, setEditAnnouncementVisible] = useState(false);
+  const [announcementText, setAnnouncementText] = useState("");
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
+
+  // get all the collaborators
+  useEffect(() => {
+    // collect every ownerId + collaboratorId from all trips
+    const allIds = trips.flatMap(t => [t.ownerId, ...(t.collaborators||[])]);
+    const uniqueIds = Array.from(new Set(allIds));
+    // only fetch the ones we haven’t resolved yet
+    const toFetch = uniqueIds.filter(id => !uidToNameMap[id]);
+    if (!toFetch.length) return;
+
+    (async () => {
+      const users = await Promise.all(toFetch.map(uid => getUserById(uid)));
+      const newEntries = users.reduce((acc, u, i) => {
+        acc[toFetch[i]] = u.name || "Unknown";
+        return acc;
+      }, {} as Record<string,string>);
+      setUidToNameMap(m => ({ ...m, ...newEntries }));
+    })();
+  }, [trips]);
 
   useEffect(() => {
     if (!currentUser || !currentUser.tripsIdList) return;
@@ -116,7 +155,7 @@ const DashboardScreen = () => {
       alert(`Invitation sent to ${inviteEmail.trim()}`);
       hideInviteDialog();
     } catch (error: any) {
-      alert(`Error inviting collaborator: ${error.message}`);
+      //alert(`Error inviting collaborator: ${error.message}`);
     }
   };
 
@@ -131,43 +170,49 @@ const DashboardScreen = () => {
     }
   };
 
-  const CollaboratorsNames = ({ collaboratorIds }: { collaboratorIds: string[] }) => {
-    const [names, setNames] = useState<string[]>([]);
-    useEffect(() => {
-      const fetchNames = async () => {
-        const promises = collaboratorIds.map(async (uid) => {
-          try {
-            const user = await getUserById(uid);
-            return user.name || "Unknown";
-          } catch (error) {
-            return "Unknown";
-          }
-        });
-        const result = await Promise.all(promises);
-        setNames(result);
-      };
-      fetchNames();
-    }, [collaboratorIds]);
+  // const CollaboratorsNames = ({ collaboratorIds }: { collaboratorIds: string[] }) => {
+  //   useEffect(() => {
+  //     const fetchAllNames = async () => {
+  //       const newMap: { [uid: string]: string } = {};
+  //       const promises = collaboratorIds.map(async (uid) => {
+  //         if (!newMap[uid]) {
+  //           try {
+  //             const user = await getUserById(uid);
+  //             newMap[uid] = user.name || "Unknown";
+  //           } catch (error) {
+  //             newMap[uid] = "Unknown";
+  //           }
+  //         }
+  //       });
+  //       await Promise.all(promises);
+  //       setUidToNameMap(prev => ({ ...prev, ...newMap }));
+  //     };
+  //
+  //     fetchAllNames();
+  //   }, [collaboratorIds]);
 
-    return <Text>{`members: ${names.join(', ')}`}</Text>;
-  };
+  //   const names = collaboratorIds.map(uid => uidToNameMap[uid]);
+  //   //console.log("map:",uidToNameMap)
+  //   return (
+  //     <Text>{`Members: ${names.join(", ")}`}</Text>
+  //   );
+  // };
 
   // Render each trip as a Card.
   const renderItem = ({ item }: { item: any }) => {
     const isCurrentTrip = item.id === currentUser?.currentTripId;
     const startDate = convertTimestampToDate(item.startDate).toLocaleDateString();
     const endDate = convertTimestampToDate(item.endDate).toLocaleDateString();
+    const names = [item.ownerId, ...(item.collaborators||[])]
+      .map(uid => uidToNameMap[uid] || "…")
+      .join(", ");
     return (
       <Card style={styles.card} elevation={3}>
         <Card.Title title={item.title} />
         <Card.Content>
           <Text>{`Start Date: ${startDate}`}</Text>
           <Text>{`End Date: ${endDate}`}</Text>
-          {isCurrentTrip ? (
-            <CollaboratorsNames collaboratorIds={[item.ownerId, ...(item.collaborators || [])]} />
-          ) : (
-            <Text>{`members: ${item.collaborators?.length + 1 || 1}`}</Text>
-          )}
+          <Text>{ isCurrentTrip ? `Members: ${names}` : `Members: ${names.split(",").length}` }</Text>
         </Card.Content>
         <Card.Actions style={styles.cardActions}>
           {!isCurrentTrip && (
@@ -206,14 +251,166 @@ const DashboardScreen = () => {
             renderItem={renderItem}
           />
         ) : (
-          <Text style={styles.emptyText}>No {title.toLowerCase()} trips</Text>
+          <Text style={styles.emptyText}>No {title} Trip Here</Text>
         )}
       </>
     );
   };
 
+  // Announcement Section
+  const groupedAnnouncements = announcements.reduce((groups, announcement) => {
+    const dateStr = announcement.updatedAt.toLocaleDateString();
+    if (!groups[dateStr]) {
+      groups[dateStr] = [];
+    }
+    groups[dateStr].push(announcement);
+    return groups;
+  }, {} as { [date: string]: typeof announcements });
+
+  const sortedAnnouncementDates = Object.keys(groupedAnnouncements).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
+
+  const handleEditAnnouncement = async () => {
+    if (!editingAnnouncementId) {
+      try {
+        await createAnnouncement(announcementText);
+        setEditAnnouncementVisible(false);
+        setAnnouncementText("");
+      } catch (err: any) {
+        console.error("Error adding announcement:", err);
+      }
+    }
+    else {
+      try {
+        await updateAnnouncement(editingAnnouncementId, announcementText);
+        setEditAnnouncementVisible(false);
+        setAnnouncementText("");
+        setEditingAnnouncementId(null);
+      } catch (err: any) {
+        console.error("Error updating announcement:", err);
+      }
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      await deleteAnnouncement(announcementId);
+    } catch (err: any) {
+      console.error("Error deleting announcement:", err);
+    }
+  };
+
   return (
     <View testID="dashboardScreen" style={styles.container}>
+      {/* Announcements Section */}
+      <View style={styles.announcementSection}>
+        <View style={styles.annoucementTitle}>
+          <Title style={styles.announcementHeader}>Announcements</Title>
+          <Button
+            testID="addAnnouncement"
+            icon="plus"
+            onPress={() => {
+              setAnnouncementText("");
+              setEditingAnnouncementId(null);
+              setEditAnnouncementVisible(true);
+            }}
+          >
+            Note
+          </Button>
+        </View>
+
+        {sortedAnnouncementDates.length === 0 ? (
+          <Text style={styles.emptyText}>
+            This trip does not have any announcement yet.{"\n"}
+            Try to create one for your partner!
+          </Text>
+        ) : (
+          sortedAnnouncementDates.map((dateStr) => (
+            <View key={dateStr}>
+              <Text style={styles.dateHeader}>{dateStr}</Text>
+              {groupedAnnouncements[dateStr].map((announcement, index) => (
+                <View key={announcement.id}>
+                  <Card style={styles.announcementCard}>
+                    <Card.Title
+                      title={
+                        <Text style={styles.announcementAuthor}>
+                          {`${uidToNameMap[announcement.authorID]} says:`}
+                        </Text>
+                      }
+                    />
+                    <Card.Content>
+                      <Markdown>{announcement.message}</Markdown>
+                      <Text style={styles.emptyText}>
+                        {`Last Updated at ${announcement.updatedAt.toLocaleDateString()}`}
+                      </Text>
+                    </Card.Content>
+                    <Card.Actions>
+                      <IconButton
+                        testID="editAnnouncement"
+                        icon="pencil"
+                        size={16}
+                        onPress={() => {
+                          setEditingAnnouncementId(announcement.id);
+                          setAnnouncementText(announcement.message);
+                          setEditAnnouncementVisible(true);
+                        }}
+                      />
+                      <IconButton
+                        testID="deleteAnnouncement"
+                        icon="trash-can"
+                        size={16}
+                        onPress={() => handleDeleteAnnouncement(announcement.id)}
+                      />
+                    </Card.Actions>
+                  </Card>
+                  {index < groupedAnnouncements[dateStr].length - 1 && (
+                    <View style={styles.separator} />
+                  )}
+                </View>
+              ))}
+            </View>
+          ))
+        )}
+      </View>
+
+      {/* Announcement Dialog */}
+      <Portal>
+        <Dialog
+          visible={isEditAnnouncementVisible}
+          onDismiss={() => setEditAnnouncementVisible(false)}
+        >
+          <Dialog.Title>Your Announcement</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              //label="Announcement Message"
+              value={announcementText}
+              onChangeText={setAnnouncementText}
+              multiline
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <IconButton
+              testID="confirmAnnoucement"
+              icon="check"
+              size={16}
+              onPress={() => {
+                handleEditAnnouncement()
+              }}
+            />
+            <IconButton
+              testID="cancelEditAnnoucement"
+              icon="close"
+              size={16}
+              iconColor="red"
+              onPress={() => {
+                setEditAnnouncementVisible(false)
+              }}
+            />
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
       {selectedSegment === "Active" ? (
         <>
           {renderSection("Planning", categorizedTrips.planning)}
@@ -265,11 +462,52 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 10, backgroundColor: "#f5f5f5" },
   card: { marginBottom: 10 },
   cardActions: { justifyContent: "flex-end" },
-  emptyText: { textAlign: "center", marginTop: 20 },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 10,
+    color: 'gray',
+    fontStyle: 'italic',
+  },
   sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 10 },
   segmentedControlContainer: {
     marginTop: "auto",
-    marginBottom: 10,
+    marginBottom: 0,
+  },
+  announcementAuthor: {
+    fontSize: 14,
+    color: 'gray',
+    fontStyle: 'italic',
+  },
+  announcementHeader: {
+    fontWeight: 'bold'
+  },
+  annoucementTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  announcementSection: {
+    marginTop: 0,
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    elevation: 2,
+    marginHorizontal: 0,
+  },
+  dateHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginVertical: 8,
+    color: "#555",
+  },
+  announcementCard: {
+    marginVertical: 0,
+  },
+  separator: {
+    borderBottomColor: "gray",
+    borderBottomWidth: 1,
+    borderStyle: "dashed",
+    marginVertical: 8,
   },
 });
 

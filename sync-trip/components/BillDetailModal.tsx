@@ -299,7 +299,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
               testID="unarchiveBill"
               mode="contained"
               onPress={() => {
-                onSave({ id: bill.id, description }); 
                 onRestore(bill.id);
                 onClose();
               }}

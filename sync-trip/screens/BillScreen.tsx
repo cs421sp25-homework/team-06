@@ -38,6 +38,12 @@ const BillScreen = () => {
   const archivedBills = bills.filter(b => b.archived);
 
   useEffect(() => {
+    setSegment('active');
+    setSelectedBill(null);
+    setBillModalVisible(false);
+  }, [currentTrip?.id]);
+
+  useEffect(() => {
     console.log('🔔 [BillScreen] bills state:', bills.map(b => ({
       id: b.id,
       archived: b.archived,
@@ -187,6 +193,13 @@ const BillScreen = () => {
   const activeSections = useMemo(() => makeSections(activeBills), [activeBills]);
   const archivedSections = useMemo(() => makeSections(archivedBills), [archivedBills]);
 
+  if (!currentTrip) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Please select a trip on dashboard</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

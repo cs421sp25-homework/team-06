@@ -1,6 +1,6 @@
 // file: screens/CurrentTripScreen.tsx
 import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import {
   Button,
   Card,
@@ -14,11 +14,9 @@ import {
   SegmentedButtons,
   Checkbox
 } from "react-native-paper";
-import Markdown from 'react-native-markdown-display';
 import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import * as Clipboard from "expo-clipboard";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
@@ -27,7 +25,7 @@ import {
   deleteTrip,
   updateDestination
 } from "../utils/tripAPI";
-import {removeTripFromAllUsers} from "../utils/userAPI";
+import { removeTripFromAllUsers } from "../utils/userAPI";
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { TripStatus } from "../types/Trip";
 import { generateICS } from "../utils/icsGenerator";
@@ -41,10 +39,6 @@ const CurrentTripScreen = () => {
     addChecklistItem,
     updateChecklistItem,
     deleteChecklistItem,
-    announcements,
-    createAnnouncement,
-    updateAnnouncement,
-    deleteAnnouncement,
   } = useTrip();
   const { setTabIndex } = useTabs();
 
@@ -72,12 +66,6 @@ const CurrentTripScreen = () => {
 
   // Help modal state for ICS instructions
   const [helpModalVisible, setHelpModalVisible] = useState(false);
-
-  // Announcement Dialog states
-  const [isAddAnnouncementVisible, setAddAnnouncementVisible] = useState(false);
-  const [isEditAnnouncementVisible, setEditAnnouncementVisible] = useState(false);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
@@ -325,50 +313,6 @@ const CurrentTripScreen = () => {
     }
   };
 
-  // Announcement Section
-  const groupedAnnouncements = announcements.reduce((groups, announcement) => {
-    const dateStr = announcement.updatedAt.toLocaleDateString();
-    if (!groups[dateStr]) {
-      groups[dateStr] = [];
-    }
-    groups[dateStr].push(announcement);
-    return groups;
-  }, {} as { [date: string]: typeof announcements });
-
-  const sortedAnnouncementDates = Object.keys(groupedAnnouncements).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
-
-  const handleAddAnnouncement = async () => {
-    try {
-      await createAnnouncement(announcementText);
-      setAddAnnouncementVisible(false);
-      setAnnouncementText("");
-    } catch (err: any) {
-      console.error("Error adding announcement:", err);
-    }
-  };
-
-  const handleEditAnnouncement = async () => {
-    if (!editingAnnouncementId) return;
-    try {
-      await updateAnnouncement(editingAnnouncementId, announcementText);
-      setEditAnnouncementVisible(false);
-      setAnnouncementText("");
-      setEditingAnnouncementId(null);
-    } catch (err: any) {
-      console.error("Error updating announcement:", err);
-    }
-  };
-
-  const handleDeleteAnnouncement = async (announcementId: string) => {
-    try {
-      await deleteAnnouncement(announcementId);
-    } catch (err: any) {
-      console.error("Error deleting announcement:", err);
-    }
-  };
-
   return (
     <>
       <ScrollView style={styles.scrollContainer}>
@@ -439,7 +383,7 @@ const CurrentTripScreen = () => {
               Cancel
             </Button>
           </>
-          
+
         ) : (
           <View style={styles.buttonRow}>
             <Button
@@ -451,8 +395,8 @@ const CurrentTripScreen = () => {
             >
               Edit
             </Button>
-            <Button 
-              testID="archiveTrip" 
+            <Button
+              testID="archiveTrip"
               icon="archive"
               mode="text"
               compact
@@ -479,12 +423,31 @@ const CurrentTripScreen = () => {
           <Text style={styles.sectionTitle}>Destinations</Text>
         </View>
         {currentTrip.destinations.length === 0 ? (
-          <Text style={{ marginHorizontal: 15 }}>No destinations added yet.</Text>
+          <Text style={styles.emptyText}>No Destinations Added Yet.</Text>
         ) : (
           currentTrip.destinations.map((destination) => (
             <View key={destination.id} style={styles.destinationCard}>
               <List.Item
                 title={destination.name}
+                titleStyle={styles.cardTitle}
+                right={props => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: -25, marginTop: -75 }}>
+                    <IconButton
+                      {...props}
+                      testID="pencil"
+                      icon="pencil"
+                      size={18}
+                      onPress={() => openDestinationDialogForEdit(destination)}
+                    />
+                    <IconButton
+                      {...props}
+                      testID="trash"
+                      icon="trash-can"
+                      size={18}
+                      onPress={() => handleDeleteDestination(destination)}
+                    />
+                  </View>
+                )}
                 description={() => (
                   <Text>
                     {destination.description ? destination.description + "\n" : ""}
@@ -496,16 +459,18 @@ const CurrentTripScreen = () => {
                 )}
               />
               <View style={styles.buttonContainer}>
-                <IconButton
-                  testID="pencil"
-                  icon="pencil"
-                  onPress={() => openDestinationDialogForEdit(destination)}
-                />
-                <IconButton
-                  testID="trash"
-                  icon="trash-can"
-                  onPress={() => handleDeleteDestination(destination)}
-                />
+                <Button
+                  testID="addChecklist"
+                  mode=""
+                  icon="plus"
+                  onPress={() => {
+                    //console.log("Add Checklist Item pressed for destination", destination.id);
+                    addChecklistItem(destination.id, "");
+                  }}
+                  style={styles.addChecklistButton}
+                >
+                  TODOs
+                </Button>
               </View>
               {/* --- Checklist Section for this Destination --- */}
               <View style={styles.checklistContainer}>
@@ -527,24 +492,29 @@ const CurrentTripScreen = () => {
                             value={editingChecklistText}
                             onChangeText={setEditingChecklistText}
                           />
-                          <TouchableOpacity
+                          <IconButton
+                            testID="confirmChecklistItem"
+                            icon="check"
+                            size={16}
                             style={styles.editButton}
+                            iconColor={styles.editButtonText.color}
                             onPress={() => {
                               updateChecklistItem(destination.id, item.id, { text: editingChecklistText });
                               setEditingChecklistItemId(null);
                             }}
-                          >
-                            <Text style={styles.editButtonText}>Confirm</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
+                          />
+
+                          <IconButton
+                            testID="cancelChecklistItem"
+                            icon="close"
+                            size={16}
                             style={styles.deleteButton}
+                            iconColor={styles.deleteButtonText.color}  // reuse your red color
                             onPress={() => {
                               setEditingChecklistItemId(null);
                               setEditingChecklistText("");
                             }}
-                          >
-                            <Text style={styles.deleteButtonText}>Cancel</Text>
-                          </TouchableOpacity>
+                          />
                         </>
                       ) : (
                         <>
@@ -555,160 +525,56 @@ const CurrentTripScreen = () => {
                               setEditingChecklistText(item.text);
                             }}
                           >
-                            {item.text || "New To-Do Item"}
+                            {item.text || "Your To-Do Item"}
                           </Text>
-                          <TouchableOpacity
-                            style={styles.editButton}
+                          <IconButton
+                            testID="editChecklistItem"
+                            icon="pencil"
+                            size={16}
                             onPress={() => {
                               setEditingChecklistItemId(item.id);
                               setEditingChecklistText(item.text);
                             }}
-                          >
-                            <Text style={styles.editButtonText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
+                          />
+                          <IconButton
                             testID="deleteChecklistItem"
+                            icon="trash-can"
+                            size={16}
+                            //iconColor={styles.cancelButton.borderColor}
                             style={styles.deleteButton}
                             onPress={() => deleteChecklistItem(destination.id, item.id)}
-                          >
-                            <Text style={styles.deleteButtonText}>Delete</Text>
-                          </TouchableOpacity>
+                          />
                         </>
                       )}
                     </View>
                   ))}
-                <Button
-                  testID="addChecklist"
-                  mode="outlined"
-                  onPress={() => {
-                    console.log("Add Checklist Item pressed for destination", destination.id);
-                    addChecklistItem(destination.id, "");
-                  }}
-                  style={styles.addChecklistButton}
-                >
-                  Create To-Dos
-                </Button>
               </View>
             </View>
           ))
         )}
 
-        {/* Announcements Section */}
-        <View style={styles.announcementSection}>
-          <Title>Announcements</Title>
-          <Button
-            testID="addAnnouncement"
-            mode="contained"
-            onPress={() => {
-              setAnnouncementText("");
-              setAddAnnouncementVisible(true);
-            }}
-            style={styles.addButton}
-          >
-            Add Announcement
-          </Button>
-          {sortedAnnouncementDates.map((dateStr) => (
-            <View key={dateStr}>
-              <Text style={styles.dateHeader}>{dateStr}</Text>
-              {groupedAnnouncements[dateStr].map((announcement, index) => (
-                <View key={announcement.id}>
-                  <Card style={styles.announcementCard}>
-                    <Card.Title
-                      title={`Created: ${announcement.createdAt.toLocaleDateString()} | Updated: ${announcement.updatedAt.toLocaleDateString()}`}
-                    />
-                    <Card.Content>
-                      <Markdown>{announcement.message}</Markdown>
-                    </Card.Content>
-                    <Card.Actions>
-                      <Button
-                        onPress={() => {
-                          setEditingAnnouncementId(announcement.id);
-                          setAnnouncementText(announcement.message);
-                          setEditAnnouncementVisible(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button testID="deleteAnnouncement" onPress={() => handleDeleteAnnouncement(announcement.id)}>
-                        Delete
-                      </Button>
-                    </Card.Actions>
-                  </Card>
-                  {index < groupedAnnouncements[dateStr].length - 1 && (
-                    <View style={styles.separator} />
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
-        </View>
-
         {/* ICS Export Row */}
         {currentTrip.destinations.length > 0 && (
-            <View style={styles.exportRow}>
-              <Button
-                testID="exportICS"
-                mode="contained"
-                onPress={handleExportICS}
-                style={styles.exportButton}
-              >
-                Export to Calendar
-              </Button>
-              <Button
-                testID="helpButton"
-                mode="contained"
-                onPress={() => setHelpModalVisible(true)}
-                style={styles.helpButton}
-              >
-                ?
-              </Button>
-        </View>
+          <View style={styles.exportRow}>
+            <Button
+              testID="exportICS"
+              mode="contained"
+              onPress={handleExportICS}
+              style={styles.exportButton}
+            >
+              Export to Calendar
+            </Button>
+            <Button
+              testID="helpButton"
+              mode="contained"
+              onPress={() => setHelpModalVisible(true)}
+              style={styles.helpButton}
+            >
+              ?
+            </Button>
+          </View>
         )}
       </ScrollView>
-      
-      {/* Announcement Dialog */}
-      <Portal>
-        <Dialog
-          visible={isAddAnnouncementVisible}
-          onDismiss={() => setAddAnnouncementVisible(false)}
-        >
-          <Dialog.Title>Add Announcement</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              testID="announcementInput"
-              label="Announcement Message"
-              value={announcementText}
-              onChangeText={setAnnouncementText}
-              multiline
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setAddAnnouncementVisible(false)}>Cancel</Button>
-            <Button onPress={handleAddAnnouncement}>Add</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-    <Portal>
-      <Dialog
-        visible={isEditAnnouncementVisible}
-        onDismiss={() => setEditAnnouncementVisible(false)}
-      >
-        <Dialog.Title>Edit Announcement</Dialog.Title>
-        <Dialog.Content>
-          <TextInput
-            label="Announcement Message"
-            value={announcementText}
-            onChangeText={setAnnouncementText}
-            multiline
-          />
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={() => setEditAnnouncementVisible(false)}>Cancel</Button>
-          <Button onPress={handleEditAnnouncement}>Save</Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
 
       {/* Help Modal for ICS instructions */}
       <Portal>
@@ -811,6 +677,11 @@ const styles = StyleSheet.create({
   card: {
     margin: 15
   },
+  cardTitle: {
+    fontSize: 18,         // Bigger
+    fontWeight: 'bold',   // Bold
+    //color: theme.colors.primary, // App theme color
+  },
   form: {
     backgroundColor: "white",
     padding: 9,
@@ -873,7 +744,7 @@ const styles = StyleSheet.create({
   },
   checklistText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 13,
   },
   checklistInput: {
     flex: 1,
@@ -894,7 +765,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     marginLeft: 5,
-    padding: 4
+    padding: 4,
   },
   deleteButtonText: {
     color: "red"
@@ -921,28 +792,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#BEBEBE"
   },
-  announcementSection: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    elevation: 2,
-    marginHorizontal: 15,
-  },
-  dateHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 8,
-    color: "#555",
-  },
-  announcementCard: {
-    marginVertical: 8,
-  },
-  separator: {
-    borderBottomColor: "gray",
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    marginVertical: 8,
+  emptyText: {
+    marginTop: 10,
+    textAlign: 'center',
+    color: 'gray',
+    fontStyle: 'italic',
   },
   saveButton: {
     margin: 15,
@@ -953,7 +807,6 @@ const styles = StyleSheet.create({
     borderColor: '#e53935',
     borderWidth: 1,
   },
-
 });
 
 export default CurrentTripScreen;
