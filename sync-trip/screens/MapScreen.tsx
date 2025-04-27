@@ -50,8 +50,6 @@ const MapScreen = () => {
   // For places search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<DestinationInfo | null>(null);
-
   // We'll store the trip's start/end date in local states
   const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
   const [tripEndDate, setTripEndDate] = useState<Date | null>(null);
@@ -264,17 +262,6 @@ const MapScreen = () => {
       }
       setFetchedPlaceDetails(null);
     }
-    if (selectedPlaceDetails) {
-      marker = {
-        latitude: selectedPlaceDetails.latitude,
-        longitude: selectedPlaceDetails.longitude,
-        place_id: selectedPlaceDetails.place_id,
-        address: selectedPlaceDetails.address,
-        description: '',
-        createdByUid: getCurrentUserId()
-      }
-      setSelectedPlaceDetails(null);
-    }
     setCurrMarker(marker);
 
     // Close the bottom sheet and open the marker creation modal
@@ -447,7 +434,7 @@ const MapScreen = () => {
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       });
-      setSelectedPlaceDetails(response);
+      setFetchedPlaceDetails(response);
       setBottomSheetVisible(true);
       setSearchResults([]);
       setSearchQuery('');
