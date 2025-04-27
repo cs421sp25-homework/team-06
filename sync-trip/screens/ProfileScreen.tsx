@@ -1,7 +1,7 @@
 import {auth, getUserDocRef, app, firestore} from "../utils/firebase";
 import {deleteDoc, doc, onSnapshot, serverTimestamp, setDoc} from '@react-native-firebase/firestore';
 import React, {useEffect, useState} from 'react';
-import {FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View, ImageBackground, Platform} from 'react-native';
 import {Avatar, Button, Dialog, Divider, Menu, Paragraph, Portal, Snackbar, Text, TextInput,} from 'react-native-paper';
 
 import {useAppNavigation} from '../navigation/useAppNavigation';
@@ -24,16 +24,16 @@ const ProfileScreen = () => {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [travelPreferences, setTravelPreferences] = useState('');
-  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [backgroundPicture, setBackgroundPicture] = useState<string | null>(null); // bg picture's link
 
   const [error, setError] = useState('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [avatarCenterY, setAvatarCenterY] = useState<number | null>(null);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-  const offset = 100;
+
   // Use the hook to get navigation if needed:
   const navigation = useAppNavigation();
 
@@ -49,6 +49,14 @@ const ProfileScreen = () => {
     travelPreferences: '',
     profilePicture: null,
     paypalEmail: '',
+    backgroundPicture: null,
+  } as {
+    name: string;
+    bio: string;
+    travelPreferences: string;
+    profilePicture: string | null;
+    paypalEmail: string;
+    backgroundPicture: string | null;
   });
 
   const availableImages = [
@@ -90,6 +98,7 @@ const ProfileScreen = () => {
             travelPreferences: data?.travelPreferences || '',
             profilePicture: data?.profilePicture || null,
             paypalEmail: data?.paypalEmail || '',
+            backgroundPicture: data?.backgroundPicture || null,
           });
 
           if (data?.name) {
@@ -106,6 +115,64 @@ const ProfileScreen = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const pickAndUploadBgPhoto = async () => {
+    console.log("invoked");
+    try {
+      // Make sure we have access
+      const ok = await ensureGalleryPermission();
+      if (!ok) {
+        setError('Gallery permission is required to choose a photo.');
+        console.error("permission not enough");
+        setSnackbarVisible(true);
+        return;
+      }
+
+      // Let the user pick
+      const res = await launchImageLibrary({ mediaType: 'photo' });
+      if (res.didCancel || !res.assets?.length) return;
+
+      const { uri } = res.assets[0];
+      console.log('Picked URI:', uri);
+
+      // fetch the local file into a Blob
+      const base64 = await FileSystem.readAsStringAsync(uri as string, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      console.log('Base64 length:', base64.length);
+
+
+      // Upload to Firebase Storage
+      const uid = auth.currentUser!.uid;
+      const ref = storage.ref(`backgroundPictures/${uid}.jpg`);
+      setError("uploading image");
+      const snapshot = await ref.putString(base64, 'base64', {
+        contentType: 'image/jpeg',
+      });
+
+      console.log('Upload complete:', snapshot.metadata.fullPath);
+
+      const downloadURL = await ref.getDownloadURL();
+      console.log('Download URL:', downloadURL);
+
+      // write into Firestore
+      await firestore.collection('users').doc(uid).set(
+        { backgroundPicture: downloadURL },
+        { merge: true }
+      );
+      console.log('Firestore write complete');
+
+      // update UI
+      setBackgroundPicture(downloadURL);
+      setError('background photo updated!');
+      setSnackbarVisible(true);
+      setIsEditing(false);
+    } catch (e: any) {
+      console.error('Error picking/uploading photo', e);
+      setError('Could not upload photo: ' + e.message);
+      setSnackbarVisible(true);
+    }
+  }
 
 
   const pickAndUploadProfilePhoto = async () => {
@@ -126,7 +193,7 @@ const ProfileScreen = () => {
       console.log('Picked URI:', uri);
 
       // fetch the local file into a Blob
-      const base64 = await FileSystem.readAsStringAsync(uri, {
+      const base64 = await FileSystem.readAsStringAsync(uri as string, {
         encoding: FileSystem.EncodingType.Base64,
       });
       console.log('Base64 length:', base64.length);
@@ -135,6 +202,7 @@ const ProfileScreen = () => {
       // Upload to Firebase Storage
       const uid = auth.currentUser!.uid;
       const ref = storage.ref(`profilePictures/${uid}.jpg`);
+      setError("uploading avatar");
       const snapshot = await ref.putString(base64, 'base64', {
         contentType: 'image/jpeg',
       });
@@ -171,7 +239,7 @@ const ProfileScreen = () => {
     }
 
     if (paypalEmail.trim() !== '' &&
-        !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(paypalEmail)) {
+      !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(paypalEmail)) {
       setError('Please enter a valid PayPal email');
       setSnackbarVisible(true);
       return;
@@ -195,8 +263,8 @@ const ProfileScreen = () => {
         updatedAt: serverTimestamp()
       }, {merge: true});
 
-      setSavedProfile({name, bio, travelPreferences, profilePicture, paypalEmail,});
-      setError('Profile saved successfully!'); //TODO: coding style: change setError to showMessage.
+      setSavedProfile({name, bio, travelPreferences, profilePicture, paypalEmail, backgroundPicture});
+      setError('Profile saved successfully!');
       setSnackbarVisible(true);
       setIsEditing(false);
     } catch (err) {
@@ -244,7 +312,7 @@ const ProfileScreen = () => {
       // delete account
       await user.delete();
       // navigate to home once deletion successful
-      navigation.navigate('Home');
+      navigation.navigate('Login');
     } catch (err) {
       setError('Error deleting account: ' + (err as Error).message);
       setSnackbarVisible(true);
@@ -257,16 +325,28 @@ const ProfileScreen = () => {
   return (
     <ScrollView testID="profileScreen" contentContainerStyle={styles.outerContainer}>
       <View style={styles.root}>
-        {/* background layer */}
-        {avatarCenterY !== null && (
-          <>
-            <View style={[styles.topBackground, {height: avatarCenterY}]}/>
-            <View style={[styles.bottomBackground, {top: avatarCenterY}]}/>
-          </>
-        )}
+        <ImageBackground
+          source={
+            backgroundPicture
+              ? { uri: backgroundPicture }
+              : require('../assets/default_bg.jpg')
+          }
+          style={styles.topBackground}
+          resizeMode="cover"
+        >
+          {isEditing && (
+            <TouchableOpacity
+              style={styles.changeBgBtn}
+              onPress={pickAndUploadBgPhoto}
+            >
+              <Text style={styles.changeBgText}>Change Cover</Text>
+            </TouchableOpacity>
+          )}
 
+        </ImageBackground>
         {/* content layer */}
-        <View style={styles.container}>
+        <View style={styles.container} pointerEvents="box-none">
+
           {/* avatar container */}
           <View
             style={styles.avatarContainer}>
@@ -296,13 +376,13 @@ const ProfileScreen = () => {
               />
 
               <TextInput
-                  testID="paypalEmail"
-                  label="PayPal Email (optional)"
-                  value={paypalEmail}
-                  onChangeText={setPaypalEmail}
-                  style={styles.input}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                testID="paypalEmail"
+                label="PayPal Email (optional)"
+                value={paypalEmail}
+                onChangeText={setPaypalEmail}
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
 
               {/* Travel Preferences drop down */}
@@ -453,14 +533,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'gray',
-  },
-  bottomBackground: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
+    overflow: 'hidden',
+    height: 215
   },
   container: {
     flex: 1,
@@ -524,6 +598,18 @@ const styles = StyleSheet.create({
   },
   warningIcon: {
     marginRight: 8,
+  },
+  changeBgBtn: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 12,
+  },
+  changeBgText: {
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 
