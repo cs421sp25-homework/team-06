@@ -12,6 +12,9 @@ interface UserContextType {
 
     getCurrentUserId: () => string;
     logout: () => void;
+
+    uidToNameMap: { [uid: string]: string };
+    setUidToNameMap: React.Dispatch<React.SetStateAction<{ [uid: string]: string }>>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -19,6 +22,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({children}: { children: ReactNode }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     // const { setCurrentTrip} = useTrip();
+    const [uidToNameMap, setUidToNameMap] = useState<{ [uid: string]: string }>({});
 
 
     useEffect(() => {
@@ -60,6 +64,9 @@ export const UserProvider = ({children}: { children: ReactNode }) => {
 
         getCurrentUserId,
         logout,
+
+        uidToNameMap,
+        setUidToNameMap,
     };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
