@@ -56,9 +56,10 @@ appId: "com.s370101387.synctrip"
 - waitForAnimationToEnd
 - inputText: "Johns Hopkins University"
 - doubleTapOn: "Johns Hopkins University, Baltimore, MD, USA"
-- assertVisible: "Johns Hopkins University"
 - tapOn: { id: "markPlace" }
 - waitForAnimationToEnd
+- tapOn: {id: "showInfo"}
+- tapOn: { id: "markPlace" }
 - tapOn: "Name"
 - waitForAnimationToEnd
 - inputText: "Johns Hopkins University"
@@ -116,7 +117,7 @@ appId: "com.s370101387.synctrip"
 - tapOn: "Save"
 - waitForAnimationToEnd
 - tapOn: "ongoing"
-- tapOn: "Save Changes"
+- tapOn: {id: "saveTripChanges"}
 - waitForAnimationToEnd
 - tapOn: {id: "pencil" }
 - tapOn: "Cancel"
@@ -125,7 +126,11 @@ appId: "com.s370101387.synctrip"
       id: "addChecklist"
     timeout: 10000
 - tapOn: {id: "addChecklist"}
-- tapOn: "Edit"
+# - tapOn: "Edit"
+- tapOn:
+    below: Destinations
+    containsDescendants:
+      - text: "Edit"
 - tapOn: {id: "checklistInput"}
 # - eraseText
 - inputText: "Student Card"
@@ -179,6 +184,8 @@ appId: "com.s370101387.synctrip"
 - tapOn: {id: "evenSplit"}
 - tapOn: { id: "enterTotalBill" }
 - inputText: "10"
+- tapOn: { id: "billDescription" }
+- inputText: "Dinner"
 - scrollUntilVisible:
     element:
       id: "saveBill"
@@ -192,8 +199,9 @@ appId: "com.s370101387.synctrip"
 - tapOn: "ARCHIVE"
 #- back
 - tapOn: "Test Bill"
-- tapOn: {id: "billDescription"}
-- inputText: "Dinner"
+- tapOn: {id: "unarchiveBill"}
+- tapOn: "Active"
+- tapOn: "Test Bill"
 - doubleTapOn: "Delete Bill"
 - tapOn: "DELETE"
 - tapOn: {id: "tab-trip"}
@@ -214,6 +222,8 @@ appId: "com.s370101387.synctrip"
 - doubleTapOn: "The White House, Washington, DC, USA"
 - tapOn: { id: "markPlace" }
 - waitForAnimationToEnd
+- tapOn: {id: "showInfo"}
+- tapOn: { id: "markPlace" }
 - tapOn: "Name"
 - waitForAnimationToEnd
 - inputText: "The White House"
@@ -235,11 +245,20 @@ appId: "com.s370101387.synctrip"
 - waitForAnimationToEnd
 - tapOn: {id: "confirmDestination"}
 - tapOn: { id: "map"}
+- tapOn: {id: "showInfo"}
 - tapOn: {id: "openRoutePlanning"}
 - tapOn: {id: "routeOriginPicker"}
 - tapOn: "Baltimore, MD 21218, USA"
 - tapOn: {id: "routeDestinationPicker"}
 - tapOn: "Washington, DC, USA"
+- tapOn: {id: "mode-walk"}
+- tapOn: {id: "mode-bike"}
+- tapOn: {id: "mode-bus"}
+- tapOn: {id: "mode-car"}
+- tapOn: {id: "selectDepartureTime"}
+- tapOn: { id: "timePicker1", point: "50%,50%" }
+- tapOn: { id: "timePicker1", point: "50%,50%" }
+- tapOn: "Ok"
 - tapOn: {id: "confirmRoute"}
 - tapOn: {id: "closeRouteInfo"}
 - tapOn: {id: "tab-trip"}
