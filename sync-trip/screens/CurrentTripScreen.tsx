@@ -406,6 +406,7 @@ const CurrentTripScreen = () => {
               Archive
             </Button>
             <Button
+              testID="deleteTrip"
               icon="delete"
               mode="text"
               compact

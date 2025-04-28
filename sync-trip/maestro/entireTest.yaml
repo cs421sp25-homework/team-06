@@ -127,14 +127,11 @@ appId: "com.s370101387.synctrip"
     timeout: 10000
 - tapOn: {id: "addChecklist"}
 # - tapOn: "Edit"
-- tapOn:
-    below: Destinations
-    containsDescendants:
-      - text: "Edit"
+- tapOn: {id: "editChecklistItem"}
 - tapOn: {id: "checklistInput"}
 # - eraseText
 - inputText: "Student Card"
-- doubleTapOn: "Confirm"
+- doubleTapOn: {id: "confirmChecklistItem"}
 - tapOn: {id: "checkbox"}
 - tapOn: {id: "deleteChecklistItem"}
 - waitForAnimationToEnd
@@ -153,11 +150,19 @@ appId: "com.s370101387.synctrip"
 - inputText: "leadlegendx@gmail.com"
 - tapOn: { id: "confirmInvitation" }
 - tapOn: "OK"
-- tapOn: {id: "tab-trip"}
+- tapOn: {id: "gotoAnnouceScreen"}
 - tapOn: {id: "addAnnouncement"}
 - tapOn: {id: "announcementInput"}
 - inputText: "Test Announcement"
-- tapOn: "Add"
+- tapOn: {id: "confirmAnnoucement"}
+- tapOn: {id: "editAnnouncement"}
+- tapOn: {id: "announcementInput"}
+- eraseText
+- inputText: "New Test Announcement"
+- tapOn: {id: "confirmAnnoucement"}
+- tapOn: {id: "deleteAnnouncement"}
+- back
+- tapOn: {id: "tab-trip"}
 - tapOn: {id: "archiveTrip"}
 - tapOn: "ARCHIVE"
 - tapOn: "Archived"
@@ -205,10 +210,6 @@ appId: "com.s370101387.synctrip"
 - doubleTapOn: "Delete Bill"
 - tapOn: "DELETE"
 - tapOn: {id: "tab-trip"}
-- scrollUntilVisible:
-    element:
-      id: "deleteAnnouncement"
-- tapOn: {id: "deleteAnnouncement"}
 - tapOn: {id: "helpButton"}
 - tapOn: "OK"
 - tapOn:
@@ -251,10 +252,10 @@ appId: "com.s370101387.synctrip"
 - tapOn: "Baltimore, MD 21218, USA"
 - tapOn: {id: "routeDestinationPicker"}
 - tapOn: "Washington, DC, USA"
-- tapOn: {id: "mode-walk"}
-- tapOn: {id: "mode-bike"}
-- tapOn: {id: "mode-bus"}
-- tapOn: {id: "mode-car"}
+- tapOn: {id: "mode-WALK"}
+- tapOn: {id: "mode-BICYCLE"}
+- tapOn: {id: "mode-TRANSIT"}
+- tapOn: {id: "mode-DRIVE"}
 - tapOn: {id: "selectDepartureTime"}
 - tapOn: { id: "timePicker1", point: "50%,50%" }
 - tapOn: { id: "timePicker1", point: "50%,50%" }
@@ -272,7 +273,7 @@ appId: "com.s370101387.synctrip"
     visible: "DELETE"
     timeout: 10000
 - tapOn: "DELETE"
-- tapOn: "Delete Trip"
+- tapOn: {id: "deleteTrip"}
 - tapOn: "DELETE"
 # logout
 - tapOn: { id: "tab-profile" }
