@@ -26,22 +26,30 @@ export const UserProvider = ({children}: { children: ReactNode }) => {
 
 
     useEffect(() => {
-        const user = auth.currentUser;
-        if (!user) return;  // No user logged in, do nothing
-
-        const userRef = doc(firestore, "users", user.uid);
-
-        // Set up Firestore listener
-        const unsubscribe = onSnapshot(userRef, (docSnap) => {
-            if (docSnap.exists) {
-                console.log("user has changed on firestore found, set new user context.");
-                setCurrentUser({uid: docSnap.id, ...docSnap.data()} as User);
-            } else {
+        // 1) Listen for login / logout
+        const unsubscribeAuth = auth.onAuthStateChanged(user => {
+            if (!user) {
+                // no one’s signed in
                 setCurrentUser(null);
+                return;
             }
+
+            // 2) When someone logs in, subscribe to their Firestore doc
+            const userRef = doc(firestore, "users", user.uid);
+            const unsubscribeSnap = onSnapshot(userRef, docSnap => {
+                if (docSnap.exists) {
+                    setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
+                } else {
+                    setCurrentUser(null);
+                }
+            });
+
+            // Clean up the Firestore listener when they sign out or provider unmounts
+            return () => unsubscribeSnap();
         });
 
-        return () => unsubscribe();  // Cleanup listener when unmounting
+        // Clean up the auth listener on unmount
+        return () => unsubscribeAuth();
     }, []);
 
     const getCurrentUserId = (): string => {
