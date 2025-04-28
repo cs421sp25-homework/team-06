@@ -91,6 +91,7 @@ const ProfileScreen = () => {
           setBio(data?.bio || '');
           setTravelPreferences(data?.travelPreferences || '');
           setProfilePicture(data?.profilePicture || null);
+          setBackgroundPicture(data?.backgroundPicture || null);
           setPaypalEmail(data?.paypalEmail || '');
 
           setSavedProfile({
@@ -280,6 +281,7 @@ const ProfileScreen = () => {
     setBio(savedProfile.bio);
     setTravelPreferences(savedProfile.travelPreferences);
     setProfilePicture(savedProfile.profilePicture);
+    setBackgroundPicture(savedProfile.backgroundPicture);
     setIsEditing(false);
     setPaypalEmail(savedProfile.paypalEmail);
   };
