@@ -5,6 +5,11 @@ build:
     - eas/maestro_test:
         inputs:
           flow_path: |
-            maestro/loginScreen_test.yaml
-            maestro/signUpScreen_test.yaml
-            maestro/afterLoginTest.yaml
+            signUpScreen_test.yaml
+            restPwd.yaml
+            profileTest.yaml
+            tripCreation.yaml
+            checklistTest.yaml
+            announcementTest.yaml
+            billTest.yaml
+            routeTest.yaml

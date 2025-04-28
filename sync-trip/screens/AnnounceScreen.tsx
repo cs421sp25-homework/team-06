@@ -164,6 +164,7 @@ const AnnouceScreen = () => {
           <Dialog.Content>
             <TextInput
               //label="Announcement Message"
+              testID="announcementInput"
               value={announcementText}
               onChangeText={setAnnouncementText}
               multiline

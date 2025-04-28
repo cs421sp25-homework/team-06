@@ -409,7 +409,7 @@ const CurrentTripScreen = () => {
         )}
         {editMode ? (
           <>
-            <Button mode="contained" onPress={handleSaveTrip} style={styles.saveButton}>
+            <Button testID="saveTripChanges" mode="contained" onPress={handleSaveTrip} style={styles.saveButton}>
               Save Changes
             </Button>
             <Button
@@ -444,6 +444,7 @@ const CurrentTripScreen = () => {
               Archive
             </Button>
             <Button
+              testID="deleteTrip"
               icon="delete"
               mode="text"
               compact
