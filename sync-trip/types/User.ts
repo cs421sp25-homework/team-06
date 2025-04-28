@@ -6,6 +6,7 @@ export interface User {
     travelPreference?: string;
     currentTripId?: string;
     profilePicture?: string; //picture link in firebase storage
+    backgroundPicture?: string;
     tripsIdList: string[];
     paypalEmail?: string;
 }

@@ -108,6 +108,27 @@ const CurrentTripScreen = () => {
     }
   }, [currentTrip]);
 
+
+  // Helper to generate ALL dates between startDate and endDate
+  const generateDateRange = (start: Date, end: Date) => {
+    const dates: string[] = [];
+    let current = new Date(start);
+    while (current <= end) {
+      dates.push(current.toDateString()); // we use Date object not modify
+      current = new Date(current);
+      current.setDate(current.getDate() + 1); // move to next day
+    }
+    return dates;
+  };
+
+  const allTripDates = startDate && endDate ? generateDateRange(startDate, endDate) : [];
+
+  useEffect(() => {
+    if (allTripDates.length > 0 && !selectedDate) {
+      setSelectedDate(allTripDates[0]); // default to first day
+    }
+  }, [allTripDates, selectedDate]);
+
   if (!currentTrip) {
     return (
       <View style={styles.emptyContainer}>
@@ -308,25 +329,7 @@ const CurrentTripScreen = () => {
     }
   };
 
-  // Helper to generate ALL dates between startDate and endDate
-  const generateDateRange = (start: Date, end: Date) => {
-    const dates: string[] = [];
-    let current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toDateString()); // we use Date object not modify
-      current = new Date(current);
-      current.setDate(current.getDate() + 1); // move to next day
-    }
-    return dates;
-  };
 
-  const allTripDates = startDate && endDate ? generateDateRange(startDate, endDate) : [];
-
-  useEffect(() => {
-    if (allTripDates.length > 0 && !selectedDate) {
-      setSelectedDate(allTripDates[0]); // default to first day
-    }
-  }, [allTripDates]);
 
   // ICS Export: Generate ICS file locally and share it.
   const handleExportICS = async () => {
