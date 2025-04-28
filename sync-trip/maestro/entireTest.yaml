@@ -119,6 +119,7 @@ appId: "com.s370101387.synctrip"
 - tapOn: "ongoing"
 - tapOn: {id: "saveTripChanges"}
 - waitForAnimationToEnd
+- tapOn: "16"
 - tapOn: {id: "pencil" }
 - tapOn: "Cancel"
 - extendedWaitUntil:
@@ -263,11 +264,13 @@ appId: "com.s370101387.synctrip"
 - tapOn: {id: "confirmRoute"}
 - tapOn: {id: "closeRouteInfo"}
 - tapOn: {id: "tab-trip"}
+- tapOn: "16"
 - tapOn: {id: "trash" }
 - extendedWaitUntil:
     visible: "DELETE"
     timeout: 10000
 - tapOn: "DELETE"
+- tapOn: "17"
 - tapOn: {id: "trash" }
 - extendedWaitUntil:
     visible: "DELETE"

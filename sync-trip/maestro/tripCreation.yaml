@@ -101,5 +101,6 @@ appId: "com.s370101387.synctrip"
 - tapOn: "ongoing"
 - tapOn: {id: "saveTripChanges"}
 - waitForAnimationToEnd
+- tapOn: "16"
 - tapOn: {id: "pencil" }
 - tapOn: "Cancel"

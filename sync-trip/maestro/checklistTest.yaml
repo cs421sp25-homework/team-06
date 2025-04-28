@@ -12,6 +12,7 @@ appId: "com.s370101387.synctrip"
 # navigate to dashboard and check the function of the buttons
 - assertVisible: { id: "dashboardScreen"}
 - tapOn: {id: "tab-trip"}
+- tapOn: "16"
 - extendedWaitUntil:
     visible:
       id: "addChecklist"
