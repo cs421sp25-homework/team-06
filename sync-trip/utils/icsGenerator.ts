@@ -9,6 +9,7 @@ import { Destination } from "../types/Destination";
 export async function generateICS(trip: Trip): Promise<string> {
   const events = trip.destinations.map((dest: Destination) => {
     const dateObj = dest.date instanceof Date ? dest.date : new Date(dest.date);
+    const endDateObj = new Date(dateObj.getTime() + 60 * 60 * 1000);
     return {
       title: dest.description || trip.title,
       start: [
@@ -20,11 +21,11 @@ export async function generateICS(trip: Trip): Promise<string> {
       ],
       // Set an arbitrary 1-hour event duration.
       end: [
-        dateObj.getFullYear(),
-        dateObj.getMonth() + 1,
-        dateObj.getDate(),
-        dateObj.getHours() + 1,
-        dateObj.getMinutes(),
+        endDateObj.getFullYear(),
+        endDateObj.getMonth() + 1,
+        endDateObj.getDate(),
+        endDateObj.getHours(),
+        endDateObj.getMinutes(),
       ],
       location: dest.address || "",
       description: `Trip: ${trip.title}`,
