@@ -28,6 +28,7 @@ const BillScreen = () => {
   // Retrieve the current trip information from the TripContext
   const { currentTrip } = useTrip();
   const { currentUser } = useUser();
+  const currentUserUid = currentUser?.uid ?? "";
 
   const [billModalVisible, setBillModalVisible] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
@@ -103,13 +104,13 @@ const BillScreen = () => {
   };
 
   const handleCreateBill = async () => {
-    if (!currentTrip) return;
+    if (!currentTrip || !currentUser) return;
     const newBill = {
       title: "New Bill",
       participants: [],
       summary: {},
       currency: "USD",
-      isDraft: false,
+      isDraft: true,
       archived: false,
       description: "",
       category: "",
@@ -146,7 +147,6 @@ const BillScreen = () => {
     }
   };
 
-  const currentUserUid = currentUser?.uid ?? "";
   const debtSummary = useMemo(() => {
     const summary: Record<string, number> = {};
     collaboratorsFull.forEach(c => { summary[c.uid] = 0 });
