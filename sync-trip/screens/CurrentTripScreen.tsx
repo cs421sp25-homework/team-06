@@ -315,18 +315,18 @@ const CurrentTripScreen = () => {
     setTimePickerVisible(false);
   };
 
-  const formatDate = (date: any) => {
-    if (date instanceof Date) {
-      return date.toISOString().split('T')[0];
-    } else if (date?.toDate) {
-      // If it's a Firebase Timestamp (has toDate())
-      return date.toDate().toISOString().split('T')[0];
-    } else if (typeof date === 'string') {
-      // Sometimes stored as string
-      return new Date(date).toISOString().split('T')[0];
-    } else {
-      return "";
-    }
+  const formatDate = (input: Date | { toDate(): Date } | string) => {
+    const d: Date = input instanceof Date
+      ? input
+      : typeof input === 'string'
+        ? new Date(input)
+        : input.toDate();
+
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');  // month is 0-based
+    const dd   = String(d.getDate()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}`;  // e.g. "2025-04-28"
   };
 
 
