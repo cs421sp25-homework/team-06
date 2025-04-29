@@ -328,16 +328,16 @@ Defined in YAML files under `./maestro/`, including:
 | `Actual Result`   | N/A                                                               |
 | `Status`          | N/A                                                               |
 
-| Field             | Description                                                                |
-|-------------------|----------------------------------------------------------------------------|
-| `Test Case ID`    | TC-003                                                                     |
-| `Title`           | Profile Test                                                               |
-| `Preconditions`   | User has a valid account                                                   |
-| `Test Steps`      | 1. Login 2. Navigate to profile screen 3. Update user profile.             |
-| `Test Data`       | User email, User Password, User Info                                       |
-| `Expected Result` | User update the profile successfully, the user data is stored in firebase. |
-| `Actual Result`   | N/A                                                                        |
-| `Status`          | N/A                                                                        |
+| Field             | Description                                                    |
+|-------------------|----------------------------------------------------------------|
+| `Test Case ID`    | TC-003                                                         |
+| `Title`           | Profile Test                                                   |
+| `Preconditions`   | User has a valid account                                       |
+| `Test Steps`      | 1. Login 2. Navigate to profile screen 3. Update user profile. |
+| `Test Data`       | User email, User Password, User Info                           |
+| `Expected Result` | User update the profile successfully.                          |
+| `Actual Result`   | N/A                                                            |
+| `Status`          | N/A                                                            |
 
 | Field             | Description                                                                                                                                  |
 |-------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
@@ -406,7 +406,69 @@ Defined in YAML files under `./maestro/`, including:
 | `Status`          | N/A                                             |
 
 ### 8.3 Test Results  
-CI badge shows ~95% pass rate. Failures primarily due to intermittent network conditions in emulator.
+
+| Field             | Description                                               |
+|-------------------|-----------------------------------------------------------|
+| `Test Case ID`    | TC-001                                                    |
+| `Title`           | Signup Function (Need manual operations to make it work)  |
+| `Actual Result`   | Users received the email and can login                    |
+| `Status`          | ✅Pass                                                     |
+
+| Field             | Description                                                       |
+|-------------------|-------------------------------------------------------------------|
+| `Test Case ID`    | TC-002                                                            |
+| `Title`           | Reset Password (Need manual operations to make it work)           |
+| `Actual Result`   | Users received the email, reset password, and login successfully. |
+| `Status`          | ✅Pass                                                             |
+
+| Field             | Description                           |
+|-------------------|---------------------------------------|
+| `Test Case ID`    | TC-003                                |
+| `Title`           | Profile Test                          |
+| `Actual Result`   | User update the profile successfully  |
+| `Status`          | ✅Pass                                 |
+
+| Field             | Description                                                                                                 |
+|-------------------|-------------------------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-004                                                                                                      |
+| `Title`           | Trip Creation Test                                                                                          |
+| `Actual Result`   | User can create (Trip, Destination), see the info of (Trip, Destination), and edit the (Trip, Destination)  |
+| `Status`          | ✅Pass                                                                                                       |
+
+| Field             | Description                                                                   |
+|-------------------|-------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-005                                                                        |
+| `Title`           | Checklist Test                                                                |
+| `Actual Result`   | User can create checklist, see the info of checklist, and edit the checklist  |
+| `Status`          | ✅Pass                                                                         |
+
+| Field             | Description                                                                            |
+|-------------------|----------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-006                                                                                 |
+| `Title`           | Announcement Test                                                                      |
+| `Actual Result`   | User can create announcement, see the info of announcement, and edit the announcement  |
+| `Status`          | ✅Pass                                                                                  |
+
+| Field             | Description                                                                       |
+|-------------------|-----------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-007                                                                            |
+| `Title`           | Bill Test (Need manual operations to make it work)                                |
+| `Actual Result`   | User can create bill, see the info of bill, edit the bill, and make transactions  |
+| `Status`          | ✅Pass                                                                             |
+
+| Field             | Description                                                        |
+|-------------------|--------------------------------------------------------------------|
+| `Test Case ID`    | TC-008                                                             |
+| `Title`           | Route Test                                                         |
+| `Actual Result`   | User can create route, see the info of route, edit the route info  |
+| `Status`          | ✅Pass                                                              |
+
+| Field             | Description                                      |
+|-------------------|--------------------------------------------------|
+| `Test Case ID`    | TC-009                                           |
+| `Title`           | Entire Test                                      |
+| `Actual Result`   | User can run the TC-001 to TC-008 successfully.  |
+| `Status`          | ✅Pass                                            |
 
 ## Deployment
 
