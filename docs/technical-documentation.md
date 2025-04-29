@@ -319,6 +319,14 @@ The data model consists of four main entities with one-to-many relationships:
 - **trips → bills:** One-to-many via `tripId`.  
 - Firestore security rules enforce access based on `ownerId` and `collaborators`.
 
+### 7.4 UML diagram
+
+- **billing_module.
+- **collaboration_module.
+- **trip_module.
+
+- View asset directory under docs
+
 ## Testing
 
 ### 8.1 Test Plan
@@ -356,7 +364,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-004                                                     |
 | `Title`             | Trip Creation Test                                         |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
@@ -365,7 +373,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-005                                                     |
 | `Title`             | Checklist Test                                             |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
@@ -374,7 +382,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-006                                                     |
 | `Title`             | Announcement Test                                          |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
@@ -392,7 +400,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-008                                                     |
 | `Title`             | Route Test                                                 |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
