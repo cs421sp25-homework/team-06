@@ -152,6 +152,7 @@ const BillScreen = () => {
         currency: updated.currency ?? selectedBill?.currency ?? 'USD',
         description: updated.description ?? selectedBill?.description ?? '',
         category: updated.category ?? selectedBill?.category ?? '',
+        isDraft: false,
       });
       //send bill update notification
       await sendBillUpdateNotification(updated as Bill);

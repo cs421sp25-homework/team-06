@@ -107,7 +107,6 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   if (!bill) return null;
 
   const isCreator = bill.createdBy === currentUserUid;
-  const isNew = bill.isDraft === true;
 
 
   const payInfo = React.useMemo(() => {
@@ -561,12 +560,12 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
 
           {isCreator && (
             <Button testID="saveBill" style={styles.saveButton} onPress={handleSave}>
-              {isNew ? "Create Bill" : "Save Changes"}
+              {"Save Changes"}
             </Button>
           )}
 
           {/* Archive */}
-          {!isNew && isCreator && !bill.archived && (
+          {isCreator && !bill.archived && (
             <Button
               testID="archiveBill"
               mode="outlined"
@@ -585,7 +584,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           )}
 
           {/* Delete */}
-          {!isNew && isCreator && (
+          {isCreator && (
             <Button
               mode="outlined"
               textColor="red"
