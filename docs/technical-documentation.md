@@ -319,6 +319,14 @@ The data model consists of four main entities with one-to-many relationships:
 - **trips → bills:** One-to-many via `tripId`.  
 - Firestore security rules enforce access based on `ownerId` and `collaborators`.
 
+### 7.4 UML diagram
+
+- **billing_module.
+- **collaboration_module.
+- **trip_module.
+
+- View asset directory under docs
+
 ## Testing
 
 ### 8.1 Test Plan
