@@ -152,40 +152,6 @@ Store the following in the `.env` file:
 ## Usage Guide
 
 ### 5.1 User Interface Overview  
-- **Login / Signup:** User authentication screens  
-- **Home / Dashboard:** Active and archived trips list  
-- **New Trip:** Form for title, dates, and member invites  
-- **Current Trip:**  
-  - **Map Tab:** Add/view destination markers  
-  - **Destinations:** Edit or delete scheduled stops  
-  - **Checklist & Announcements:** Collaboration tools  
-  - **Billing:** Expense entry and split summary  
-- **Profile:** Manage user information and logout
-
-### 5.2 User Authentication  
-- Supports **Email/Password** and **Google OAuth** via Firebase Auth.  
-- Session management and token refresh handled by Firebase SDK.
-
-### 5.3 Core Functionality  
-- **Trips CRUD:** Create, read, update, delete trips.  
-- **Destinations Management:** Add via map or list, edit/delete through modals.  
-- **Real-Time Sync:** Data writes via React Context trigger Firestore updates; `onSnapshot` listeners refresh UI immediately.
-
-### 5.4 Advanced Features  
-- **Offline Support:** Firestore caches writes locally and syncs upon reconnection.  
-- **Push Notifications:** Background alerts for trip changes via Expo Notification service.  
-- **Expense Tracking:** Create bills and transactions with automatic splitting.  
-- **Calendar Export:** Generate `.ics` files stored in Firebase Storage.
-
-### 5.5 Troubleshooting  
-- **ICS Export Error:** "end[3] must be ≤ 23" — Ensure event end-hour is within 0–23.  
-- **Map Load Failures:** Verify `GOOGLE_MAPS_API_KEY` restrictions and GCP billing.  
-- **Missing Push Token:** Confirm `NotificationHandler` runs on login and writes to Firestore.  
-- **Billing Edits:** No permission controls; plan to add security rules.
-
-## Usage Guide
-
-### 5.1 User Interface Overview  
 - Login / Signup: User authentication screens
 - Home / Dashboard: Active and archived trips list
 - New Trip: Form for title, dates, and member invites
@@ -212,10 +178,9 @@ Store the following in the `.env` file:
 - Calendar Export: Generate .ics files stored in Firebase Storage.
 
 ### 5.5 Troubleshooting  
-- ICS Export Error: “end[3] must be ≤ 23” — Ensure event end-hour is within 0–23.  
-- Map Load Failures: Verify GOOGLE_MAPS_API_KEY restrictions and GCP billing.  
-- Missing Push Token: Confirm NotificationHandler runs on login and writes to Firestore.  
-- Billing Edits: No permission controls; plan to add security rules.
+- ? Missing Push Token: Confirm NotificationHandler runs on login and writes to Firestore.  
+- ? Billing Edits: No permission controls; plan to add security rules.
+- **TODO**
 
 ## API Documentation
 
