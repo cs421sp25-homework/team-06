@@ -357,16 +357,12 @@ CI badge shows ~95% pass rate. Failures primarily due to intermittent network co
 ### 9.1 Deployment Process  
 Production builds and submission via EAS:
 ```bash
-eas build --profile production --platform all
-eas submit --platform ios
-eas submit --platform android
+eas build --profile production --platform android
 ```  
 Monitor build status in Expo dashboard and app store consoles.
 
 ### 9.2 Release Notes  
-- **v1.0.0:** Initial release with core real-time syncing.  
-- **v1.1.0:** Background notifications and offline support.  
-- **v2.0.0:** Expense tracking and calendar export.
+
 
 ### 9.3 Known Issues and Limitations  
 - **In-App Notifications:** Expo supports background only; no in-app banners.  
