@@ -436,9 +436,9 @@ Defined in YAML files under `./maestro/`, including:
 | `Test Case ID`    | TC-004                                                                                                                                       |
 | `Title`           | Trip Creation Test                                                                                                                           |
 | `Preconditions`   | User has a valid account                                                                                                                     |
-| `Test Steps`      | 1. Login 2. Navigate to map screen 3. Create Trip by using map. 4. Modify the trip <br/> 5. Create the destination 6. Modify the destination |
+| `Test Steps`      | 1. Login 2. Navigate to map screen 3. Create Trip by using map. 4. Modify the trip <br/> 5. Create the destination 6. Modify the destination 7. Archive Trip. 8. Restore Trip |
 | `Test Data`       | User Info, Trip Info                                                                                                                         |
-| `Expected Result` | User can create (Trip, Destination), see the info of (Trip, Destination), and edit the (Trip, Destination)                                   |
+| `Expected Result` | User can create (Trip, Destination), see the info of (Trip, Destination), and edit the (Trip, Destination), archive and restore the trip                                   |
 | `Actual Result`   | N/A                                                                                                                                          |
 | `Status`          | N/A                                                                                                                                          |
 
@@ -458,7 +458,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Test Case ID`    | TC-006                                                                                                                              |
 | `Title`           | Announcement Test                                                                                                                   |
 | `Preconditions`   | User has a valid account, User has created at least one trip                                                                        |
-| `Test Steps`      | 1. Login 2. Navigate to dashboard screen 3. Create the announcement, 4. Edit the announcement <br/>5. Archive Trip. 6. Restore Trip |
+| `Test Steps`      | 1. Login 2. Navigate to dashboard screen 3. Create the announcement, 4. Edit the announcement |
 | `Test Data`       | User Info, Trip Info, Announcement Info                                                                                             |
 | `Expected Result` | User can create announcement, see the info of announcement, and edit the announcement                                               |
 | `Actual Result`   | N/A                                                                                                                                 |
@@ -469,7 +469,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Test Case ID`    | TC-007                                                                                            |
 | `Title`           | Bill Test (Need manual operations to make it work)                                                |
 | `Preconditions`   | User has a valid account, User has created at least one trip, Trip has at least two participants. |
-| `Test Steps`      | 1. Login 2. Navigate to bill screen 3. Create the bill, 4. Edit the bill 5. Make transactions     |
+| `Test Steps`      | 1. Login 2. Navigate to bill screen 3. Create the bill, 4. Edit the bill, 5. Archive the bill, 6. Restore the bill 7. Make transactions     |
 | `Test Data`       | User Info, Trip Info, Bill Info                                                                   |
 | `Expected Result` | User can create bill, see the info of bill, edit the bill, and make transactions                  |
 | `Actual Result`   | N/A                                                                                               |
@@ -535,7 +535,7 @@ Defined in YAML files under `./maestro/`, including:
 |-------------------|-------------------------------------------------------------------------------------------------------------|
 | `Test Case ID`    | TC-004                                                                                                      |
 | `Title`           | Trip Creation Test                                                                                          |
-| `Actual Result`   | User can create (Trip, Destination), see the info of (Trip, Destination), and edit the (Trip, Destination)  |
+| `Actual Result`   | User can create (Trip, Destination), see the info of (Trip, Destination), edit the (Trip, Destination), and archive(restore) the trip |
 | `Status`          | ✅Pass                                                                                                       |
 
 | Field             | Description                                                                   |
@@ -556,7 +556,7 @@ Defined in YAML files under `./maestro/`, including:
 |-------------------|-----------------------------------------------------------------------------------|
 | `Test Case ID`    | TC-007                                                                            |
 | `Title`           | Bill Test (Need manual operations to make it work)                                |
-| `Actual Result`   | User can create bill, see the info of bill, edit the bill, and make transactions  |
+| `Actual Result`   | User can create bill, see the info of bill, edit the bill, archive the bill, restore the bill, and make transactions  |
 | `Status`          | ✅Pass                                                                             |
 
 | Field             | Description                                                        |
