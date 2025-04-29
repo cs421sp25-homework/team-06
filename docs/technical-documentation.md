@@ -306,13 +306,104 @@ End-to-end testing using Maestro to cover:
 ### 8.2 Test Cases  
 Defined in YAML files under `./maestro/`, including:
 
-- `entireTest.yaml`: Full app flow
-- `resetPwd.yaml`: Password reset and verification
-- `signUpScreen_test.yaml`: Signup UI
-- `profileTest.yaml`: Profile editing
-- `tripCreation.yaml`: Trip creation steps
-- `billTest.yaml`: Billing functionality
-- `routeTest.yaml`: Map route interactions
+| Field             | Description                                                                              |
+|-------------------|------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-001                                                                                   |
+| `Title`           | Signup Function (Need manual operations to make it work)                                 |
+| `Preconditions`   | User has the app on the phone or emulator                                                |
+| `Test Steps`      | 1. Type in the email. 2. Type in the password twice 3. Submit request 4. Verify on email |
+| `Test Data`       | User email, User Password                                                                |
+| `Expected Result` | Users received the email and can login                                                   |
+| `Actual Result`   | N/A                                                                                      |
+| `Status`          | N/A                                                                                      |
+
+| Field             | Description                                                       |
+|-------------------|-------------------------------------------------------------------|
+| `Test Case ID`    | TC-002                                                            |
+| `Title`           | Reset Password (Need manual operations to make it work)           |
+| `Preconditions`   | User has a valid account                                          |
+| `Test Steps`      | 1. Click "Forget the password". 2. Reset password via email.      |
+| `Test Data`       | User email                                                        |
+| `Expected Result` | Users received the email, reset password, and login successfully. |
+| `Actual Result`   | N/A                                                               |
+| `Status`          | N/A                                                               |
+
+| Field             | Description                                                                |
+|-------------------|----------------------------------------------------------------------------|
+| `Test Case ID`    | TC-003                                                                     |
+| `Title`           | Profile Test                                                               |
+| `Preconditions`   | User has a valid account                                                   |
+| `Test Steps`      | 1. Login 2. Navigate to profile screen 3. Update user profile.             |
+| `Test Data`       | User email, User Password, User Info                                       |
+| `Expected Result` | User update the profile successfully, the user data is stored in firebase. |
+| `Actual Result`   | N/A                                                                        |
+| `Status`          | N/A                                                                        |
+
+| Field             | Description                                                                                                                                  |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-004                                                                                                                                       |
+| `Title`           | Trip Creation Test                                                                                                                           |
+| `Preconditions`   | User has a valid account                                                                                                                     |
+| `Test Steps`      | 1. Login 2. Navigate to map screen 3. Create Trip by using map. 4. Modify the trip <br/> 5. Create the destination 6. Modify the destination |
+| `Test Data`       | User email, User Password, User Info, Trip Info                                                                                              |
+| `Expected Result` | User can create (Trip, Destination), see the info of (Trip, Destination), and edit the (Trip, Destination)                                   |
+| `Actual Result`   | N/A                                                                                                                                          |
+| `Status`          | N/A                                                                                                                                          |
+
+| Field             | Description                                                                        |
+|-------------------|------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-005                                                                             |
+| `Title`           | Checklist Test                                                                     |
+| `Preconditions`   | User has a valid account, User has created at least one trip.                      |
+| `Test Steps`      | 1. Login 2. Navigate to trip screen 3. Create the checklist, 4. Edit the checklist |
+| `Test Data`       | User email, User Password, User Info, Trip Info, Checklist Info                    |
+| `Expected Result` | User can create checklist, see the info of checklist, and edit the checklist       |
+| `Actual Result`   | N/A                                                                                |
+| `Status`          | N/A                                                                                |
+
+| Field             | Description                                                                                                                         |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-006                                                                                                                              |
+| `Title`           | Announcement Test                                                                                                                   |
+| `Preconditions`   | User has a valid account, User has created at least one trip                                                                        |
+| `Test Steps`      | 1. Login 2. Navigate to dashboard screen 3. Create the announcement, 4. Edit the announcement <br/>5. Archive Trip. 6. Restore Trip |
+| `Test Data`       | User email, User Password, User Info, Trip Info, Announcement Info                                                                  |
+| `Expected Result` | User can create announcement, see the info of announcement, and edit the announcement                                               |
+| `Actual Result`   | N/A                                                                                                                                 |
+| `Status`          | N/A                                                                                                                                 |
+
+| Field             | Description                                                                                       |
+|-------------------|---------------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-007                                                                                            |
+| `Title`           | Bill Test (Need manual operations to make it work)                                                |
+| `Preconditions`   | User has a valid account, User has created at least one trip, Trip has at least two participants. |
+| `Test Steps`      | 1. Login 2. Navigate to bill screen 3. Create the bill, 4. Edit the bill 5. Make transactions     |
+| `Test Data`       | User email, User Password, User Info, Trip Info, Bill Info                                        |
+| `Expected Result` | User can create bill, see the info of bill, edit the bill, and make transactions                  |
+| `Actual Result`   | N/A                                                                                               |
+| `Status`          | N/A                                                                                               |
+
+| Field             | Description                                                                                       |
+|-------------------|---------------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-008                                                                                            |
+| `Title`           | Route Test                                                                                        |
+| `Preconditions`   | User has a valid account, User has created at least one trip, Trip has at least two destinations. |
+| `Test Steps`      | 1. Login 2. Navigate to map screen 3. Create the route, 4. Edit the route 5. Generate the route   |
+| `Test Data`       | User email, User Password, User Info, Trip Info, Announcement Info                                |
+| `Expected Result` | User can create route, see the info of route, edit the route info                                 |
+| `Actual Result`   | N/A                                                                                               |
+| `Status`          | N/A                                                                                               |
+
+| Field             | Description                                     |
+|-------------------|-------------------------------------------------|
+| `Test Case ID`    | TC-009                                          |
+| `Title`           | Entire Test                                     |
+| `Preconditions`   | User has a valid account.                       |
+| `Test Steps`      | From TC-001 to TC-008.                          |
+| `Test Data`       | All info included in TC-001 to TC-008.          |
+| `Expected Result` | User can run the TC-001 to TC-008 successfully. |
+| `Actual Result`   | N/A                                             |
+| `Status`          | N/A                                             |
 
 ### 8.3 Test Results  
 CI badge shows ~95% pass rate. Failures primarily due to intermittent network conditions in emulator.
