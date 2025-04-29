@@ -15,11 +15,14 @@ import { deleteDestinationInTrip } from '../utils/tripAPI'; // or wherever your 
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { getInfoFromPlaceId, getPlaceFromCoordinates, getRoute, decodePolyline, getAddressFromCoordinates, getCoordinatesFromAddress } from '../utils/map';
 
+import {useAppNavigation} from '../navigation/useAppNavigation';
+
+
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
-  const { getCurrentUserId } = useUser();
+  const { currentUser, getCurrentUserId } = useUser();
   const { tabIndex, setTabIndex } = useTabs();
 
   // User location & map region
@@ -69,6 +72,21 @@ const MapScreen = () => {
   const [departureTime, setDepartureTime] = useState<Date | null>(null)
   const [showDeparturePicker, setShowDeparturePicker] = useState(false)
   const [departureDateTime, setDepartureDateTime] = useState<Date | null>(null)
+
+  const navigation = useAppNavigation();
+
+  // 1) redirect away if no user
+  useEffect(() => {
+    if (!currentUser) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
+  }, [currentUser, navigation]);
+
+
+
   // Convert trip's start/end to Date objects
   useEffect(() => {
     if (currentTrip) {
@@ -123,6 +141,11 @@ const MapScreen = () => {
       })
     }
   }, [routeCoords])
+
+  if (!currentUser) {
+    // render a null page to avoid error.
+    return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
+  }
 
   // Navigate user to the 'New Trip' tab if they have no current trip
   const redirectToNewTrip = () => {
@@ -209,8 +232,8 @@ const MapScreen = () => {
 
   // Save a NEW marker (destination) to the trip
   const saveNewMarker = async () => {
-    if (!currMarker || !description) {
-      Alert.alert('Incomplete', 'Please provide a description before saving.');
+    if (!currMarker || !markerName) {
+      Alert.alert('Incomplete', 'Please provide a markerName before saving.');
       return;
     }
     // If we want date/time for new markers as well:

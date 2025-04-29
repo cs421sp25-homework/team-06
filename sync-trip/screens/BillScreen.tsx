@@ -21,6 +21,7 @@ import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
 import { Collaborator } from "../types/User";
 import {sendBillCreateNotification, sendBillUpdateNotification} from "../utils/NotificationService";
+import {useAppNavigation} from "../navigation/useAppNavigation";
 
 const BillScreen = () => {
   // Retrieve bills and transactions from the BillTransactionContext
@@ -36,6 +37,18 @@ const BillScreen = () => {
 
   const activeBills   = bills.filter(b => !b.archived);
   const archivedBills = bills.filter(b => b.archived);
+
+  const navigation = useAppNavigation();
+
+  // redirect away if no user
+  useEffect(() => {
+    if (!currentUser) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
+  }, [currentUser, navigation]);
 
   useEffect(() => {
     setSegment('active');
