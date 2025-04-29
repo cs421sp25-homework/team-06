@@ -151,7 +151,8 @@ Store the following in the `.env` file:
 
 ## Usage Guide
 
-### 5.1 User Interface Overview  
+### 5.1 User Interface Overview
+
 - Login / Signup: User authentication screens
 - Home / Dashboard: Active and archived trips list
 - New Trip: Form for title, dates, and member invites
@@ -162,24 +163,26 @@ Store the following in the `.env` file:
   • Billing: Expense entry and split summary
 - Profile: Manage user information and logout
 
-### 5.2 User Authentication  
+### 5.2 User Authentication
+
 - Supports Email/Password and Google OAuth via Firebase Auth.  
 - Session management and token refresh handled by Firebase SDK.
 
-### 5.3 Core Functionality  
+### 5.3 Core Functionality
+
 - Trips CRUD: Create, read, update, delete trips.  
 - Destinations Management: Add via map or list, edit/delete through modals.  
 - Real-Time Sync: Data writes via React Context trigger Firestore updates; onSnapshot listeners refresh UI immediately.
 
 ### 5.4 Advanced Features  
-- Offline Support: Firestore caches writes locally and syncs upon reconnection.  
+
 - Push Notifications: Background alerts for trip changes via Expo Notification service.  
 - Expense Tracking: Create bills and transactions with automatic splitting.  
 - Calendar Export: Generate .ics files stored in Firebase Storage.
 
 ### 5.5 Troubleshooting  
+
 - ? Missing Push Token: Confirm NotificationHandler runs on login and writes to Firestore.  
-- ? Billing Edits: No permission controls; plan to add security rules.
 - **TODO**
 
 ## API Documentation
@@ -216,13 +219,15 @@ All interactions use Firestore collections; there are no custom REST endpoints.
   "createdByUid": "user123"  
 }
 
-### 6.3 Authentication and Authorization  
+### 6.3 Authentication and Authorization 
+
 - Security Rules: Only authenticated users in collaborators or ownerId can read/write trip data.  
 - Future Rules: Enforce creator-only edits on billing subcollections.
 
 ## Database Schema
 
 ### 7.1 Entity-Relationship Diagram  
+
 The data model consists of four main entities with one-to-many relationships:
 
 - User (1) → Trip (many): Each user can create or join multiple trips, referenced by collaborators in the Trip document.  
@@ -289,10 +294,12 @@ The data model consists of four main entities with one-to-many relationships:
 }
 
 ### 7.3 Relationships and Constraints  
+
 - **users → trips:** One-to-many via `collaborators` and `ownerId`.  
 - **trips → destinations:** One-to-many via `tripId`.  
 - **trips → bills:** One-to-many via `tripId`.  
 - Firestore security rules enforce access based on `ownerId` and `collaborators`.
+
 ## Testing
 
 ### 8.1 Test Plan  
@@ -470,28 +477,37 @@ Defined in YAML files under `./maestro/`, including:
 | `Actual Result`   | User can run the TC-001 to TC-008 successfully.  |
 | `Status`          | ✅Pass                                            |
 
+### 8.3 Test Results  
+
+CI badge shows ~95% pass rate. Failures primarily due to intermittent network conditions in emulator.
+
 ## Deployment
 
 ### 9.1 Deployment Process  
+
 Production builds and submission via EAS:
+
 ```bash
 eas build --profile production --platform android
 ```  
+
 Monitor build status in Expo dashboard and app store consoles.
 
 ### 9.2 Release Notes  
 
-
 ### 9.3 Known Issues and Limitations  
+
 - **In-App Notifications:** Expo supports background only; no in-app banners.  
-- **Billing Permissions:** No role-based controls; any member can edit.
+- **Offline Support:** Local changes make in offline won't be synced to the server, and will be covered by the next sync from cloud when user reconnects.
+- **Map Support:** detailed instructions for route planning are not provided; intelligenttraveling suggestions are not provided.
+- **Place Choice Logic:** Only fetch the exact location user tap on the map, suggestions for nearby locations are not provided.
 
 ## Glossary
 
-### 10.1 Terms and Definitions  
+### 10.1 Terms and Definitions
+
 - **Trip:** Collection of destinations shared among users.  
 - **Destination:** Scheduled stop with date, time, and location.  
 - **React Context:** API for passing state through the component tree.  
 - **Firestore Subscription:** Real-time data listener for Firestore documents.  
 - **Maestro:** End-to-end testing framework for Expo applications.
-
