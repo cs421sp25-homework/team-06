@@ -2,10 +2,12 @@
 
 ## Introduction
 
-### 1.1 Purpose  
+### 1.1 Purpose
+
 Sync-Trip is a mobile application designed to enable groups to collaboratively plan and manage trip itineraries in real time on Android and iOS platforms. It offers tools for creating trips, scheduling destinations, viewing interactive maps, and sending notifications to keep all participants up to date.
 
-### 1.2 Scope  
+### 1.2 Scope
+
 This document covers the following Sync-Trip features:
 
 - Trip creation, editing, and deletion
@@ -16,7 +18,8 @@ This document covers the following Sync-Trip features:
 - Offline support using Firestore’s local cache
 - Billing permission management 
 
-### 1.3 Audience  
+### 1.3 Audience
+
 This documentation is intended for:
 
 - **Mobile Developers:** For feature enhancements and maintenance
@@ -26,7 +29,8 @@ This documentation is intended for:
 
 ## System Overview
 
-### 2.1 Architecture  
+### 2.1 Architecture
+
 Sync-Trip uses a client-centric architecture with the following components:
 
 1. **Frontend (React Native + Expo):**  
@@ -48,7 +52,8 @@ Sync-Trip uses a client-centric architecture with the following components:
    - End-to-end tests defined with Maestro YAML scripts.  
    - Automated test suite run on GitHub Actions for pull request validation.
 
-### 2.2 Technologies Used  
+### 2.2 Technologies Used
+
 - React Native (Expo SDK 48+)  
 - React Native Paper (v5+)  
 - React Navigation (v6+)  
@@ -58,7 +63,8 @@ Sync-Trip uses a client-centric architecture with the following components:
 - Maestro for E2E testing  
 - GitHub Actions for CI
 
-### 2.3 Dependencies  
+### 2.3 Dependencies
+
 - Node.js ≥ v18.0.0  
 - npm ≥ v8.0.0  
 - Expo CLI ≥ v5.0.0  
@@ -66,7 +72,8 @@ Sync-Trip uses a client-centric architecture with the following components:
 
 ## Installation Guide
 
-### 3.1 Prerequisites  
+### 3.1 Prerequisites
+
 - **Node.js** v22.14.0 or higher  
 - **Yarn** ≥ v1.22.0 (or npm ≥ v8.0.0)  
 - **JDK** 17  
@@ -74,31 +81,41 @@ Sync-Trip uses a client-centric architecture with the following components:
 - **Expo CLI:** Install with `npm install -g expo-cli`  
 - **Firebase CLI (optional):** Install with `npm install -g firebase-tools`
 
-### 3.2 System Requirements  
+### 3.2 System Requirements
+
 - **Hardware:** Minimum 8 GB RAM, modern multi-core CPU  
 - **Operating System:** macOS, Windows, or Linux  
 - **Mobile Emulators:** Android Studio or Xcode Simulator
 
-### 3.3 Installation Steps  
-1. Clone the repository:  
+### 3.3 Installation Steps
+
+1. Clone the repository:
+
    ```bash
    git clone https://github.com/cs421sp25-homework/team-06.git
    cd sync-trip
    ```  
-2. Install dependencies:  
+
+2. Install dependencies:
+
    ```bash
    yarn install
    npx expo install
-   ```  
-3. Copy and configure environment variables:  
+   ```
+
+3. Copy and configure environment variables:
+
    ```bash
    cp .env.example .env
    # Edit .env with Firebase and Google Maps keys
-   ```  
+   ```
+
 4. Prebuild native code (Android):  
+
    ```bash
    npx expo prebuild --platform android --clean
-   ```  
+   ```
+
 5. Launch on emulator or device:  
    ```bash
    npx expo run:android
@@ -119,23 +136,20 @@ Store the following in the `.env` file:
 
 | Variable                    | Description                                      |
 |-----------------------------|--------------------------------------------------|
-| `FIREBASE_API_KEY`          | Firebase project API key                         |
-| `FIREBASE_AUTH_DOMAIN`      | Firebase Auth domain                             |
-| `FIREBASE_PROJECT_ID`       | Firebase project ID                              |
-| `FIREBASE_STORAGE_BUCKET`   | Firebase Storage bucket                          |
-| `FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID                |
-| `FIREBASE_APP_ID`           | Firebase App ID                                  |
 | `GOOGLE_MAPS_API_KEY`       | API key for Google Maps SDK                      |
 | `ANDROID_HOME`              | Path to local Android SDK                        |
 | `JAVA_HOME`                 | Path to installed JDK 17                         |
 
-### 4.2 Environment Setup  
-1. Export environment variables:  
+### 4.2 Environment Setup
+
+1. Export environment variables:
+
    ```bash
    export ANDROID_HOME="<path-to-Android-Sdk>"
    export JAVA_HOME="<path-to-JDK-17>"
    export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator"
-   ```  
+   ```
+
 2. Verify setup:  
    ```bash
    npx react-native doctor
@@ -144,7 +158,8 @@ Store the following in the `.env` file:
    - Place `google-services.json` in `android/app/`.  
    - Ensure Firestore, Auth, and Storage are enabled in Firebase Console.
 
-### 4.3 External Services Integration  
+### 4.3 External Services Integration
+
 - **Firestore Emulators:** Configure in `firebase.json`, run `firebase emulators:start`.  
 - **Expo Push Notifications:** Register tokens with `NotificationHandler.registerForPushNotificationsAsync()`, then save to Firestore.  
 - **Cloud Functions:** (Planned) For server-side triggers on billing changes.
@@ -187,14 +202,16 @@ Store the following in the `.env` file:
 
 ## API Documentation
 
-### 6.1 Endpoints  
+### 6.1 Endpoints
+
 All interactions use Firestore collections; there are no custom REST endpoints.
 
 - users/{uid}
 - trips/{tripId}
 - trips/{tripId}/destinations/{destinationId}
 
-### 6.2 Request and Response Formats  
+### 6.2 Request and Response Formats
+
 **Trip Document Example:**  
 {  
   "title": "Beach Trip",  
@@ -219,10 +236,11 @@ All interactions use Firestore collections; there are no custom REST endpoints.
   "createdByUid": "user123"  
 }
 
-### 6.3 Authentication and Authorization 
+### 6.3 Authentication and Authorization
 
-- Security Rules: Only authenticated users in collaborators or ownerId can read/write trip data.  
-- Future Rules: Enforce creator-only edits on billing subcollections.
+- Security Rules:
+  - Only authenticated users who are collaborators or owner of the trip can C/R/U/D trip data.  
+  - Only owner of a bill can C/R/U/D billing data.
 
 ## Database Schema
 
@@ -235,7 +253,8 @@ The data model consists of four main entities with one-to-many relationships:
 - User (1) → ExpoToken (many): Users may have multiple device tokens, saved in the expoTokens array.  
 - Trip (1) → Bill (many): Each trip can have multiple bills, stored in a bills subcollection under a trip.
 
-### 7.2 Table Definitions  
+### 7.2 Table Definitions
+
 **users:**  
 {  
   "uid": "user123",  
@@ -303,6 +322,7 @@ The data model consists of four main entities with one-to-many relationships:
 ## Testing
 
 ### 8.1 Test Plan
+
 End-to-end testing using Maestro to cover:
 
 | Field               | Description                                                |
@@ -396,6 +416,7 @@ End-to-end testing using Maestro to cover:
 | `Test Deliverables` | Test cases, Bug reports     |
 
 ### 8.2 Test Cases
+
 Defined in YAML files under `./maestro/`, including:
 
 | Field             | Description                                                                              |

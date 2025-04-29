@@ -24,6 +24,7 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 │   ├── README.md
 │   ├── adaptive-icon.png
 │   ├── another_image.png
+│   ├── default_bg.jpg
 │   ├── favicon.png
 │   ├── icon.png
 │   ├── logInBackground.jpg
@@ -48,15 +49,15 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 │   ├── Podfile
 │   └── Podfile.properties.json
 ├── maestro
-│   ├── entireTest.yaml
-│   ├── resetPwd.yaml
-│   ├── profileTest.yaml
-│   ├── tripCreation.yaml
-│   ├── checklistTest.yaml
 │   ├── announcementTest.yaml
 │   ├── billTest.yaml
+│   ├── checklistTest.yaml
+│   ├── entireTest.yaml
+│   ├── profileTest.yaml
+│   ├── resetPwd.yaml
 │   ├── routeTest.yaml
-│   └── signUpScreen_test.yaml
+│   ├── signUpScreen_test.yaml
+│   └── tripCreation.yaml
 ├── metro.config.js
 ├── nativewind-env.d.ts
 ├── navigation
@@ -67,11 +68,11 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 ├── package.json
 ├── prettier.config.js
 ├── screens
+│   ├── AnnounceScreen.tsx
 │   ├── ArchivedHistoryScreen.tsx
 │   ├── BillScreen.tsx
 │   ├── CurrentTripScreen.tsx
 │   ├── DashboardScreen.tsx
-│   ├── HistoryScreen.tsx
 │   ├── HomeScreen.tsx
 │   ├── LogInScreen.tsx
 │   ├── MapScreen.tsx
@@ -79,6 +80,7 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 │   ├── ProfileScreen.tsx
 │   └── SignUpScreen.tsx
 ├── styles
+│   ├── announce.ts
 │   └── loginStyples.ts
 ├── tailwind.config.js
 ├── tsconfig.json
@@ -248,4 +250,3 @@ Refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
 ## License
 
 Refer to [LICENSE.md](./LICENSE.md).
-
