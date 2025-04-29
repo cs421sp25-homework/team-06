@@ -183,59 +183,151 @@ Store the following in the `.env` file:
 - **Missing Push Token:** Confirm `NotificationHandler` runs on login and writes to Firestore.  
 - **Billing Edits:** No permission controls; plan to add security rules.
 
+## Usage Guide
+
+### 5.1 User Interface Overview  
+- Login / Signup: User authentication screens
+- Home / Dashboard: Active and archived trips list
+- New Trip: Form for title, dates, and member invites
+- Current Trip:
+  • Map Tab: Add/view destination markers
+  • Destinations: Edit or delete scheduled stops
+  • Checklist & Announcements: Collaboration tools
+  • Billing: Expense entry and split summary
+- Profile: Manage user information and logout
+
+### 5.2 User Authentication  
+- Supports Email/Password and Google OAuth via Firebase Auth.  
+- Session management and token refresh handled by Firebase SDK.
+
+### 5.3 Core Functionality  
+- Trips CRUD: Create, read, update, delete trips.  
+- Destinations Management: Add via map or list, edit/delete through modals.  
+- Real-Time Sync: Data writes via React Context trigger Firestore updates; onSnapshot listeners refresh UI immediately.
+
+### 5.4 Advanced Features  
+- Offline Support: Firestore caches writes locally and syncs upon reconnection.  
+- Push Notifications: Background alerts for trip changes via Expo Notification service.  
+- Expense Tracking: Create bills and transactions with automatic splitting.  
+- Calendar Export: Generate .ics files stored in Firebase Storage.
+
+### 5.5 Troubleshooting  
+- ICS Export Error: “end[3] must be ≤ 23” — Ensure event end-hour is within 0–23.  
+- Map Load Failures: Verify GOOGLE_MAPS_API_KEY restrictions and GCP billing.  
+- Missing Push Token: Confirm NotificationHandler runs on login and writes to Firestore.  
+- Billing Edits: No permission controls; plan to add security rules.
+
 ## API Documentation
 
 ### 6.1 Endpoints  
 All interactions use Firestore collections; there are no custom REST endpoints.
 
-- `users/{uid}`
-- `trips/{tripId}`
-- `trips/{tripId}/destinations/{destinationId}`
+- users/{uid}
+- trips/{tripId}
+- trips/{tripId}/destinations/{destinationId}
 
 ### 6.2 Request and Response Formats  
 **Trip Document Example:**  
-```json
-{
-  "title": "Beach Trip",
-  "ownerUid": "user123",
-  "createdAt": {"_seconds": 1610000000, "_nanoseconds": 0},
-  "memberUids": ["user123","user456"]
+{  
+  "title": "Beach Trip",  
+  "ownerId": "user123",  
+  "startDate": "2025-05-01T00:00:00.000Z",  
+  "endDate": "2025-05-07T00:00:00.000Z",  
+  "destinations": [ ... ],  
+  "collaborators": ["user123","user456"],  
+  "status": "planning"  
 }
-```
+
 **Destination Document Example:**  
-```json
-{
-  "date": "2025-05-10T09:00:00.000Z",
-  "location": "Central Park",
-  "notes": "Bring snacks"
+{  
+  "latitude": 40.7128,  
+  "longitude": -74.0060,  
+  "place_id": "ChIJOwg_06VPwokRYv534QaPC8g",  
+  "tripId": "trip123",  
+  "address": "New York, NY",  
+  "description": "Statue of Liberty",  
+  "date": "2025-05-02T09:00:00.000Z",  
+  "name": "Statue of Liberty",  
+  "createdByUid": "user123"  
 }
-```
 
 ### 6.3 Authentication and Authorization  
-- **Security Rules:** Only authenticated users in `memberUids` can read/write trip data.  
-- **Future Rules:** Enforce creator-only edits on billing subcollections.
+- Security Rules: Only authenticated users in collaborators or ownerId can read/write trip data.  
+- Future Rules: Enforce creator-only edits on billing subcollections.
 
 ## Database Schema
 
 ### 7.1 Entity-Relationship Diagram  
-The data model consists of three main entities with one-to-many relationships:
+The data model consists of four main entities with one-to-many relationships:
 
-- **User** (1) → **Trip** (many): Each user can create or join multiple trips, referenced by `memberUids` in the Trip document.  
-- **Trip** (1) → **Destination** (many): Each trip contains multiple destinations, stored in the `destinations` subcollection under a trip.  
-- **User** (1) → **ExpoToken** (many): Users may have multiple device tokens, saved in the `expoTokens` array.
-
-These relationships ensure that trip data and destination schedules are scoped under the appropriate user and trip contexts.
+- User (1) → Trip (many): Each user can create or join multiple trips, referenced by collaborators in the Trip document.  
+- Trip (1) → Destination (many): Each trip contains multiple destinations, stored in the destinations subcollection under a trip.  
+- User (1) → ExpoToken (many): Users may have multiple device tokens, saved in the expoTokens array.  
+- Trip (1) → Bill (many): Each trip can have multiple bills, stored in a bills subcollection under a trip.
 
 ### 7.2 Table Definitions  
-**users:**  `{ uid (PK), displayName, email, expoTokens[] }`  
-**trips:**  `{ tripId (PK), ownerUid (FK), title, createdAt, memberUids[] }`  
-**destinations:**  `{ destinationId (PK), tripId (FK), date, location, notes }`
+**users:**  
+{  
+  "uid": "user123",  
+  "email": "user@example.com",  
+  "name": "Jane Doe",  
+  "bio": "Traveler",  
+  "travelPreference": "Backpacking",  
+  "currentTripId": "trip123",  
+  "profilePicture": "url_to_storage",  
+  "backgroundPicture": "url_to_storage",  
+  "tripsIdList": ["trip123","trip456"],  
+  "paypalEmail": "jane@paypal.com"  
+}
+
+**trips:**  
+{  
+  "id": "trip123",  
+  "title": "NYC Adventure",  
+  "startDate": "2025-05-01T00:00:00.000Z",  
+  "endDate": "2025-05-07T00:00:00.000Z",  
+  "destinations": [Destination,...],  
+  "ownerId": "user123",  
+  "collaborators": ["user123","user456"],  
+  "status": "planning"  
+}
+
+**destinations:**  
+{  
+  "id": "dest123",  
+  "latitude": 40.7128,  
+  "longitude": -74.0060,  
+  "place_id": "ChIJOwg_06VPwokRYv534QaPC8g",  
+  "tripId": "trip123",  
+  "address": "New York, NY",  
+  "description": "Statue of Liberty",  
+  "date": "2025-05-02T09:00:00.000Z",  
+  "name": "Statue of Liberty",  
+  "createdByUid": "user123"  
+}
+
+**bills:**  
+{  
+  "id": "bill123",  
+  "createdBy": "user123",  
+  "participants": ["user123","user456"],  
+  "title": "Lunch Bill",  
+  "currency": "USD",  
+  "summary": {  
+    "user123": { "user456": 25 },  
+    "user456": { "user123": 25 }  
+  },  
+  "isDraft": false,  
+  "archived": false,  
+  "description": "Lunch at diner",  
+  "category": "food"  
+}
 
 ### 7.3 Relationships and Constraints  
-- **users → trips:** One-to-many via `memberUids`.  
+- **users → trips:** One-to-many via `collaborators` and `ownerId`.  
 - **trips → destinations:** One-to-many via `tripId`.  
-- Firestore security rules enforce membership-based access control.
-
+- **trips → bills:** One-to-many via `tripId`.  
+- Firestore security rules enforce access based on `ownerId` and `collaborators`.
 ## Testing
 
 ### 8.1 Test Plan  
