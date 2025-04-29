@@ -364,7 +364,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-004                                                     |
 | `Title`             | Trip Creation Test                                         |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
@@ -373,7 +373,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-005                                                     |
 | `Title`             | Checklist Test                                             |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
@@ -382,7 +382,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-006                                                     |
 | `Title`             | Announcement Test                                          |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
@@ -400,7 +400,7 @@ End-to-end testing using Maestro to cover:
 |---------------------|------------------------------------------------------------|
 | `Test Plan ID`      | TP-008                                                     |
 | `Title`             | Route Test                                                 |
-| `Test Strategy`     | Automation                                                 |
+| `Test Strategy`     | Automation (synchronization will be tested manually)                                                |
 | `Scope`             | All features will be tested                                |
 | `Test Environment`  | Emulator & Android Phone                                   |
 | `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
