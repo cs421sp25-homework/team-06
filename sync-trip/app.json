@@ -4,6 +4,7 @@
     "slug": "sync-trip",
     "version": "1.0.0",
     "newArchEnabled": false,
+    "icon": "./assets/icon.png",
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -38,6 +39,10 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "useNextNotificationsApi": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      },
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "READ_MEDIA_IMAGES"
