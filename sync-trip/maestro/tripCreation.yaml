@@ -104,3 +104,9 @@ appId: "com.s370101387.synctrip"
 - tapOn: "16"
 - tapOn: {id: "pencil" }
 - tapOn: "Cancel"
+- tapOn: {id: "tab-trip"}
+- tapOn: {id: "archiveTrip"}
+- tapOn: "ARCHIVE"
+- tapOn: "Archived"
+- tapOn: "Restore"
+- tapOn: "OK"
