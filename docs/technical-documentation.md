@@ -16,7 +16,7 @@ This document covers the following Sync-Trip features:
 - Interactive map integration for adding and viewing destinations
 - Push notifications for trip updates (background only)
 - Offline support using Firestore’s local cache
-- Billing permission management 
+- Billing permission management
 
 ### 1.3 Audience
 
@@ -86,6 +86,7 @@ Sync-Trip uses a client-centric architecture with the following components:
 - **Hardware:** Minimum 8 GB RAM, modern multi-core CPU  
 - **Operating System:** macOS, Windows, or Linux  
 - **Mobile Emulators:** Android Studio or Xcode Simulator
+- **Mobile Phones:** Android 8.0 or higher
 
 ### 3.3 Installation Steps
 
@@ -132,13 +133,13 @@ Sync-Trip uses a client-centric architecture with the following components:
 ## Configuration Guide
 
 ### 4.1 Configuration Parameters  
-Store the following in the `.env` file:
 
-| Variable                    | Description                                      |
-|-----------------------------|--------------------------------------------------|
-| `GOOGLE_MAPS_API_KEY`       | API key for Google Maps SDK                      |
-| `ANDROID_HOME`              | Path to local Android SDK                        |
-| `JAVA_HOME`                 | Path to installed JDK 17                         |
+Most parameter and path variable configuration is supported by Expo, stored in `sync-trip/app.json` and `sync-trip/google-service.json`. To use your own Google API, refer to [Google Cloud Platform](https://mapsplatform.google.com) and replace the `expo: extra: googleMaps: apiKey2` with your own API keys.
+
+| File                  | Role                                    | Critical Fields                           |
+|-----------------------|-----------------------------------------|-------------------------------------------|
+| `app.json`             | Frontend Expo app configuration        | `slug`, `version`, `googleMaps.apiKey`, `googleMaps.apiKey2` |
+| `google-services.json` | Android Firebase service configuration | `project_id`, `api_key`, `client_id`, `storage_bucket` |
 
 ### 4.2 Environment Setup
 
@@ -252,6 +253,12 @@ The data model consists of four main entities with one-to-many relationships:
 - Trip (1) → Destination (many): Each trip contains multiple destinations, stored in the destinations subcollection under a trip.  
 - User (1) → ExpoToken (many): Users may have multiple device tokens, saved in the expoTokens array.  
 - Trip (1) → Bill (many): Each trip can have multiple bills, stored in a bills subcollection under a trip.
+
+In UML diagram, we have: 
+
+![Trip Module](asset/trip_module.png)
+
+![Billing Module](asset/billing_module.png)
 
 ### 7.2 Table Definitions
 
