@@ -13,12 +13,13 @@ appId: "com.s370101387.synctrip"
 - assertVisible: { id: "dashboardScreen"}
 - waitForAnimationToEnd
 - tapOn: { id: "tab-dashboard" }
+- tapOn: "Active"
 - assertVisible:
-    below: "Ongoing"
+    below: "Planning"
     containsDescendants:
       - "Test Trip"
 - tapOn:
-    below: "Ongoing"
+    below: "Planning"
     containsDescendants:
       - "Invite"
 - waitForAnimationToEnd
@@ -38,9 +39,3 @@ appId: "com.s370101387.synctrip"
 - tapOn: {id: "confirmAnnoucement"}
 - tapOn: {id: "deleteAnnouncement"}
 - back
-- tapOn: {id: "tab-trip"}
-- tapOn: {id: "archiveTrip"}
-- tapOn: "ARCHIVE"
-- tapOn: "Archived"
-- tapOn: "Restore"
-- tapOn: "OK"
