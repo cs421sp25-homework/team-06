@@ -302,15 +302,100 @@ The data model consists of four main entities with one-to-many relationships:
 
 ## Testing
 
-### 8.1 Test Plan  
+### 8.1 Test Plan
 End-to-end testing using Maestro to cover:
 
-- User authentication workflows  
-- Trip and destination CRUD operations  
-- Offline sync and conflict resolution  
-- Expense tracking and notification triggers
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-001                                                     |
+| `Title`             | Signup Function                                            |
+| `Test Strategy`     | Manual Testing & Automation                                |
+| `Scope`             | All features will be tested                                |
+| `Test Environment`  | Emulator & Android Phone                                   |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
 
-### 8.2 Test Cases  
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-002                                                     |
+| `Title`             | Reset Password                                             |
+| `Test Strategy`     | Manual Testing & Automation                                |
+| `Scope`             | All features will be tested                                |
+| `Test Environment`  | Emulator & Android Phone                                   |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
+
+| Field               | Description                                                                                                            |
+|---------------------|------------------------------------------------------------------------------------------------------------------------|
+| `Test Plan ID`      | TP-003                                                                                                                 |
+| `Title`             | Profile Test                                                                                                           |
+| `Test Strategy`     | Automation                                                                                                             |
+| `Scope`             | Profile info will be tested, change of avatar and backgroud will not be tested <br/> (depends on the picture in album) |
+| `Test Environment`  | Emulator & Android Phone                                                                                               |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report                                                             |
+
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-004                                                     |
+| `Title`             | Trip Creation Test                                         |
+| `Test Strategy`     | Automation                                                 |
+| `Scope`             | All features will be tested                                |
+| `Test Environment`  | Emulator & Android Phone                                   |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
+
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-005                                                     |
+| `Title`             | Checklist Test                                             |
+| `Test Strategy`     | Automation                                                 |
+| `Scope`             | All features will be tested                                |
+| `Test Environment`  | Emulator & Android Phone                                   |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
+
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-006                                                     |
+| `Title`             | Announcement Test                                          |
+| `Test Strategy`     | Automation                                                 |
+| `Scope`             | All features will be tested                                |
+| `Test Environment`  | Emulator & Android Phone                                   |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
+
+| Field               | Description                                                                  |
+|---------------------|------------------------------------------------------------------------------|
+| `Test Plan ID`      | TP-007                                                                       |
+| `Title`             | Bill Test                                                                    |
+| `Test Strategy`     | Manual Testing & Automation                                                  |
+| `Scope`             | Operations on bills be tested automatically. Transactions be tested manually |
+| `Test Environment`  | Emulator & Android Phone                                                     |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report                   |
+
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-008                                                     |
+| `Title`             | Route Test                                                 |
+| `Test Strategy`     | Automation                                                 |
+| `Scope`             | All features will be tested                                |
+| `Test Environment`  | Emulator & Android Phone                                   |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
+
+| Field               | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `Test Plan ID`      | TP-009                                                     |
+| `Title`             | Entire Test                                                |
+| `Test Strategy`     | Manual Testing & Automation (Related to TP above)          |
+| `Scope`             | All features will be tested (Related to TP above)          |
+| `Test Environment`  | Emulator & Android Phone (Related to TP above)             |
+| `Test Deliverables` | Test cases, Test scripts, Bug reports, Test summary report |
+
+| Field               | Description                 |
+|---------------------|-----------------------------|
+| `Test Plan ID`      | TP-010                      |
+| `Title`             | Notification Test           |
+| `Test Strategy`     | Manual Testing              |
+| `Scope`             | All features will be tested |
+| `Test Environment`  | Android Phone               |
+| `Test Deliverables` | Test cases, Bug reports     |
+
+### 8.2 Test Cases
 Defined in YAML files under `./maestro/`, including:
 
 | Field             | Description                                                                              |
@@ -341,7 +426,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Profile Test                                                   |
 | `Preconditions`   | User has a valid account                                       |
 | `Test Steps`      | 1. Login 2. Navigate to profile screen 3. Update user profile. |
-| `Test Data`       | User email, User Password, User Info                           |
+| `Test Data`       | User Info                                                      |
 | `Expected Result` | User update the profile successfully.                          |
 | `Actual Result`   | N/A                                                            |
 | `Status`          | N/A                                                            |
@@ -352,7 +437,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Trip Creation Test                                                                                                                           |
 | `Preconditions`   | User has a valid account                                                                                                                     |
 | `Test Steps`      | 1. Login 2. Navigate to map screen 3. Create Trip by using map. 4. Modify the trip <br/> 5. Create the destination 6. Modify the destination |
-| `Test Data`       | User email, User Password, User Info, Trip Info                                                                                              |
+| `Test Data`       | User Info, Trip Info                                                                                                                         |
 | `Expected Result` | User can create (Trip, Destination), see the info of (Trip, Destination), and edit the (Trip, Destination)                                   |
 | `Actual Result`   | N/A                                                                                                                                          |
 | `Status`          | N/A                                                                                                                                          |
@@ -363,7 +448,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Checklist Test                                                                     |
 | `Preconditions`   | User has a valid account, User has created at least one trip.                      |
 | `Test Steps`      | 1. Login 2. Navigate to trip screen 3. Create the checklist, 4. Edit the checklist |
-| `Test Data`       | User email, User Password, User Info, Trip Info, Checklist Info                    |
+| `Test Data`       | User Info, Trip Info, Checklist Info                                               |
 | `Expected Result` | User can create checklist, see the info of checklist, and edit the checklist       |
 | `Actual Result`   | N/A                                                                                |
 | `Status`          | N/A                                                                                |
@@ -374,7 +459,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Announcement Test                                                                                                                   |
 | `Preconditions`   | User has a valid account, User has created at least one trip                                                                        |
 | `Test Steps`      | 1. Login 2. Navigate to dashboard screen 3. Create the announcement, 4. Edit the announcement <br/>5. Archive Trip. 6. Restore Trip |
-| `Test Data`       | User email, User Password, User Info, Trip Info, Announcement Info                                                                  |
+| `Test Data`       | User Info, Trip Info, Announcement Info                                                                                             |
 | `Expected Result` | User can create announcement, see the info of announcement, and edit the announcement                                               |
 | `Actual Result`   | N/A                                                                                                                                 |
 | `Status`          | N/A                                                                                                                                 |
@@ -385,7 +470,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Bill Test (Need manual operations to make it work)                                                |
 | `Preconditions`   | User has a valid account, User has created at least one trip, Trip has at least two participants. |
 | `Test Steps`      | 1. Login 2. Navigate to bill screen 3. Create the bill, 4. Edit the bill 5. Make transactions     |
-| `Test Data`       | User email, User Password, User Info, Trip Info, Bill Info                                        |
+| `Test Data`       | User Info, Trip Info, Bill Info                                                                   |
 | `Expected Result` | User can create bill, see the info of bill, edit the bill, and make transactions                  |
 | `Actual Result`   | N/A                                                                                               |
 | `Status`          | N/A                                                                                               |
@@ -396,7 +481,7 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Route Test                                                                                        |
 | `Preconditions`   | User has a valid account, User has created at least one trip, Trip has at least two destinations. |
 | `Test Steps`      | 1. Login 2. Navigate to map screen 3. Create the route, 4. Edit the route 5. Generate the route   |
-| `Test Data`       | User email, User Password, User Info, Trip Info, Announcement Info                                |
+| `Test Data`       | User Info, Trip Info, Announcement Info                                                           |
 | `Expected Result` | User can create route, see the info of route, edit the route info                                 |
 | `Actual Result`   | N/A                                                                                               |
 | `Status`          | N/A                                                                                               |
@@ -412,7 +497,18 @@ Defined in YAML files under `./maestro/`, including:
 | `Actual Result`   | N/A                                             |
 | `Status`          | N/A                                             |
 
-### 8.3 Test Results  
+| Field             | Description                                                                                 |
+|-------------------|---------------------------------------------------------------------------------------------|
+| `Test Case ID`    | TC-010                                                                                      |
+| `Title`           | Notification Test                                                                           |
+| `Preconditions`   | User has a valid account. Have two physical devices to run the test(separate accounts)      |
+| `Test Steps`      | 1. Update the trip 2. Update the bill 3. Receive the notification on another device         |
+| `Test Data`       | User Info, Trip Info, Bill Info                                                             |
+| `Expected Result` | Once the trip or bill is updated on one account, another account will receive notifications |
+| `Actual Result`   | N/A                                                                                         |
+| `Status`          | N/A                                                                                         |
+
+### 8.3 Test Results (solid results on physical devices)
 
 | Field             | Description                                               |
 |-------------------|-----------------------------------------------------------|
@@ -476,6 +572,13 @@ Defined in YAML files under `./maestro/`, including:
 | `Title`           | Entire Test                                      |
 | `Actual Result`   | User can run the TC-001 to TC-008 successfully.  |
 | `Status`          | ✅Pass                                            |
+
+| Field             | Description                                  |
+|-------------------|----------------------------------------------|
+| `Test Case ID`    | TC-0010                                      |
+| `Title`           | Notification Test                            |
+| `Actual Result`   | User can receive notifications successfully. |
+| `Status`          | ✅Pass                                        |
 
 ### 8.3 Test Results  
 
