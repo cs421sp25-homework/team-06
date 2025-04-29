@@ -103,6 +103,13 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
   onRestore,
   onDelete,
 }) => {
+
+  if (!bill) return null;
+
+  const isCreator = bill.createdBy === currentUserUid;
+  const isNew = bill.isDraft === true;
+
+
   const payInfo = React.useMemo(() => {
     if (!bill) return { debtorEntry: null, creditorUid: null, creditorPayPal: null };
 
@@ -207,12 +214,10 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
     }
 
     const summary = distributionMode === 'even' ? computeEvenSummary() : computeCustomSummary();
-    onSave({ id: bill!.id, title, participants, summary, currency, description, category });
+    onSave({ id: bill!.id, title, participants, summary, currency, description, category, isDraft: false });
     onClose();
   };
 
-  if (!bill) return null;
-  
   if (bill.archived) {
     return (
       <Portal>
@@ -287,7 +292,7 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             <Button
               mode="outlined"
               onPress={() => {
-              onSave({ id: bill.id, description });
+              onSave({ id: bill.id, description, isDraft:false });
                 Alert.alert('Saved', 'Description saved');
              }}
               style={styles.fullBtn}
@@ -554,12 +559,14 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
             />
           )}
 
-          <Button testID="saveBill" style={styles.saveButton} onPress={handleSave}>
-            Save Changes
-          </Button>
+          {isCreator && (
+            <Button testID="saveBill" style={styles.saveButton} onPress={handleSave}>
+              {isNew ? "Create Bill" : "Save Changes"}
+            </Button>
+          )}
 
           {/* Archive */}
-          {!bill.archived && (
+          {!isNew && isCreator && !bill.archived && (
             <Button
               testID="archiveBill"
               mode="outlined"
@@ -578,21 +585,23 @@ const BillDetailModal: React.FC<BillDetailModalProps> = ({
           )}
 
           {/* Delete */}
-          <Button
-            mode="outlined"
-            textColor="red"
-            style={{ marginTop: 12 }}
-            onPress={() => Alert.alert(
-              'Delete Bill',
-              'Are you sure?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => onDelete(bill.id) },
-              ]
-            )}
-          >
-            Delete Bill
-          </Button>
+          {!isNew && isCreator && (
+            <Button
+              mode="outlined"
+              textColor="red"
+              style={{ marginTop: 12 }}
+              onPress={() => Alert.alert(
+                'Delete Bill',
+                'Are you sure?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: () => onDelete(bill.id) },
+                ]
+              )}
+            >
+              Delete Bill
+            </Button>
+          )}
 
           <Button style={styles.closeButton} onPress={onClose}>
             Close
@@ -740,7 +749,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginVertical: 8,
   },
-  fullBtn: {                                   // ← 新增：全宽按钮
+  fullBtn: {
     marginVertical: 12,
     alignSelf: 'stretch',
   },
