@@ -12,13 +12,12 @@ import {
   Title,
   TextInput,
   SegmentedButtons,
-  Checkbox
+  Checkbox,
+  useTheme
 } from "react-native-paper";
-import Markdown from 'react-native-markdown-display';
 import { DatePickerModal, TimePickerModal } from "react-native-paper-dates";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import * as Clipboard from "expo-clipboard";
 import { useTrip } from "../context/TripContext";
 import { useTabs } from "../navigation/useAppNavigation";
 import { Destination } from "../types/Destination";
@@ -27,7 +26,7 @@ import {
   deleteTrip,
   updateDestination
 } from "../utils/tripAPI";
-import {removeTripFromAllUsers} from "../utils/userAPI";
+import { removeTripFromAllUsers } from "../utils/userAPI";
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { TripStatus } from "../types/Trip";
 import { generateICS } from "../utils/icsGenerator";
@@ -41,12 +40,9 @@ const CurrentTripScreen = () => {
     addChecklistItem,
     updateChecklistItem,
     deleteChecklistItem,
-    announcements,
-    createAnnouncement,
-    updateAnnouncement,
-    deleteAnnouncement,
   } = useTrip();
   const { setTabIndex } = useTabs();
+  const { colors } = useTheme();
 
   // Trip and destination states
   const [editMode, setEditMode] = useState(false);
@@ -65,6 +61,7 @@ const CurrentTripScreen = () => {
   const [destPickerVisible, setDestPickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [destinationTime, setDestinationTime] = useState<{ hours: number; minutes: number } | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   // Checklist editing states
   const [editingChecklistItemId, setEditingChecklistItemId] = useState<string | null>(null);
@@ -72,12 +69,6 @@ const CurrentTripScreen = () => {
 
   // Help modal state for ICS instructions
   const [helpModalVisible, setHelpModalVisible] = useState(false);
-
-  // Announcement Dialog states
-  const [isAddAnnouncementVisible, setAddAnnouncementVisible] = useState(false);
-  const [isEditAnnouncementVisible, setEditAnnouncementVisible] = useState(false);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentTrip && currentTrip.status === TripStatus.ARCHIVED) {
@@ -116,6 +107,27 @@ const CurrentTripScreen = () => {
       setEndDate(endDateConverted);
     }
   }, [currentTrip]);
+
+
+  // Helper to generate ALL dates between startDate and endDate
+  const generateDateRange = (start: Date, end: Date) => {
+    const dates: string[] = [];
+    let current = new Date(start);
+    while (current <= end) {
+      dates.push(current.toDateString()); // we use Date object not modify
+      current = new Date(current);
+      current.setDate(current.getDate() + 1); // move to next day
+    }
+    return dates;
+  };
+
+  const allTripDates = startDate && endDate ? generateDateRange(startDate, endDate) : [];
+
+  useEffect(() => {
+    if (allTripDates.length > 0 && !selectedDate) {
+      setSelectedDate(allTripDates[0]); // default to first day
+    }
+  }, [allTripDates, selectedDate]);
 
   if (!currentTrip) {
     return (
@@ -224,6 +236,10 @@ const CurrentTripScreen = () => {
     );
   };
 
+  const handleCancelEdit = () => {
+    setEditMode(false);
+  };
+
   const openDestinationDialogForEdit = (destination: Destination) => {
     setEditingDestinationId(destination.id || null);
     setDestinationName(destination.name || ""); // Use 'name' for the event title
@@ -299,6 +315,22 @@ const CurrentTripScreen = () => {
     setTimePickerVisible(false);
   };
 
+  const formatDate = (input: Date | { toDate(): Date } | string) => {
+    const d: Date = input instanceof Date
+      ? input
+      : typeof input === 'string'
+        ? new Date(input)
+        : input.toDate();
+
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');  // month is 0-based
+    const dd   = String(d.getDate()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}`;  // e.g. "2025-04-28"
+  };
+
+
+
   // ICS Export: Generate ICS file locally and share it.
   const handleExportICS = async () => {
     if (!currentTrip || !currentTrip.id) {
@@ -318,50 +350,6 @@ const CurrentTripScreen = () => {
     } catch (err) {
       console.error("Error generating ICS file:", err);
       Alert.alert("Error", "Failed to generate ICS file.");
-    }
-  };
-
-  // Announcement Section
-  const groupedAnnouncements = announcements.reduce((groups, announcement) => {
-    const dateStr = announcement.updatedAt.toLocaleDateString();
-    if (!groups[dateStr]) {
-      groups[dateStr] = [];
-    }
-    groups[dateStr].push(announcement);
-    return groups;
-  }, {} as { [date: string]: typeof announcements });
-
-  const sortedAnnouncementDates = Object.keys(groupedAnnouncements).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
-
-  const handleAddAnnouncement = async () => {
-    try {
-      await createAnnouncement(announcementText);
-      setAddAnnouncementVisible(false);
-      setAnnouncementText("");
-    } catch (err: any) {
-      console.error("Error adding announcement:", err);
-    }
-  };
-
-  const handleEditAnnouncement = async () => {
-    if (!editingAnnouncementId) return;
-    try {
-      await updateAnnouncement(editingAnnouncementId, announcementText);
-      setEditAnnouncementVisible(false);
-      setAnnouncementText("");
-      setEditingAnnouncementId(null);
-    } catch (err: any) {
-      console.error("Error updating announcement:", err);
-    }
-  };
-
-  const handleDeleteAnnouncement = async (announcementId: string) => {
-    try {
-      await deleteAnnouncement(announcementId);
-    } catch (err: any) {
-      console.error("Error deleting announcement:", err);
     }
   };
 
@@ -409,12 +397,13 @@ const CurrentTripScreen = () => {
         ) : (
           <Card style={styles.card}>
             <Card.Content style={{ alignItems: "center" }}>
-              <Title>{currentTrip.title}</Title>
+                <Title style={styles.sectionTitle}>
+                  {currentTrip.title}
+                </Title>
               <Text>
                 <Text style={styles.bold}>From: </Text>
-                {new Date(currentTrip.startDate).toLocaleDateString()}
-              </Text>
-              <Text>
+                  {new Date(currentTrip.startDate).toLocaleDateString()}
+                {"  "}
                 <Text style={styles.bold}>To: </Text>
                 {new Date(currentTrip.endDate).toLocaleDateString()}
               </Text>
@@ -422,267 +411,258 @@ const CurrentTripScreen = () => {
           </Card>
         )}
         {editMode ? (
-          <Button mode="contained" onPress={handleSaveTrip} style={{ margin: 15 }}>
-            Save Changes
-          </Button>
+          <>
+            <Button testID="saveTripChanges" mode="contained" onPress={handleSaveTrip} style={styles.saveButton}>
+              Save Changes
+            </Button>
+            <Button
+              mode="text"
+              onPress={handleCancelEdit}
+              style={styles.cancelButton}
+              textColor="#e53935"
+            >
+              Cancel
+            </Button>
+          </>
+
         ) : (
           <View style={styles.buttonRow}>
             <Button
               testID="editTrip"
-              mode="contained"
+              icon="pencil"
+              mode="text"
               onPress={handleBeginEditCurrentTrip}
-              style={styles.smallButton}
+              style={styles.iconTextButton}
             >
-              Edit Trip
-            </Button>
-            <Button testID="archiveTrip" mode="contained" onPress={handleArchiveTrip} style={styles.smallButton}>
-              Archive Trip
+              Edit
             </Button>
             <Button
-              mode="contained"
-              onPress={handleDeleteTrip}
-              buttonColor="#e53935"
-              style={styles.smallButton}
+              testID="archiveTrip"
+              icon="archive"
+              mode="text"
+              compact
+              onPress={handleArchiveTrip}
+              style={styles.iconTextButton}
             >
-              Delete Trip
+              Archive
+            </Button>
+            <Button
+              testID="deleteTrip"
+              icon="delete"
+              mode="text"
+              compact
+              textColor="#e53935"
+              onPress={handleDeleteTrip}
+              style={styles.iconTextButton}
+            >
+              Delete
+            </Button>
+            </View>
+        )}
+        {/* ICS Export Row */}
+        {currentTrip.destinations.length > 0 && (
+          <View style={styles.exportRow}>
+            <Button
+              testID="exportICS"
+              mode="contained"
+              onPress={handleExportICS}
+              style={styles.exportButton}
+            >
+              Sync Your Trip to Calendar
+            </Button>
+            <Button
+              testID="helpButton"
+              mode="contained"
+              onPress={() => setHelpModalVisible(true)}
+              style={styles.helpButton}
+            >
+              ?
             </Button>
           </View>
         )}
 
         {/* --- Destinations Section --- */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Destinations</Text>
+          <Text style={styles.sectionTitle}>Your Itinerary</Text>
         </View>
         {currentTrip.destinations.length === 0 ? (
-          <Text style={{ marginHorizontal: 15 }}>No destinations added yet.</Text>
+          <Text style={styles.emptyText}>
+            No Destinations Added Yet. {"\n"}
+            You Can Use Map to Add New Destinations.
+          </Text>
         ) : (
-          currentTrip.destinations.map((destination) => (
-            <View key={destination.id} style={styles.destinationCard}>
-              <List.Item
-                title={destination.name}
-                description={() => (
-                  <Text>
-                    {destination.description ? destination.description + "\n" : ""}
-                    {destination.address ? destination.address + "\n" : ""}
-                    {destination.date
-                      ? new Date(destination.date).toLocaleString()
-                      : "No date/time"}
-                  </Text>
-                )}
-              />
-              <View style={styles.buttonContainer}>
-                <IconButton
-                  testID="pencil"
-                  icon="pencil"
-                  onPress={() => openDestinationDialogForEdit(destination)}
-                />
-                <IconButton
-                  testID="trash"
-                  icon="trash-can"
-                  onPress={() => handleDeleteDestination(destination)}
-                />
-              </View>
-              {/* --- Checklist Section for this Destination --- */}
-              <View style={styles.checklistContainer}>
-                {checklists[destination.id] &&
-                  checklists[destination.id].map((item) => (
-                    <View key={item.id} style={styles.checklistItemRow}>
-                      <Checkbox
-                        testID="checkbox"
-                        status={item.completed ? "checked" : "unchecked"}
-                        onPress={() =>
-                          updateChecklistItem(destination.id, item.id, { completed: !item.completed })
-                        }
-                      />
-                      {editingChecklistItemId === item.id ? (
-                        <>
-                          <TextInput
-                            testID="checklistInput"
-                            style={styles.checklistInput}
-                            value={editingChecklistText}
-                            onChangeText={setEditingChecklistText}
-                          />
-                          <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => {
-                              updateChecklistItem(destination.id, item.id, { text: editingChecklistText });
-                              setEditingChecklistItemId(null);
-                            }}
-                          >
-                            <Text style={styles.editButtonText}>Confirm</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => {
-                              setEditingChecklistItemId(null);
-                              setEditingChecklistText("");
-                            }}
-                          >
-                            <Text style={styles.deleteButtonText}>Cancel</Text>
-                          </TouchableOpacity>
-                        </>
-                      ) : (
-                        <>
-                          <Text
-                            style={[styles.checklistText, item.completed && styles.completedText]}
-                            onLongPress={() => {
-                              setEditingChecklistItemId(item.id);
-                              setEditingChecklistText(item.text);
-                            }}
-                          >
-                            {item.text || "New To-Do Item"}
+            <>
+              {/* Tabs for each date */}
+              <View style={{ marginHorizontal: 10, marginBottom: 10 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row' }}>
+                    {allTripDates.map(date => {
+                      const dateObj = new Date(date);
+                      const month = dateObj.toLocaleString('en-US', { month: 'short' }).toUpperCase(); // "APR"
+                      const day = String(dateObj.getDate()).padStart(2, '0'); // "08"
+                      const isSelected = selectedDate === formatDate(date);
+
+                      return (
+                        <TouchableOpacity
+                          key={date}
+                          onPress={() => setSelectedDate(formatDate(date))}
+                          style={{
+                            backgroundColor: isSelected ? colors.primary : '#f0f0f0',
+                            borderRadius: 6,
+                            paddingVertical: 8,
+                            paddingHorizontal: 12,
+                            marginRight: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Text style={{ color: isSelected ? 'white' : 'black', fontSize: 14, fontWeight: 'bold' }}>
+                            {month}
                           </Text>
-                          <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => {
-                              setEditingChecklistItemId(item.id);
-                              setEditingChecklistText(item.text);
-                            }}
-                          >
-                            <Text style={styles.editButtonText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => deleteChecklistItem(destination.id, item.id)}
-                          >
-                            <Text style={styles.deleteButtonText}>Delete</Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-                    </View>
-                  ))}
-                <Button
-                  testID="addChecklist"
-                  mode="outlined"
-                  onPress={() => {
-                    console.log("Add Checklist Item pressed for destination", destination.id);
-                    addChecklistItem(destination.id, "");
-                  }}
-                  style={styles.addChecklistButton}
-                >
-                  Create To-Dos
-                </Button>
+                          <Text style={{ color: isSelected ? 'white' : 'black', fontSize: 16, fontWeight: 'bold' }}>
+                            {day}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
               </View>
-            </View>
-          ))
-        )}
 
-        {/* Announcements Section */}
-        <View style={styles.announcementSection}>
-          <Title>Announcements</Title>
-          <Button
-            testID="addAnnouncement"
-            mode="contained"
-            onPress={() => {
-              setAnnouncementText("");
-              setAddAnnouncementVisible(true);
-            }}
-            style={styles.addButton}
-          >
-            Add Announcement
-          </Button>
-          {sortedAnnouncementDates.map((dateStr) => (
-            <View key={dateStr}>
-              <Text style={styles.dateHeader}>{dateStr}</Text>
-              {groupedAnnouncements[dateStr].map((announcement, index) => (
-                <View key={announcement.id}>
-                  <Card style={styles.announcementCard}>
-                    <Card.Title
-                      title={`Created: ${announcement.createdAt.toLocaleDateString()} | Updated: ${announcement.updatedAt.toLocaleDateString()}`}
+              {/* Show destinations for selected date */}
+              {currentTrip.destinations
+                .filter(dest => dest.date && formatDate(dest.date) === selectedDate)
+                .sort((a, b) => (a.date! > b.date! ? 1 : -1)) // sort by time within the day
+                .map((destination) => (
+                  <View key={destination.id} style={styles.destinationCard}>
+                    <List.Item
+                      title={destination.name}
+                      titleStyle={styles.cardTitle}
+                      right={props => (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: -25, marginTop: -75 }}>
+                          <IconButton
+                            {...props}
+                            testID="pencil"
+                            icon="pencil"
+                            size={18}
+                            onPress={() => openDestinationDialogForEdit(destination)}
+                          />
+                          <IconButton
+                            {...props}
+                            testID="trash"
+                            icon="trash-can"
+                            size={18}
+                            onPress={() => handleDeleteDestination(destination)}
+                          />
+                        </View>
+                      )}
+                      description={() => (
+                        <Text>
+                          {destination.description ? destination.description + "\n" : ""}
+                          {destination.address ? destination.address + "\n" : ""}
+                          {destination.date
+                            ? new Date(destination.date).toLocaleString()
+                            : "No date/time"}
+                        </Text>
+                      )}
                     />
-                    <Card.Content>
-                      <Markdown>{announcement.message}</Markdown>
-                    </Card.Content>
-                    <Card.Actions>
+                    <View style={styles.buttonContainer}>
                       <Button
-                        onPress={() => {
-                          setEditingAnnouncementId(announcement.id);
-                          setAnnouncementText(announcement.message);
-                          setEditAnnouncementVisible(true);
-                        }}
+                        testID="addChecklist"
+                        icon="plus"
+                        onPress={() => addChecklistItem(destination.id, "")}
+                        style={styles.addChecklistButton}
                       >
-                        Edit
+                        TODOs
                       </Button>
-                      <Button testID="deleteAnnouncement" onPress={() => handleDeleteAnnouncement(announcement.id)}>
-                        Delete
-                      </Button>
-                    </Card.Actions>
-                  </Card>
-                  {index < groupedAnnouncements[dateStr].length - 1 && (
-                    <View style={styles.separator} />
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
-        </View>
+                    </View>
 
-        {/* ICS Export Row */}
-        {currentTrip.destinations.length > 0 && (
-            <View style={styles.exportRow}>
-              <Button
-                testID="exportICS"
-                mode="contained"
-                onPress={handleExportICS}
-                style={styles.exportButton}
-              >
-                Export to Calendar
-              </Button>
-              <Button
-                testID="helpButton"
-                mode="contained"
-                onPress={() => setHelpModalVisible(true)}
-                style={styles.helpButton}
-              >
-                ?
-              </Button>
-        </View>
+                    {/* Checklist rendering (your original logic) */}
+                    <View style={styles.checklistContainer}>
+                      {checklists[destination.id] &&
+                        checklists[destination.id].map((item) => (
+                          <View key={item.id} style={styles.checklistItemRow}>
+                            <Checkbox
+                              testID="checkbox"
+                              status={item.completed ? "checked" : "unchecked"}
+                              onPress={() =>
+                                updateChecklistItem(destination.id, item.id, { completed: !item.completed })
+                              }
+                            />
+                            {editingChecklistItemId === item.id ? (
+                              <>
+                                <TextInput
+                                  testID="checklistInput"
+                                  style={styles.checklistInput}
+                                  value={editingChecklistText}
+                                  onChangeText={setEditingChecklistText}
+                                />
+                                <IconButton
+                                  testID="confirmChecklistItem"
+                                  icon="check"
+                                  size={16}
+                                  style={styles.editButton}
+                                  iconColor={colors.primary}
+                                  onPress={() => {
+                                    updateChecklistItem(destination.id, item.id, { text: editingChecklistText });
+                                    setEditingChecklistItemId(null);
+                                  }}
+                                />
+                                <IconButton
+                                  testID="cancelChecklistItem"
+                                  icon="close"
+                                  size={16}
+                                  style={styles.deleteButton}
+                                  iconColor={styles.deleteButtonText.color}
+                                  onPress={() => {
+                                    setEditingChecklistItemId(null);
+                                    setEditingChecklistText("");
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <Text
+                                  style={[styles.checklistText, item.completed && styles.completedText]}
+                                  onLongPress={() => {
+                                    setEditingChecklistItemId(item.id);
+                                    setEditingChecklistText(item.text);
+                                  }}
+                                >
+                                  {item.text || "Your To-Do Item"}
+                                </Text>
+                                <IconButton
+                                  testID="editChecklistItem"
+                                  icon="pencil"
+                                  size={16}
+                                  onPress={() => {
+                                    setEditingChecklistItemId(item.id);
+                                    setEditingChecklistText(item.text);
+                                  }}
+                                />
+                                <IconButton
+                                  testID="deleteChecklistItem"
+                                  icon="trash-can"
+                                  size={16}
+                                  style={styles.deleteButton}
+                                  onPress={() => deleteChecklistItem(destination.id, item.id)}
+                                />
+                              </>
+                            )}
+                          </View>
+                        ))}
+                    </View>
+                  </View>
+                ))}
+
+              {/* 👇 If no destinations for selected date */}
+              {currentTrip.destinations.filter(dest => dest.date && formatDate(dest.date) === selectedDate).length === 0 && (
+                <Text style={styles.emptyText}>No Destinations for this day yet.</Text>
+              )}
+            </>
         )}
-      </ScrollView>
-      
-      {/* Announcement Dialog */}
-      <Portal>
-        <Dialog
-          visible={isAddAnnouncementVisible}
-          onDismiss={() => setAddAnnouncementVisible(false)}
-        >
-          <Dialog.Title>Add Announcement</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              testID="announcementInput"
-              label="Announcement Message"
-              value={announcementText}
-              onChangeText={setAnnouncementText}
-              multiline
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setAddAnnouncementVisible(false)}>Cancel</Button>
-            <Button onPress={handleAddAnnouncement}>Add</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
 
-    <Portal>
-      <Dialog
-        visible={isEditAnnouncementVisible}
-        onDismiss={() => setEditAnnouncementVisible(false)}
-      >
-        <Dialog.Title>Edit Announcement</Dialog.Title>
-        <Dialog.Content>
-          <TextInput
-            label="Announcement Message"
-            value={announcementText}
-            onChangeText={setAnnouncementText}
-            multiline
-          />
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={() => setEditAnnouncementVisible(false)}>Cancel</Button>
-          <Button onPress={handleEditAnnouncement}>Save</Button>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
+      </ScrollView>
 
       {/* Help Modal for ICS instructions */}
       <Portal>
@@ -783,7 +763,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff"
   },
   card: {
-    margin: 15
+    margin: 10,
+  },
+  cardTitle: {
+    fontSize: 18,         // Bigger
+    fontWeight: 'bold',   // Bold
   },
   form: {
     backgroundColor: "white",
@@ -829,10 +813,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     margin: 10,
   },
-  smallButton: {
-    marginHorizontal: 1,
-    paddingHorizontal: 2,
-    width: 130
+  iconTextButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 6,
   },
   checklistContainer: {
     marginTop: 10,
@@ -847,7 +831,7 @@ const styles = StyleSheet.create({
   },
   checklistText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 13,
   },
   checklistInput: {
     flex: 1,
@@ -863,12 +847,9 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     padding: 4
   },
-  editButtonText: {
-    color: "#6200ee"
-  },
   deleteButton: {
     marginLeft: 5,
-    padding: 4
+    padding: 4,
   },
   deleteButtonText: {
     color: "red"
@@ -880,7 +861,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: 15
+    marginLeft: 15,
+    marginRight: 15,
   },
   exportButton: {
     flex: 1,
@@ -895,28 +877,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#BEBEBE"
   },
-  announcementSection: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    elevation: 2,
+  emptyText: {
+    marginTop: 10,
+    textAlign: 'center',
+    color: 'gray',
+    fontStyle: 'italic',
+  },
+  saveButton: {
+    margin: 15,
+  },
+  cancelButton: {
     marginHorizontal: 15,
-  },
-  dateHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 8,
-    color: "#555",
-  },
-  announcementCard: {
-    marginVertical: 8,
-  },
-  separator: {
-    borderBottomColor: "gray",
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    marginVertical: 8,
+    marginBottom: 15,
+    borderColor: '#e53935',
+    borderWidth: 1,
   },
 });
 

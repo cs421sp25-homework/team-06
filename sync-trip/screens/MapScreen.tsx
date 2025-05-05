@@ -15,11 +15,14 @@ import { deleteDestinationInTrip } from '../utils/tripAPI'; // or wherever your 
 import { convertTimestampToDate } from '../utils/dateUtils';
 import { getInfoFromPlaceId, getPlaceFromCoordinates, getRoute, decodePolyline, getAddressFromCoordinates, getCoordinatesFromAddress } from '../utils/map';
 
+import {useAppNavigation} from '../navigation/useAppNavigation';
+
+
 const GOOGLE_API_KEY = Constants.expoConfig?.extra?.googleMaps?.apiKey2;
 
 const MapScreen = () => {
   const { currentTrip, addDestinationToTrip, updateDestinationInTrip } = useTrip();
-  const { getCurrentUserId } = useUser();
+  const { currentUser, getCurrentUserId } = useUser();
   const { tabIndex, setTabIndex } = useTabs();
 
   // User location & map region
@@ -50,9 +53,6 @@ const MapScreen = () => {
   // For places search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedPlaceDetails, setSelectedPlaceDetails] = useState<DestinationInfo | null>(null);
-  const [placeDetailsModalVisible, setPlaceDetailsModalVisible] = useState(false);
-
   // We'll store the trip's start/end date in local states
   const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
   const [tripEndDate, setTripEndDate] = useState<Date | null>(null);
@@ -72,6 +72,21 @@ const MapScreen = () => {
   const [departureTime, setDepartureTime] = useState<Date | null>(null)
   const [showDeparturePicker, setShowDeparturePicker] = useState(false)
   const [departureDateTime, setDepartureDateTime] = useState<Date | null>(null)
+
+  const navigation = useAppNavigation();
+
+  // 1) redirect away if no user
+  useEffect(() => {
+    if (!currentUser) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
+  }, [currentUser, navigation]);
+
+
+
   // Convert trip's start/end to Date objects
   useEffect(() => {
     if (currentTrip) {
@@ -126,6 +141,11 @@ const MapScreen = () => {
       })
     }
   }, [routeCoords])
+
+  if (!currentUser) {
+    // render a null page to avoid error.
+    return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
+  }
 
   // Navigate user to the 'New Trip' tab if they have no current trip
   const redirectToNewTrip = () => {
@@ -212,8 +232,8 @@ const MapScreen = () => {
 
   // Save a NEW marker (destination) to the trip
   const saveNewMarker = async () => {
-    if (!currMarker || !description) {
-      Alert.alert('Incomplete', 'Please provide a description before saving.');
+    if (!currMarker || !markerName) {
+      Alert.alert('Incomplete', 'Please provide a markerName before saving.');
       return;
     }
     // If we want date/time for new markers as well:
@@ -265,21 +285,9 @@ const MapScreen = () => {
       }
       setFetchedPlaceDetails(null);
     }
-    if (selectedPlaceDetails) {
-      marker = {
-        latitude: selectedPlaceDetails.latitude,
-        longitude: selectedPlaceDetails.longitude,
-        place_id: selectedPlaceDetails.place_id,
-        address: selectedPlaceDetails.address,
-        description: '',
-        createdByUid: getCurrentUserId()
-      }
-      setSelectedPlaceDetails(null);
-    }
     setCurrMarker(marker);
 
     // Close the bottom sheet and open the marker creation modal
-    setPlaceDetailsModalVisible(false);
     setBottomSheetVisible(false);
     setModalVisible(true);
   };
@@ -394,29 +402,29 @@ const MapScreen = () => {
     setDescription('');
   };
 
-    const handleDeleteDestination = async () => {
-      const markerId = (currMarker as any).id;
-      if (!markerId) {
-        Alert.alert("Error", "Destination missing ID.");
-        return;
-      }
-      Alert.alert(
-        "Delete Destination",
-        "Are you sure you want to delete this destination?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              if (!currentTrip.id) throw new Error("currentTrip missing ID");
-              await deleteDestinationInTrip(currentTrip.id, markerId);
-              setInfoModalVisible(false)
-            },
+  const handleDeleteDestination = async () => {
+    const markerId = (currMarker as any).id;
+    if (!markerId) {
+      Alert.alert("Error", "Destination missing ID.");
+      return;
+    }
+    Alert.alert(
+      "Delete Destination",
+      "Are you sure you want to delete this destination?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!currentTrip.id) throw new Error("currentTrip missing ID");
+            await deleteDestinationInTrip(currentTrip.id, markerId);
+            setInfoModalVisible(false)
           },
-        ]
-      );
-    };
+        },
+      ]
+    );
+  };
 
   // --- Google Places Search (Autocomplete) ---
   const handleSearch = async (query: string) => {
@@ -449,8 +457,8 @@ const MapScreen = () => {
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       });
-      setSelectedPlaceDetails(response);
-      setPlaceDetailsModalVisible(true);
+      setFetchedPlaceDetails(response);
+      setBottomSheetVisible(true);
       setSearchResults([]);
       setSearchQuery('');
     }
@@ -467,7 +475,7 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-      
+
       <View style={styles.searchContainer}>
         {!routePlanningMode ? (
           <>
@@ -496,30 +504,30 @@ const MapScreen = () => {
             )}
           </>
         ) : (
-            <View style={styles.routePlanningContainer}>
-              <View style={styles.modeSelector}>
-                {(['DRIVE', 'WALK', 'BICYCLE', 'TRANSIT'] as const).map((mode) => {
-                  const icons = { DRIVE: 'car', WALK: 'walk', BICYCLE: 'bike', TRANSIT: 'bus' }
-                  const selected = travelMode === mode
-                  return (
-                    <View
-                      key={mode}
-                      style={[
-                        styles.modeButton,
-                        selected && styles.modeButtonSelected
-                      ]}
-                    >
-                      <IconButton
-                        testID={`mode-${mode}`}
-                        icon={icons[mode]}
-                        color={selected ? '#fff' : '#666'}
-                        size={20}
-                        onPress={() => setTravelMode(mode)}
-                      />
-                    </View>
-                  )
-                })}
-              </View>
+          <View style={styles.routePlanningContainer}>
+            <View style={styles.modeSelector}>
+              {(['DRIVE', 'WALK', 'BICYCLE', 'TRANSIT'] as const).map((mode) => {
+                const icons = { DRIVE: 'car', WALK: 'walk', BICYCLE: 'bike', TRANSIT: 'bus' }
+                const selected = travelMode === mode
+                return (
+                  <View
+                    key={mode}
+                    style={[
+                      styles.modeButton,
+                      selected && styles.modeButtonSelected
+                    ]}
+                  >
+                    <IconButton
+                      testID={`mode-${mode}`}
+                      icon={icons[mode]}
+                      color={selected ? '#fff' : '#666'}
+                      size={20}
+                      onPress={() => setTravelMode(mode)}
+                    />
+                  </View>
+                )
+              })}
+            </View>
             <Picker
               testID="routeOriginPicker"
               selectedValue={originId}
@@ -558,17 +566,21 @@ const MapScreen = () => {
                 icon="directions"
                 size={24}
                 onPress={handlePlanRoute}
-                />
-                <IconButton
-                  testID="selectDepartureTime"
-                  icon="clock-outline"
-                  onPress={() => setShowDeparturePicker(true)}
-                />
+              />
+              <IconButton
+                testID="selectDepartureTime"
+                icon="clock-outline"
+                onPress={() => setShowDeparturePicker(true)}
+              />
               <IconButton
                 testID="cancelRoute"
                 icon="close"
                 size={24}
-                onPress={() => setRoutePlanningMode(false)}
+                onPress={() => {
+                  setRoutePlanningMode(false)
+                  setTravelMode('DRIVE')
+                }
+                }
               />
             </View>
           </View>
@@ -762,8 +774,8 @@ const MapScreen = () => {
                 mode="single"
                 visible={markerDatePickerVisible}
                 onDismiss={() => setMarkerDatePickerVisible(false)}
-                previous= 'Previous'
-                next= {'Next', testID="nextMonth"}
+                previous='Previous'
+                next={'Next', testID = "nextMonth"}
                 date={markerDate || tripStartDate}
                 onConfirm={({ date }) => {
                   setMarkerDate(date);
@@ -792,7 +804,7 @@ const MapScreen = () => {
               />
             </Card.Content>
             <Card.Actions>
-              <IconButton icon="check" mode="contained" onPress={saveNewMarker}
+              <IconButton testID="confirmDestination" icon="check" mode="contained" onPress={saveNewMarker}
               />
               <IconButton
                 testID="showInfo" mode="contained" icon="information" onPress={showDetailedInfo}
@@ -821,31 +833,31 @@ const MapScreen = () => {
               )}
             />
             <Card.Content>
-                  <Text style={styles.addressText}>{currMarker?.address}</Text>
-                  <TextInput
-                    testID="editMarkerName"
-                    label="Name"
-                    value={markerName}
-                    mode="outlined"
-                    onChangeText={setMarkerName}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    testID="editDescription"
-                    label="Description"
-                    value={description}
-                    mode="outlined"
-                    onChangeText={setDescription}
-                    style={styles.input}
-                  />
+              <Text style={styles.addressText}>{currMarker?.address}</Text>
+              <TextInput
+                testID="editMarkerName"
+                label="Name"
+                value={markerName}
+                mode="outlined"
+                onChangeText={setMarkerName}
+                style={styles.input}
+              />
+              <TextInput
+                testID="editDescription"
+                label="Description"
+                value={description}
+                mode="outlined"
+                onChangeText={setDescription}
+                style={styles.input}
+              />
 
               {/* Date/time pickers for editing */}
-                  <Button testID="editDate" onPress={() => setMarkerDatePickerVisible(true)}>
-                    {markerDate
-                      ? `Date: ${markerDate.toDateString()}`
-                      : "Select Date"
-                    }
-                  </Button>
+              <Button testID="editDate" onPress={() => setMarkerDatePickerVisible(true)}>
+                {markerDate
+                  ? `Date: ${markerDate.toDateString()}`
+                  : "Select Date"
+                }
+              </Button>
               <DatePickerModal
                 locale="en"
                 mode="single"
@@ -862,12 +874,12 @@ const MapScreen = () => {
                 }}
               />
 
-                  <Button testID="editTime" onPress={() => setMarkerTimePickerVisible(true)}>
-                    {markerTime
-                      ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
+              <Button testID="editTime" onPress={() => setMarkerTimePickerVisible(true)}>
+                {markerTime
+                  ? `Time: ${markerTime.hours}:${String(markerTime.minutes).padStart(2, '0')}`
                   : "Select Time"
                 }
-                  </Button>
+              </Button>
               <TimePickerModal
                 testID="timePicker2"
                 visible={markerTimePickerVisible}
@@ -875,7 +887,7 @@ const MapScreen = () => {
                 onConfirm={onConfirmMarkerTime}
                 hours={markerTime?.hours || 12}
                 minutes={markerTime?.minutes || 0}
-                  />
+              />
             </Card.Content>
             <Card.Actions>
               <IconButton
@@ -914,14 +926,6 @@ const MapScreen = () => {
             </Card.Content>
             <Card.Actions>
               <IconButton
-                testID="openRoutePlanning"
-                icon="map-marker-path"
-                onPress={() => {
-                  setInfoModalVisible(false)
-                  setRoutePlanningMode(true)
-                }}
-              />
-              <IconButton
                 testID="showInfo" mode="contained" icon="information" onPress={showDetailedInfo}
               />
               <IconButton
@@ -936,59 +940,33 @@ const MapScreen = () => {
           </Card>
         </Modal>
 
-        {/* Modal for detailed place information (from search) */}
-        <Modal
-          visible={placeDetailsModalVisible}
-          onDismiss={() => setPlaceDetailsModalVisible(false)}
-          contentContainerStyle={[styles.modalContainer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}
-        >
-          <Card style={styles.card}>
-            <Card.Title title={selectedPlaceDetails?.name || "Place Details"} />
-            <Card.Content>
-              <Text style={styles.addressText}>{selectedPlaceDetails?.address}</Text>
-              {selectedPlaceDetails?.phone && (
-                <Text>Phone: {selectedPlaceDetails.phone}</Text>
-              )}
-              {selectedPlaceDetails?.website && (
-                <Text>Website: {selectedPlaceDetails.website}</Text>
-              )}
-              {selectedPlaceDetails?.rating && (
-                <View style={styles.ratingContainer}>
-                  {renderStars(selectedPlaceDetails.rating)}
-                  <Text style={styles.ratingText}>{selectedPlaceDetails.rating.toFixed(1)}</Text>
-                </View>
-              )}
-              {selectedPlaceDetails?.openingHours && (
-                <View style={styles.openingHoursContainer}>
-                  <Text style={{
-                    color: selectedPlaceDetails.openingHours.open_now ? 'green' : 'red',
-                    fontWeight: 'bold'
-                  }}>
-                    {selectedPlaceDetails.openingHours.open_now ? 'Open Now' : 'Closed'}
-                  </Text>
-                  <Text style={styles.weekdayText}>
-                    {getTodayOpeningHours(selectedPlaceDetails.openingHours.weekday_text)}
-                  </Text>
-                </View>
-              )}
-            </Card.Content>
-            <Card.Actions>
-              <Button mode="contained" onPress={() => setPlaceDetailsModalVisible(false)}>
-                Close
-              </Button>
-              <Button testID="markPlace" mode="outlined" onPress={handleMarkDestination}>
-                Mark This Place
-              </Button>
-            </Card.Actions>
-          </Card>
-        </Modal>
         <Modal
           visible={bottomSheetVisible}
           onDismiss={() => setBottomSheetVisible(false)}
           contentContainerStyle={[styles.modalContainer, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}
         >
           <Card style={styles.card}>
-            <Card.Title title={fetchedPlaceDetails?.name || "Place Details"} />
+            <Card.Title
+              title={fetchedPlaceDetails?.name || "Place Details"}
+              right={props => (
+                <View style={{ flexDirection: 'row' }}>
+                  <IconButton
+                    {...props}
+                    mode="contained-tonal"
+                    testID="markPlace"
+                    icon="plus"
+                    onPress={handleMarkDestination}
+                  />
+                  <IconButton
+                    {...props}
+                    testID="closeBottomSheet"
+                    mode="contained-tonal"
+                    icon="close"
+                    onPress={() => setBottomSheetVisible(false)}
+                  />
+                </View>
+              )}
+            />
             <Card.Content>
               <Text style={styles.addressText}>{fetchedPlaceDetails?.address}</Text>
               <Text style={styles.infoText}>Phone: {fetchedPlaceDetails?.phone || "N/A"}</Text>
@@ -1012,13 +990,16 @@ const MapScreen = () => {
                 </Text>
               </View>
             </Card.Content>
-            <Card.Actions>
-              <Button mode="contained" onPress={handleMarkDestination}>
-                Mark This Place
-              </Button>
-              <Button mode="outlined" onPress={() => setBottomSheetVisible(false)}>
-                Cancel
-              </Button>
+            <Card.Actions style={{ flexDirection: 'row' }}>
+              <IconButton
+                testID="openRoutePlanning"
+                icon="car"
+                onPress={() => {
+                  setBottomSheetVisible(false)
+                  setInfoModalVisible(false)
+                  setRoutePlanningMode(true)
+                }}
+              />
             </Card.Actions>
           </Card>
         </Modal>
@@ -1030,31 +1011,6 @@ const MapScreen = () => {
 export default MapScreen;
 
 const styles = StyleSheet.create({
-  routePlanningContainer: {
-    backgroundColor: 'white',
-    borderRadius: 4,
-    padding: 8,
-    // keep it positioned under your search bar
-  },
-  modeSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 6,
-  },
-  modeButton: {
-    borderRadius: 24,
-    padding: 4,
-  },
-  modeButtonSelected: {
-    backgroundColor: '#007AFF',
-  },
-  routeCard: {
-    position: 'absolute',
-    top: '40%',          // middle of screen
-    left: 20,
-    right: 20,
-    elevation: 4,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1132,9 +1088,9 @@ const styles = StyleSheet.create({
   // Search bar styles
   searchContainer: {
     position: 'absolute',
-    top: 40,
+    top: 10,
     left: 10,
-    right: 10,
+    right: 60,
     zIndex: 1,
     backgroundColor: 'white',
     borderRadius: 5,
@@ -1151,5 +1107,29 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+  },
+  routePlanningContainer: {
+    backgroundColor: 'white',
+    borderRadius: 4,
+    padding: 8,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 6,
+  },
+  modeButton: {
+    borderRadius: 24,
+    padding: 4,
+  },
+  modeButtonSelected: {
+    backgroundColor: '#007AFF',
+  },
+  routeCard: {
+    position: 'absolute',
+    top: '40%',          // middle of screen
+    left: 20,
+    right: 20,
+    elevation: 4,
   },
 });

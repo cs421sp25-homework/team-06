@@ -24,6 +24,7 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 │   ├── README.md
 │   ├── adaptive-icon.png
 │   ├── another_image.png
+│   ├── default_bg.jpg
 │   ├── favicon.png
 │   ├── icon.png
 │   ├── logInBackground.jpg
@@ -48,11 +49,15 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 │   ├── Podfile
 │   └── Podfile.properties.json
 ├── maestro
-│   ├── afterLoginTest.yaml
-│   ├── bill_test.yaml
-│   ├── dashboardScreen_test.yaml
-│   ├── loginScreen_test.yaml
-│   └── signUpScreen_test.yaml
+│   ├── announcementTest.yaml
+│   ├── billTest.yaml
+│   ├── checklistTest.yaml
+│   ├── entireTest.yaml
+│   ├── profileTest.yaml
+│   ├── resetPwd.yaml
+│   ├── routeTest.yaml
+│   ├── signUpScreen_test.yaml
+│   └── tripCreation.yaml
 ├── metro.config.js
 ├── nativewind-env.d.ts
 ├── navigation
@@ -63,11 +68,11 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 ├── package.json
 ├── prettier.config.js
 ├── screens
+│   ├── AnnounceScreen.tsx
 │   ├── ArchivedHistoryScreen.tsx
 │   ├── BillScreen.tsx
 │   ├── CurrentTripScreen.tsx
 │   ├── DashboardScreen.tsx
-│   ├── HistoryScreen.tsx
 │   ├── HomeScreen.tsx
 │   ├── LogInScreen.tsx
 │   ├── MapScreen.tsx
@@ -75,6 +80,7 @@ A collaborative group trip planner enabling real‑time itinerary management, of
 │   ├── ProfileScreen.tsx
 │   └── SignUpScreen.tsx
 ├── styles
+│   ├── announce.ts
 │   └── loginStyples.ts
 ├── tailwind.config.js
 ├── tsconfig.json
@@ -163,18 +169,24 @@ eas init
 eas build --profile maestro-test
 ```
 
-Local E2E test:
+Local E2E test (entire test as an example):
 
 ```bash
 npx expo run:android
-maestro test ./maestro/afterLoginTest.yaml
+maestro test ./maestro/entireTest.yaml
 ```
 
 This will run the test suite of YAML files stored in `./maestro`. Specifically:
 
-1. `./maestro/afterLoginTest.yaml` checks the main flow of Sync Trip, including trip CRUD, multi-user editing, map interactions and billing system;
-2. `./maestro/loginScreen_test.yaml` checks the login functions, including password reset and email verification;
+1. `./maestro/entireTest.yaml` checks the main flow of Sync Trip, including trip CRUD, multi-user editing, map interactions and billing system;
+2. `./maestro/restPwd.yaml` checks the login functions, including password reset and email verification;
 3. `./maestro/signUpScreen_test.yaml` checks the sign up function based on Firebase email service.
+4. `./maestro/profileTest.yaml` checks the profile editing function;
+5. `./maestro/tripCreation.yaml` checks the trip creation function;
+6. `./maestro/checklistTest.yaml` checks the checklist function;
+7. `./maestro/announcementTest.yaml` checks the announcement function;
+8. `./maestro/billTest.yaml` checks the billing function;
+9. `./maestro/routeTest.yaml` checks the route planning function;
 
 ## Automated Test
 
@@ -238,4 +250,3 @@ Refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
 ## License
 
 Refer to [LICENSE.md](./LICENSE.md).
-

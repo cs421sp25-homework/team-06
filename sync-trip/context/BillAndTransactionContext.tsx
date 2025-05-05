@@ -77,13 +77,25 @@ export const BillTransactionProvider = ({ children }: { children: ReactNode }) =
   // Update an existing bill using the API helper function
   const updateBill = async (billId: string, updatedBill: Partial<Bill>): Promise<void> => {
     if (!currentTripId) throw new Error("No current trip available.");
-    const cleanData: any = {};
-      for (const [key, value] of Object.entries(updatedBill)) {
-        if (value !== undefined && key !== 'isDraft') {
-          cleanData[key] = value;
-      }
+    if (
+      !updatedBill ||
+      typeof updatedBill !== "object" ||
+      Object.keys(updatedBill).length === 0
+    ) {
+      console.warn(`updateBill: nothing to update for bill ${billId}`);
+      return;
     }
-    //send notification for the updated bill
+    const cleanData: Record<string, any> = {};
+    Object.entries(updatedBill).forEach(([key, value]) => {
+      if (value !== undefined && key !== "isDraft") {
+        cleanData[key] = value;
+      }
+    });
+    
+    if (Object.keys(cleanData).length === 0) {
+      console.warn(`updateBill: no valid fields to update for bill ${billId}`);
+      return;
+    }
 
     await apiUpdateBill(currentTripId, billId, cleanData);
   };

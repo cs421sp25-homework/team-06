@@ -26,6 +26,7 @@ export const parseBill = (id: string, data: any): Bill => {
   return {
     id,
     title: data.title,
+    createdBy: data.createdBy,
     participants: data.participants,
     summary: data.summary || {},
     currency: data.currency || "USD",

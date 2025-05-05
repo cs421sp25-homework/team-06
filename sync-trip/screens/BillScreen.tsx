@@ -3,13 +3,14 @@ import {
   View,
   FlatList,
   StyleSheet,
-  SectionList
 } from "react-native";
 import {
   Button,
   List,
   Text,
   SegmentedButtons,
+  Card, 
+  Divider,
 } from 'react-native-paper';
 import { useBillTransaction } from "../context/BillAndTransactionContext";
 import { useTrip } from "../context/TripContext";
@@ -20,6 +21,7 @@ import TransactionModal from "../components/TransactionModal";
 import BillDetailModal from "../components/BillDetailModal";
 import { Collaborator } from "../types/User";
 import {sendBillCreateNotification, sendBillUpdateNotification} from "../utils/NotificationService";
+import {useAppNavigation} from "../navigation/useAppNavigation";
 
 const BillScreen = () => {
   // Retrieve bills and transactions from the BillTransactionContext
@@ -27,6 +29,7 @@ const BillScreen = () => {
   // Retrieve the current trip information from the TripContext
   const { currentTrip } = useTrip();
   const { currentUser } = useUser();
+  const currentUserUid = currentUser?.uid ?? "";
 
   const [billModalVisible, setBillModalVisible] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
@@ -35,6 +38,24 @@ const BillScreen = () => {
 
   const activeBills   = bills.filter(b => !b.archived);
   const archivedBills = bills.filter(b => b.archived);
+
+  const navigation = useAppNavigation();
+
+  // redirect away if no user
+  useEffect(() => {
+    if (!currentUser) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
+  }, [currentUser, navigation]);
+
+  useEffect(() => {
+    setSegment('active');
+    setSelectedBill(null);
+    setBillModalVisible(false);
+  }, [currentTrip?.id]);
 
   useEffect(() => {
     console.log('🔔 [BillScreen] bills state:', bills.map(b => ({
@@ -96,16 +117,17 @@ const BillScreen = () => {
   };
 
   const handleCreateBill = async () => {
-    if (!currentTrip) return;
+    if (!currentTrip || !currentUser) return;
     const newBill = {
       title: "New Bill",
       participants: [],
       summary: {},
       currency: "USD",
-      isDraft: false,
+      isDraft: true,
       archived: false,
       description: "",
-      category: "", 
+      category: "",
+      createdBy: currentUserUid,
     } as Omit<Bill, "id">;
     try {
       const billId = await createBill(newBill);
@@ -130,6 +152,7 @@ const BillScreen = () => {
         currency: updated.currency ?? selectedBill?.currency ?? 'USD',
         description: updated.description ?? selectedBill?.description ?? '',
         category: updated.category ?? selectedBill?.category ?? '',
+        isDraft: false,
       });
       //send bill update notification
       await sendBillUpdateNotification(updated as Bill);
@@ -138,7 +161,6 @@ const BillScreen = () => {
     }
   };
 
-  const currentUserUid = currentUser?.uid ?? "";
   const debtSummary = useMemo(() => {
     const summary: Record<string, number> = {};
     collaboratorsFull.forEach(c => { summary[c.uid] = 0 });
@@ -158,6 +180,18 @@ const BillScreen = () => {
     return summary;
   }, [activeBills, collaboratorsFull, currentUserUid]);
 
+  const totalYouOwe = useMemo(
+    () => Object.values(debtSummary).filter(v => v < 0).reduce((sum, v) => sum + (-v), 0),
+    [debtSummary]
+  );
+
+  const totalYouReceive = useMemo(
+    () => Object.values(debtSummary).filter(v => v > 0).reduce((sum, v) => sum + v, 0),
+    [debtSummary]
+  );
+
+  const netBalance = totalYouReceive - totalYouOwe;
+
   const makeSections = (list: Bill[]) => {
     const map: Record<string, Bill[]> = {};
     list.forEach(bill => {
@@ -173,6 +207,13 @@ const BillScreen = () => {
   const activeSections = useMemo(() => makeSections(activeBills), [activeBills]);
   const archivedSections = useMemo(() => makeSections(archivedBills), [archivedBills]);
 
+  if (!currentTrip) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Please select a trip on dashboard</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -181,19 +222,36 @@ const BillScreen = () => {
       </Text>
 
       {Object.values(debtSummary).some(v => v !== 0) && (
-        <View style={styles.debtSummaryContainer}>
-          {Object.entries(debtSummary).map(([uid, amt]) => {
-            if (amt === 0) return null;
-            const name = collaboratorsFull.find(c => c.uid === uid)?.name || uid;
-            return (
-              <Text key={uid} style={styles.debtSummaryText}>
-                {amt < 0
-                  ? `You owe ${(-amt).toFixed(2)} to ${name}`
-                  : `${name} owes you ${amt.toFixed(2)}`}
-              </Text>
-            );
-          })}
-        </View>
+        <Card style={styles.debtCard}>
+          <Card.Title title="Balance Summary" />
+          <Card.Content>
+            {Object.entries(debtSummary).map(([uid, amt]) => {
+              if (amt === 0) return null;
+              const name = collaboratorsFull.find(c => c.uid === uid)?.name || uid;
+              const isReceive = amt > 0;
+                return (
+                <Text key={uid} style={styles.debtLine}>
+                  {isReceive
+                    ? `${name} owes you `
+                    : `You owe `}
+                  <Text style={isReceive ? styles.receives : styles.owes}>
+                    ${Math.abs(amt).toFixed(2)}
+                  </Text>
+                  {isReceive ? '' : ` to ${name}`}
+                </Text>
+                );
+            })}
+            <Divider style={styles.debtDivider} />
+             <Text style={styles.totalText}>
+               {netBalance >= 0
+                 ? 'Total you receive: '
+                 : 'Total you owe: '}
+               <Text style={netBalance >= 0 ? styles.receives : styles.owes}>
+                 ${Math.abs(netBalance).toFixed(2)}
+               </Text>
+             </Text>
+          </Card.Content>
+        </Card>
       )}
 
      {segment === 'active' ? (
@@ -205,6 +263,7 @@ const BillScreen = () => {
             item.id?.trim() ? item.id : `bill_${index}`
           }
           renderItem={({ item }) => {
+            const creatorName = collaboratorsFull.find(c => c.uid === item.createdBy)?.name ?? 'Unknown';
             const bal = balanceForUser(item, currentUser?.uid ?? '');
             const bg =
               bal > 0   ? '#e8ffea'
@@ -214,15 +273,23 @@ const BillScreen = () => {
             return (
               <List.Item
                 title={item.title}
-                description={
-                  <>
-                  {item.category && <Text style={styles.categoryBadge}>{item.category}</Text>}
-                  <Text>{item.description}</Text>
-                  <Text style={styles.balanceText}>
-                    {bal === 0 ? "" : bal > 0 ? `You should receive ${bal}` : `You owe ${-bal}`}
-                  </Text>
-                </>
-                }
+                description={() => (
+                  <View>
+                    <Text style={styles.creator}>Created by {creatorName}</Text>
+                    <View style={styles.itemDescription}>
+                      <Text style={styles.categoryBadge}>
+                        {item.category || 'Uncategorized'}
+                      </Text>
+                      <Text style={styles.balanceText}>
+                        {bal === 0
+                          ? 'No balance'
+                          : bal > 0
+                          ? `Receives $${bal.toFixed(2)}`
+                          : `Owes $${(-bal).toFixed(2)}`}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 onPress={() => {
                   handleBillPress(item.id)
                 }}
@@ -241,6 +308,7 @@ const BillScreen = () => {
             item.id?.trim() ? item.id : `bill_${index}`
           }
           renderItem={({ item }) => {
+            const creatorName = collaboratorsFull.find(c => c.uid === item.createdBy)?.name ?? 'Unknown';
             const bal = balanceForUser(item, currentUser?.uid ?? '');
             const bg =
               bal > 0   ? '#e8ffea'
@@ -250,13 +318,23 @@ const BillScreen = () => {
             return (
               <List.Item
                 title={item.title}
-                description={
-                  bal === 0
-                    ? undefined
-                    : bal > 0
-                    ? `You should receive ${bal.toFixed(2)}`
-                    : `You owe ${(-bal).toFixed(2)}`
-                }
+                description={() => (
+                  <View>
+                    <Text style={styles.creator}>Created by {creatorName}</Text>
+                    <View style={styles.itemDescription}>
+                      <Text style={styles.categoryBadge}>
+                        {item.category || 'Uncategorized'}
+                      </Text>
+                      <Text style={styles.balanceText}>
+                        {bal === 0
+                          ? 'No balance'
+                          : bal > 0
+                          ? `Receives $${bal.toFixed(2)}`
+                          : `Owes $${(-bal).toFixed(2)}`}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 onPress={() => {
                   handleBillPress(item.id)
                 }}
@@ -294,6 +372,7 @@ const BillScreen = () => {
         onClose={() => setBillModalVisible(false)}
         onSave={handleBillSave}
         onArchive={handleArchive}
+        onRestore={handleRestore} 
         onDelete={async id => {
           await deleteBill(id);
           setBillModalVisible(false);
@@ -306,14 +385,70 @@ const BillScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   header: { marginBottom: 16, fontSize: 18, fontWeight: 'bold' },
-  billItem: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
   createButton: {
-    marginTop: 20,
+    marginTop: 10,
     alignSelf: 'center',
     width: 180,
+    marginBottom: 10,
+  },
+  debtCard: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 2,
+  },
+  debtLine: {
+    marginVertical: 4,
+    fontSize: 14,
+  },
+  debtDivider: {
+    marginVertical: 8,
+  },
+  totalOweText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  billItem: {
+    borderRadius: 8,
+    marginVertical: 6,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  itemDescription: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  categoryBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    fontWeight: 'bold'
+  },
+  balanceText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  receives: {
+    color: 'green',
+  },
+  owes: {
+    color: 'red',
+  },
+  totalText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    marginTop: 8,
+  },
+  creator: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginLeft: 8,
   },
 });
 

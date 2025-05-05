@@ -5,7 +5,8 @@ export interface User {
     bio?: string;
     travelPreference?: string;
     currentTripId?: string;
-    profilePicture?: string; //picture link?
+    profilePicture?: string; //picture link in firebase storage
+    backgroundPicture?: string;
     tripsIdList: string[];
     paypalEmail?: string;
 }
